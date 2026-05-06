@@ -36,6 +36,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     var colorIdx = Note.maniaData[maniaIdx][strumNote.noteData % ammo];
     var color = Note.colArray[colorIdx];
     var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
+    var strumAlpha:Float = strumNote.alpha;
 
     //if (!strumNote.isPixelNote)
     //{
@@ -75,9 +76,9 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
         }
     //}
 
-    glow.alpha = 0.8;
-    sparks.alpha = 0.8;
-    this.alpha = 0.8;
+    glow.alpha = 0.8 * strumAlpha;
+    sparks.alpha = 0.8 * strumAlpha;
+    this.alpha = 0.8 * strumAlpha;
 
     glow.visible = false;
     sparks.visible = false;
@@ -92,6 +93,10 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
   public override function update(elapsed):Void
   {
     super.update(elapsed);
+    var a = 0.8 * strumNote.alpha;
+    this.alpha = a;
+    if (glow != null) glow.alpha = a;
+    if (sparks != null) sparks.alpha = a;
   }
 
   public function playStart():Void
@@ -176,7 +181,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     //super.revive();
 
     this.visible = true;
-    this.alpha = 0.8;
+    this.alpha = 0.8 * strumAlpha;
 
     if (glow != null) glow.visible = true;
     if (sparks != null) sparks.visible = true;
