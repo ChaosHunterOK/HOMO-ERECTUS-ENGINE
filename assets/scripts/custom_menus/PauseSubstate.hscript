@@ -1,0 +1,215 @@
+var grpMenuShit;
+
+var menuItems = ['Resume', 'Restart Song', 'Change Options', 'Change Modifiers', 'Exit to menu'];
+var curSelected = 0;
+var skipTimeText;
+var pauseMusic;
+var skipTimeTracker;
+var curTime = Math.max(0, Conductor.songPosition);
+function create() 
+{
+	pauseMusic = new FlxSound().loadEmbedded(SUtil.getPath() + 'assets/music/breakfast' + TitleState.soundExt, true, true);
+	pauseMusic.volume = 0;
+	pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
+	FlxG.sound.list.add(pauseMusic);
+
+	var bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF000000);
+	bg.alpha = 0.6;
+	bg.scrollFactor.set();
+	add(bg);
+
+	grpMenuShit = new FlxGroup();
+	add(grpMenuShit);
+	if(!PlayState.instance.startingSong && PlayState.chartingMode)
+		{
+			menuItems.insert(3, 'Skip Time');
+		}
+		regenMenu();
+	setCameras();
+	if (mobile){
+		addVirtualPads('full', 'a_b');
+		addPadcam();
+}
+}
+var holdTime = 0;
+function update(elapsed)
+{
+	if (pauseMusic.volume < 0.5)
+		pauseMusic.volume += 0.01 * elapsed;
+    updateSkipTextStuff();
+	var upP = controls.UP_MENU;
+	var downP = controls.DOWN_MENU;
+	var accepted = controls.ACCEPT;
+
+	if (upP)
+	{
+		changeSelection(-1);
+	}
+	if (downP)
+	{
+		changeSelection(1);
+	}
+	var daSelected = menuItems[curSelected];
+	if(daSelected ==  'Skip Time'){
+				if (controls.LEFT_P)
+				{
+					FlxG.sound.play(SUtil.getPath() + 'assets/sounds/custom_menu_sounds/'+CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/sounds/custom_menu_sounds/custom_menu_sounds.json")).customMenuScroll+'/scrollMenu' + TitleState.soundExt, 0.4);
+					curTime -= 1000;
+					holdTime = 0;
+				}
+				if (controls.RIGHT_P)
+				{
+					FlxG.sound.play(SUtil.getPath() + 'assets/sounds/custom_menu_sounds/'+CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/sounds/custom_menu_sounds/custom_menu_sounds.json")).customMenuScroll+'/scrollMenu' + TitleState.soundExt, 0.4);
+					curTime += 1000;
+					holdTime = 0;
+				}
+
+				if(controls.LEFT || controls.RIGHT)
+				{
+					holdTime += elapsed;
+					if(holdTime > 0.5)
+					{
+                        var funni = 1;
+                        if (controls.LEFT)
+                            funni = -1;
+						curTime += 45000 * elapsed * funni;
+					}
+
+					if(curTime >= FlixG.sound.music.length) curTime -= FlixG.sound.music.length;
+					else if(curTime < 0) curTime += FlixG.sound.music.length;
+					updateSkipTimeText();
+				}
+			}
+	if (accepted)
+	{
+		
+		switch (daSelected)
+		{
+			case "Resume":
+				close();
+			case "Restart Song":
+				resetState();
+			case "Exit to menu":
+				FlixG.save.data.isFromPlayState = false;
+				if (PlayState.isStoryMode)
+					LoadingState.loadAndSwitchState(new StoryMenuState());
+				else if (PlayState.isFreeplay)
+					LoadingState.loadAndSwitchState(new FreeplayState());
+			case "Change Modifiers":
+				LoadingState.loadAndSwitchState(new ModifierState());
+			case "Change Options":
+				LoadingState.loadAndSwitchState(new SaveDataState());
+				case 'Skip Time':
+					if(curTime < Conductor.songPosition)
+					{
+						PlayState.startOnTime = curTime;
+						FlxG.sound.music.volume = 0;
+						PlayState.instance.vocals.volume = 0;
+						FlxTransitionableState.skipNextTransOut = true;
+						resetState();
+					}
+					else
+					{
+						if (curTime != Conductor.songPosition)
+						{
+							PlayState.instance.clearNotesBefore(curTime);
+							PlayState.instance.setSongTime(curTime);
+						}
+
+						close();
+					}
+		}
+	}
+}
+
+function onDestroy()
+{
+	pauseMusic.destroy();
+}
+
+function regenMenu() {
+    for (i in 0...grpMenuShit.members.length) {
+        var obj = grpMenuShit.members[0];
+        obj.kill();
+        grpMenuShit.remove(obj, true);
+        obj.destroy();
+    }
+
+    for (i in 0...menuItems.length) {
+        var item = new Alphabet(0, 70 * i + 30, menuItems[i], true, false);
+        item.isMenuItem = true;
+        item.targetY = i;
+        grpMenuShit.add(item);
+
+        if(menuItems[i] == 'Skip Time')
+        {
+            skipTimeText = new FlxText(0, 0, 0, '', 64);
+            skipTimeText.setFormat(SUtil.getPath() + 'assets/fonts/vcr.ttf', 64, 0xffffffff, 'center', FlxTextBorderStyle.OUTLINE, 0xff000000);
+            skipTimeText.scrollFactor.set();
+            skipTimeText.borderSize = 2;
+            skipTimeTracker = item;
+            add(skipTimeText);
+
+            updateSkipTextStuff();
+            updateSkipTimeText();
+        }
+    }
+    curSelected = 0;
+    changeSelection(0);
+}
+
+function changeSelection(change)
+{
+	curSelected += change;
+
+	if (curSelected < 0)
+		curSelected = menuItems.length - 1;
+	if (curSelected >= menuItems.length)
+		curSelected = 0;
+
+	var bullShit = 0;
+
+	for (item in grpMenuShit.members)
+	{
+		item.targetY = bullShit - curSelected;
+		bullShit++;
+
+		item.alpha = 0.6;
+		// item.setGraphicSize(Std.int(item.width * 0.8));
+
+		if (item.targetY == 0)
+		{
+			item.alpha = 1;
+			if(item == skipTimeTracker)
+				{
+					curTime = Math.max(0, Conductor.songPosition);
+					updateSkipTimeText();
+				}
+			// item.setGraphicSize(Std.int(item.width));
+		}
+	}
+}
+function deleteSkipTimeText()
+	{
+		if(skipTimeText != null)
+		{
+			skipTimeText.kill();
+			remove(skipTimeText);
+			skipTimeText.destroy();
+		}
+		skipTimeText = null;
+		skipTimeTracker = null;
+	}
+function updateSkipTextStuff()
+	{
+		if(skipTimeText == null || skipTimeTracker == null) return;
+
+		skipTimeText.x = skipTimeTracker.x + skipTimeTracker.width + 60;
+		skipTimeText.y = skipTimeTracker.y;
+		skipTimeText.visible = (skipTimeTracker.alpha >= 1);
+	}
+
+	function updateSkipTimeText()
+	{
+		skipTimeText.text = FlxStringUtil.formatTime(Math.max(0, Math.floor(curTime / 1000)), false) + ' / ' + FlxStringUtil.formatTime(Math.max(0, Math.floor(FlixG.sound.music.length / 1000)), false);
+	}

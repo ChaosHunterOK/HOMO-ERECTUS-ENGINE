@@ -1,0 +1,9 @@
+{
+    "title": "Test",
+    "version": "1.0.0",
+    "borderless": false,
+    "cursorVisible": true,
+    "width": 1280,
+    "height": 720,
+    "borderColor": "0x000000"
+}
