@@ -145,6 +145,10 @@ class Note extends DynamicSprite
 	public static var posRest:Array<Int> = [0, 35, 50, 70];
 	var lastNoteOffsetXForPixelAutoAdjusting:Float = 0;
 	var mania = PlayState.SONG.mania;
+
+	public static function getSustainScale():Float {
+		return (Conductor.stepCrochet / 100) * 1.5 * PlayState.instance.daScrollSpeed;
+	}
 	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?customImage:Null<BitmapData>, ?customXml:Null<String>, ?customEnds:Null<BitmapData>, ?LiftNote:Bool=false, ?animSuffix:String, ?numSuffix:Int)
 	{
 		super();
@@ -188,17 +192,16 @@ class Note extends DynamicSprite
 		x += swidths[mania] * swagWidth * (this.noteData % NOTE_AMOUNT);
 		var animToPlay:Int = getAnimID(mania);
 		animation.play(colArray[animToPlay] + 'Scroll');
-
 		if (isSustainNote && prevNote != null)
 		{
-			alpha = 0.6;
+			alpha *= 0.6;
+			prevNote.alpha = alphaMultiplier * 0.6;
 			if (OptionsHandler.options.downscroll) flipY = true;
 
 			offsetX += width / 2;
 			animation.play(colArray[animToPlay] + 'holdend');
 			updateHitbox();
 			offsetX -= width / 2;
-
 			if (isPixel) offsetX += 30;
 
 			if (prevNote.isSustainNote)
@@ -206,10 +209,8 @@ class Note extends DynamicSprite
 				var prevAnimID = prevNote.getAnimID(mania);
 				prevNote.animation.play(colArray[prevAnimID] + 'hold');
 
-				prevNote.scale.y *= Conductor.stepCrochet / 100 * 1.5;
-				if(PlayState.instance != null)
-					prevNote.scale.y *= PlayState.instance.daScrollSpeed;
-				
+				var sustainScale = getSustainScale();
+				prevNote.scale.y = sustainScale;
 				prevNote.updateHitbox();
 			}
 		}
@@ -627,8 +628,7 @@ class Note extends DynamicSprite
 
 		if (tooLate)
 		{
-			if (alpha > 0.3)
-				alpha = 0.3;
+			alpha = Math.min(alpha, 0.3 * alphaMultiplier);
 		}
 	}
 	public inline function daStrumTime():Float {

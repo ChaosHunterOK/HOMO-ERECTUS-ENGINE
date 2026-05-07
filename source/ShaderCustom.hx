@@ -90,15 +90,24 @@ class Shader extends FlxShaderFix {
         }
         return vec4(0.0, 0.0, 0.0, 0.0);
     }
-    uniform vec4 _camSize; //x, y, width, height
-    
-    vec2 getCamPos(vec2 pos) {
-        vec2 mainPos = pos * openfl_TextureSize;
-        return (mainPos - _camSize.xy) / _camSize.zw;
+    uniform vec4 _camSize; // x, y, w, h
+
+    vec2 getCamPos(vec2 uv) {
+        vec2 texSize = openfl_TextureSize;
+
+        vec2 camMin = _camSize.xy / texSize;
+        vec2 camMax = (_camSize.xy + _camSize.zw) / texSize;
+
+        return (uv - camMin) / (camMax - camMin);
     }
 
-    vec2 camToOg(vec2 pos) {
-        return (pos * _camSize.zw + _camSize.xy) / openfl_TextureSize;
+    vec2 camToOg(vec2 uv) {
+        vec2 texSize = openfl_TextureSize;
+
+        vec2 camMin = _camSize.xy / texSize;
+        vec2 camMax = (_camSize.xy + _camSize.zw) / texSize;
+
+        return mix(camMin, camMax, uv);
     }
     vec4 textureCam(sampler2D bitmap, vec2 pos) {
         return texture2D(bitmap, camToOg(pos));
@@ -375,7 +384,6 @@ class ShaderCustom extends Shader {
         if (data._camSize != null)
             data._camSize.value = [x, y, width, height];
     }
-
 
     public function init(fragCode:String, vertCode:String) {
 

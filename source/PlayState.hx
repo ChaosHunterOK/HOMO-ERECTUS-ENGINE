@@ -585,6 +585,32 @@ class PlayState extends MusicBeatState
 		interp.variables.set("Fake3D", Fake3D);
 		interp.variables.set("camHUD", camHUD);
 		interp.variables.set("pi", Math.PI);
+		interp.variables.set("BEHIND_NONE", BEHIND_NONE);
+		function getGroupIndex(group:FlxBasic):Int {
+			if (group == null) return members.length;
+
+			var i = members.indexOf(group);
+			return (i == -1) ? members.length : i;
+		}
+		interp.variables.set("addSprite", function (obj:FlxBasic, position:Int) {
+			var index:Int = members.length;
+			if ((position & BEHIND_GF) != 0)
+				index = Std.int(Math.min(index, getGroupIndex(gfGroup)));
+			if ((position & BEHIND_DAD) != 0)
+				index = Std.int(Math.min(index, getGroupIndex(dadGroup)));
+			if ((position & BEHIND_BF) != 0)
+				index = Std.int(Math.min(index, getGroupIndex(boyfriendGroup)));
+			if ((position & BEHIND_NOTES) != 0)
+				index = Std.int(Math.min(index, getGroupIndex(strumLineNotes)));
+			if ((position & BEHIND_SPLASHES) != 0)
+				index = Std.int(Math.min(index, getGroupIndex(grpNoteSplashes)));
+			if (index < 0 || index > members.length)
+				add(obj);
+			else
+				insert(index, obj);
+		});
+		interp.variables.set("playerStrums", playerStrums);
+		interp.variables.set("enemyStrums", enemyStrums);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
@@ -597,7 +623,6 @@ class PlayState extends MusicBeatState
 		sameVarsIdk(interp);
 
 		// set makeHaxeState-specific vars
-		interp.variables.set("BEHIND_NONE", BEHIND_NONE);
 		interp.variables.set("isDemoMode", ModifierState.namedModifiers.demo.value);
 		interp.variables.set("bpm", Conductor.bpm);
 		interp.variables.set("FlxTypeText", FlxTypeText);
@@ -614,8 +639,6 @@ class PlayState extends MusicBeatState
 		});
 
 		interp.variables.set("showOnlyStrums", false);
-		interp.variables.set("playerStrums", playerStrums);
-		interp.variables.set("enemyStrums", enemyStrums);
 		interp.variables.set("mustHit", false);
 		interp.variables.set("strumLineY", strumLine.y);
 		interp.variables.set("hscriptPath", path);
@@ -644,36 +667,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("goodNoteHit", function(id:Note, direction:Int, noteType:String, isSustainNote:Bool, isPlayer:Bool) {});
 		interp.variables.set("noteMiss", function(id, direction, noteType, isSustainNote, isPlayer) {});
 		interp.variables.set("blendModeFromString", blendModeFromString);
-		function getGroupIndex(group:FlxBasic):Int {
-			if (group == null) return members.length;
-
-			var i = members.indexOf(group);
-			return (i == -1) ? members.length : i;
-		}
-
-		interp.variables.set("addSprite", function (obj:FlxBasic, position:Int) {
-			var index:Int = members.length;
-
-			if ((position & BEHIND_GF) != 0)
-				index = Std.int(Math.min(index, getGroupIndex(gfGroup)));
-
-			if ((position & BEHIND_DAD) != 0)
-				index = Std.int(Math.min(index, getGroupIndex(dadGroup)));
-
-			if ((position & BEHIND_BF) != 0)
-				index = Std.int(Math.min(index, getGroupIndex(boyfriendGroup)));
-
-			if ((position & BEHIND_NOTES) != 0)
-				index = Std.int(Math.min(index, getGroupIndex(strumLineNotes)));
-
-			if ((position & BEHIND_SPLASHES) != 0)
-				index = Std.int(Math.min(index, getGroupIndex(grpNoteSplashes)));
-
-			if (index < 0 || index > members.length)
-				add(obj);
-			else
-				insert(index, obj);
-		});
 		interp.variables.set("add", add);
 		interp.variables.set("remove", remove);
 		interp.variables.set("insert", insert);
@@ -762,8 +755,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("opponentPlayer", opponentPlayer);
 		interp.variables.set("demoMode", demoMode);
 		interp.variables.set("disableScoreChange", function(funny:Bool) {disableScoreChange = funny;});
-		interp.variables.set("playerStrums", playerStrums);
-		interp.variables.set("enemyStrums", enemyStrums);
 		interp.variables.set("strumLineY", strumLine.y);
 		interp.variables.set("hscriptPath", path);
 		interp.variables.set("health", health);
@@ -878,37 +869,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("combo", combo);
 
 		//interp.variables.set("noteHit", function(player1:Bool, note:Note, wasGoodHit:Bool) {}); //this works finally!! :D
-		interp.variables.set("addSprite", function (sprite, position) {
-			var targetIndex:Int = members.length;
-			var spriteObj:FlxSprite = cast(sprite, FlxSprite);
-
-			if (spriteObj != null) {
-				if ((position & BEHIND_NOTES != 0) || (position & BEHIND_SPLASHES != 0)) {
-					spriteObj.cameras = [camHUD];
-				}
-				if (position & BEHIND_ALL != 0) {
-					if (position & BEHIND_GF != 0) 
-						targetIndex = Math.floor(Math.min(targetIndex, members.indexOf(gfGroup)));
-					
-					if (position & BEHIND_DAD != 0) 
-						targetIndex = Math.floor(Math.min(targetIndex, members.indexOf(dadGroup)));
-					
-					if (position & BEHIND_BF != 0) 
-						targetIndex = Math.floor(Math.min(targetIndex, members.indexOf(boyfriendGroup)));
-						
-					if (position & BEHIND_NOTES != 0) 
-						targetIndex = Math.floor(Math.min(targetIndex, members.indexOf(notes)));
-
-					if (position & BEHIND_SPLASHES != 0) 
-						targetIndex = Math.floor(Math.min(targetIndex, members.indexOf(grpNoteSplashes)));
-				}
-				if (targetIndex < 0 || targetIndex >= members.length) {
-					add(spriteObj);
-				} else {
-					insert(targetIndex, spriteObj);
-				}
-			}
-		});
 		interp.variables.set("replaceSprite", function(sprite, replaced) {replace(sprite, replaced);});
 		interp.variables.set("HelperFunctions", HelperFunctions);
 		
@@ -2706,92 +2666,59 @@ class PlayState extends MusicBeatState
 		if (paused)
 		{
 			if (FlxG.sound.music != null && !startingSong)
-			{
 				resyncVocals();
-			}
-			if (!opponentPlayer && !duoMode)
-			{
-				controls.setKeyboardScheme(Solo(false));
-			}
-			if (duoMode) {
+
+			if (duoMode)
 				controls.setKeyboardScheme(Duo(true));
-			}
+			else if (!opponentPlayer)
+				controls.setKeyboardScheme(Solo(false));
+
 			if (startTimer != null && !startTimer.finished)
 				startTimer.active = true;
-			paused = false;
-			var currentIconState = "";
 
 			if (songSpeedTween != null)
 				songSpeedTween.active = true;
 
-			if (opponentPlayer)
-			{
-				if (healthBar.percent > 80)
-				{
-					currentIconState = "Dying";
-				}
-				else
-				{
-					currentIconState = "Playing";
-				}
-				if (poisonTimes != 0)
-				{
-					currentIconState = "Being Posioned";
-				}
-			}
-			else
-			{
-				if (healthBar.percent > 20)
-				{
-					currentIconState = "Dying";
-				}
-				else
-				{
-					currentIconState = "Playing";
-				}
-				if (poisonTimes != 0)
-				{
-					currentIconState = "Being Posioned";
-				}
-			}
+			paused = false;
+
+			var healthThreshold = opponentPlayer ? 80 : 20;
+			var currentIconState = (poisonTimes != 0)
+				? "Being Posioned"
+				: (healthBar.percent > healthThreshold ? "Dying" : "Playing");
+
 			#if desktop
 			if (startTimer.finished)
 			{
-				DiscordClient.changePresence(customPrecence
-					+ " "
-					+ SONG.song
-					+ " ("
-					+ storyDifficultyText
-					+ ") "
-					+ Ratings.GenerateLetterRank(accuracy),
-					"\nAcc: "
-					+ HelperFunctions.truncateFloat(accuracy, 2)
-					+ "% | Score: "
-					+ songScore
-					+ " | Misses: "
-					+ misses, iconRPC, true,
-					songLength
-					- Conductor.songPosition, playingAsRpc);
+				DiscordClient.changePresence(
+					customPrecence + " " + SONG.song + " (" + storyDifficultyText + ") " +
+					Ratings.GenerateLetterRank(accuracy),
+					"\nAcc: " + HelperFunctions.truncateFloat(accuracy, 2) +
+					"% | Score: " + songScore +
+					" | Misses: " + misses,
+					iconRPC,
+					true,
+					songLength - Conductor.songPosition,
+					playingAsRpc
+				);
 			}
 			else
 			{
-				DiscordClient.changePresence(customPrecence, SONG.song
-					+ " ("
-					+ storyDifficultyText
-					+ ") "
-					+ Ratings.GenerateLetterRank(accuracy), iconRPC,
-					playingAsRpc);
+				DiscordClient.changePresence(
+					customPrecence,
+					SONG.song + " (" + storyDifficultyText + ") " +
+					Ratings.GenerateLetterRank(accuracy),
+					iconRPC,
+					playingAsRpc
+				);
 			}
 			#end
 		}
-		
-		for (tween in modTweens) {
+
+		for (tween in modTweens)
 			tween.active = true;
-		}
-		
-		for (timer in modTimers) {
+
+		for (timer in modTimers)
 			timer.active = true;
-		}
 
 		super.closeSubState();
 	}
@@ -2828,9 +2755,6 @@ class PlayState extends MusicBeatState
 			+ misses, iconRPC,
 			playingAsRpc);
 		#end
-
-		
-			
 	}
 
 	private var paused:Bool = false;
