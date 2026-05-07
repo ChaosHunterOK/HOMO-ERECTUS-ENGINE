@@ -3349,10 +3349,12 @@ class PlayState extends MusicBeatState
 
 					if (daNote.isSustainNote)
 					{
-						//aaaa
+						daNote.alpha *= 0.6;
+					} else {
+						daNote.alpha *= 1;
 					}
 
-					var center:Float = strumY + ((Note.swidths[mania] * Note.swagWidth) / 2);
+					var center:Float = strumY + (Note.swidths[mania] * Note.swagWidth * 0.5);
 					if (daNote.isSustainNote && ((daNote.wasGoodHit || (daNote.prevNote.wasGoodHit && !daNote.canBeHit))))
 					{
 						if (downscroll)
@@ -3360,10 +3362,11 @@ class PlayState extends MusicBeatState
 							if (daNote.y - daNote.offset.y * daNote.scale.y + daNote.height >= center)
 							{
 								var swagRect = new FlxRect(0, 0, daNote.frameWidth, daNote.frameHeight);
-								swagRect.height = (center - daNote.y) / daNote.scale.y;
+								swagRect.height = FlxMath.bound((center - daNote.y) / daNote.scale.y, 0, daNote.frameHeight);
 								swagRect.y = daNote.frameHeight - swagRect.height;
 
 								daNote.clipRect = swagRect;
+								daNote.height = Math.min(daNote.height, 200);
 							}
 						}
 						else
@@ -3375,6 +3378,7 @@ class PlayState extends MusicBeatState
 								swagRect.height -= swagRect.y;
 
 								daNote.clipRect = swagRect;
+								daNote.height = Math.min(daNote.height, 200);
 							}
 						}
 					}
@@ -3955,27 +3959,6 @@ class PlayState extends MusicBeatState
 				camHUD.alpha = alpha;
 		}
 		callAllHScript("onEvent", [eventName, value1, value2, value3]);
-	}
-
-	function sustain2(strum:Int, spr:StrumNote, note:Note):Void
-	{
-		var length:Float = note.sustainLength;
-
-		var bps:Float = Conductor.bpm / 60;
-		var spb:Float = 1 / bps;
-
-		if (!note.isSustainNote)
-		{
-			new FlxTimer().start(length == 0 ? 0.2 : (length / Conductor.crochet * spb) + 0.1, function(tmr:FlxTimer)
-			{
-				if (spr.animation.curAnim.finished) {
-					spr.animation.play('static', true);
-					spr.centerOffsets();
-				} else {
-					tmr.reset(0.1);
-				}
-			});
-		}
 	}
 	function endSong():Void
 	{

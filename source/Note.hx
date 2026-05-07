@@ -147,7 +147,7 @@ class Note extends DynamicSprite
 	var mania = PlayState.SONG.mania;
 
 	public static function getSustainScale():Float {
-		return (Conductor.stepCrochet / 100) * 1.5 * PlayState.instance.daScrollSpeed;
+		return (Conductor.stepCrochet / 100) * 1.1 * PlayState.instance.daScrollSpeed;
 	}
 	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?customImage:Null<BitmapData>, ?customXml:Null<String>, ?customEnds:Null<BitmapData>, ?LiftNote:Bool=false, ?animSuffix:String, ?numSuffix:Int)
 	{
@@ -194,8 +194,6 @@ class Note extends DynamicSprite
 		animation.play(colArray[animToPlay] + 'Scroll');
 		if (isSustainNote && prevNote != null)
 		{
-			alpha *= 0.6;
-			prevNote.alpha = Math.min(prevNote.alpha, alphaMultiplier * 0.6);
 			if (OptionsHandler.options.downscroll) flipY = true;
 			offsetX += width / 2;
 			animation.play(colArray[animToPlay] + 'holdend');
