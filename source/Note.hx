@@ -195,20 +195,17 @@ class Note extends DynamicSprite
 		if (isSustainNote && prevNote != null)
 		{
 			alpha *= 0.6;
-			prevNote.alpha = alphaMultiplier * 0.6;
+			prevNote.alpha = Math.min(prevNote.alpha, alphaMultiplier * 0.6);
 			if (OptionsHandler.options.downscroll) flipY = true;
-
 			offsetX += width / 2;
 			animation.play(colArray[animToPlay] + 'holdend');
 			updateHitbox();
 			offsetX -= width / 2;
 			if (isPixel) offsetX += 30;
-
 			if (prevNote.isSustainNote)
 			{
 				var prevAnimID = prevNote.getAnimID(mania);
 				prevNote.animation.play(colArray[prevAnimID] + 'hold');
-
 				var sustainScale = getSustainScale();
 				prevNote.scale.y = sustainScale;
 				prevNote.updateHitbox();
@@ -247,7 +244,7 @@ class Note extends DynamicSprite
 			if (oppntSing.alt == null) oppntSing.alt = 0;
 			if (oppntSing.miss == null) oppntSing.miss = false;
 		}
-		ignoreHealthMods = cast thingie.ignoreHealthMods;
+		ignoreHealthMods = thingie.ignoreHealthMods == true;
 	}
 
 	private function handleSparrowAssets(curUiType:TUI, animSuffix:String):Void {
@@ -567,7 +564,8 @@ class Note extends DynamicSprite
 		{
 			if (prevNote != null && prevNote.isSustainNote)
 			{
-				animation.play(colArray[animToPlay] + 'hold');
+				animation.play(colArray[animToPlay] + 'holdend');
+				prevNote.animation.play(colArray[animToPlay] + 'hold');
 			}
 			else
 			{

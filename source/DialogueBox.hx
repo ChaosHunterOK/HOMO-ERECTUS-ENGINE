@@ -1,7 +1,6 @@
 package;
 
 import flixel.math.FlxMath;
-import flixel.system.FlxSound;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.text.FlxTypeText;
@@ -13,6 +12,7 @@ import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import flash.display.BitmapData;
 import lime.utils.Assets;
+import flixel.system.FlxSound;
 import flixel.graphics.frames.FlxFrame;
 import lime.system.System;
 import flixel.system.FlxAssets.FlxSoundAsset;
@@ -178,7 +178,10 @@ class DialogueBox extends FlxSpriteGroup
 		swagDialogue = new FlxTypeText(240, 480, Std.int(FlxG.width * 0.6), "", curFontScale);
 		swagDialogue.font = curFont;
 		swagDialogue.color = dialogueColor;
-		swagDialogue.sounds = [FlxG.sound.load(FNFAssets.getSound(SUtil.getPath() + 'assets/images/custom_dialogs/dialogSounds/$curSound.ogg'), 0.6)];
+		swagDialogue.sounds = [cast FlxG.sound.load(
+			FNFAssets.getSound(SUtil.getPath() + 'assets/images/custom_dialogs/dialogSounds/$curSound.ogg'),
+			0.6
+		)];
 		add(swagDialogue);
 
 		dialogue = new Alphabet(0, 80, "", false, true);
@@ -419,7 +422,10 @@ for (touch in FlxG.touches.list)
 		dropText.font = swagDialogue.font = curFont;
 		dropText.size = swagDialogue.size = curFontScale;
 
-		swagDialogue.sounds = swagDialogue.sounds = [FlxG.sound.load(FNFAssets.getSound(SUtil.getPath() + 'assets/images/custom_dialogs/dialogSounds/$curSound.ogg'), 0.6)];
+		swagDialogue.sounds = swagDialogue.sounds = [cast FlxG.sound.load(
+			FNFAssets.getSound(SUtil.getPath() + 'assets/images/custom_dialogs/dialogSounds/$curSound.ogg'),
+			0.6
+		)];
 
 		dropText.color = shadowColor;
 		swagDialogue.color = dialogueColor;

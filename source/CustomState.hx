@@ -199,7 +199,7 @@ class CustomState extends MusicBeatState
 		interp.variables.set("insert", insert);
         interp.variables.set("replace", replace);
 		interp.variables.set("pi", Math.PI);
-		interp.variables.set("FlxAxes", FlxAxes);
+		//interp.variables.set("FlxAxes", FlxAxes);
 		interp.variables.set("CoolUtil", CoolUtil);
 		interp.variables.set("curMusicName", Main.curMusicName);
 		interp.variables.set("Highscore", Highscore);
@@ -281,9 +281,8 @@ class CustomState extends MusicBeatState
 		interp.variables.set("SortState", SortState);
 		interp.variables.set("Song", Song);
 		interp.variables.set("FlxFlicker", FlxFlicker);
-		interp.variables.set("FlxAxes", FlxAxes);
 		interp.variables.set("FlxGridOverlay", FlxGridOverlay);
-		interp.variables.set("FlxPoint", FlxPoint);
+		//interp.variables.set("FlxPoint", FlxPoint);
 		interp.variables.set("FlxBackdrop", FlxBackdrop);
 		interp.variables.set("FlxTrailArea", FlxTrailArea);
 		interp.variables.set("ShaderFilter", ShaderFilter);

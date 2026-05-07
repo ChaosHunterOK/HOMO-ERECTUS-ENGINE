@@ -9,6 +9,8 @@
 
 This is the repository for Friday Night Funkin Modding Plus, a mod for FNF to add more features for modders and players alike.
 
+This is like, a fork for Friday Night Funkin Vixtin Engine, this one mainly fixes issues, adding new additional stuff and optimization.
+
 Any mods made with this mod must have express permission from the creator of songs included. 
 (for example, if you include the Whitty Mod, you should have express permission from Nate Anim8, KadeDev, and SockClip.
 I at least would like to see the main author and a majority of secondary offers get express permission)
@@ -36,9 +38,13 @@ take down mods that don't follow this rule.
 - [GwebDev](https://github.com/GrowtopiaFli) - Edited WebM code
 - [Axy](https://github.com/timeless13GH) - Poggers help
 
-## Vixtin Engine Credits
+## Vixtin Engine Credits (that was forked ig)
 - [Vixtin](https://github.com/ElAnthonyVix) - Main programmer
 - [DANI24](https://github.com/DANI002428) - Coding helper
+
+## Homo Erectus Engine (this)
+- [CopiluCuSarmale] (https://github.com/ChaosHunterOK) - Main programmer
+- [Saunter] (https://github.com/table-coder) - Programmer
 
 
 ## Build instructions
@@ -61,8 +67,11 @@ The link to that is on the [HaxeFlixel website](https://haxeflixel.com/documenta
 Other installations you'd need is the additional libraries, a fully updated list will be in `Project.xml` in the project root, but here are the one's I'm using as of writing.
 
 ```
-haxelib install flixel 4.11.0
+haxelib install flixel 5.0.2
 haxelib install flixel-addons 2.11.0
+
+haxelib install lime 8.0.0
+haxelib install openfl 9.1.0
 
 haxelib install hscript
 haxelib install flixel-ui

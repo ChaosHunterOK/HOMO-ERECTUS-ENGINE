@@ -293,8 +293,6 @@ class PlayState extends MusicBeatState
 	private var forceCamera:Bool = false;
 	private var instantFollowCamera:Bool = false;
 
-
-
 	var talking:Bool = true;
 	var songScore:Int = 0;
 	var trueScore:Int = 0;
@@ -526,7 +524,7 @@ class PlayState extends MusicBeatState
 			return false;
 			#end
 		}
-	function sameVarsIdk(interp:Dynamic) {
+	function sameVarsIdk(interp:Dynamic, path:String) {
 		#if mobile
 		interp.variables.set("addVirtualPad", addVirtualPad);
 		interp.variables.set("removeVirtualPad", removeVirtualPad);
@@ -611,6 +609,11 @@ class PlayState extends MusicBeatState
 		});
 		interp.variables.set("playerStrums", playerStrums);
 		interp.variables.set("enemyStrums", enemyStrums);
+		interp.variables.set("health", health);
+		interp.variables.set("iconP1", iconP1);
+		interp.variables.set("iconP2", iconP2);
+		interp.variables.set("strumLineY", strumLine.y);
+		interp.variables.set("hscriptPath", path);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
@@ -620,7 +623,7 @@ class PlayState extends MusicBeatState
 		var interp = PluginManager.createSimpleInterp();
 		
 		// set common vars
-		sameVarsIdk(interp);
+		sameVarsIdk(interp, path);
 
 		// set makeHaxeState-specific vars
 		interp.variables.set("isDemoMode", ModifierState.namedModifiers.demo.value);
@@ -640,8 +643,6 @@ class PlayState extends MusicBeatState
 
 		interp.variables.set("showOnlyStrums", false);
 		interp.variables.set("mustHit", false);
-		interp.variables.set("strumLineY", strumLine.y);
-		interp.variables.set("hscriptPath", path);
 		interp.variables.set("addCustomShaderToSprite", addCustomShaderToSprite);
 		interp.variables.set("addCustomShaderToCam", addCustomShaderToCam);
 
@@ -651,9 +652,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("vocals", vocals);
 		interp.variables.set("gfSpeed", gfSpeed);
 		interp.variables.set("tweenCamIn", tweenCamIn);
-		interp.variables.set("health", health);
-		interp.variables.set("iconP1", iconP1);
-		interp.variables.set("iconP2", iconP2);
 		interp.variables.set("currentPlayState", this);
 		interp.variables.set("makeText", function (posx:Float, posy:Float, fwidth:Float, ?text:String, size:Int = 8, embFont:Bool = true) {
 			return (new FlxText(posx, posy, fwidth, text, size, embFont)); //make text in hcripts
@@ -747,7 +745,7 @@ class PlayState extends MusicBeatState
 		var interp = PluginManager.createSimpleInterp();
 		
 		// set common vars
-		sameVarsIdk(interp);
+		sameVarsIdk(interp, path);
 
 		interp.variables.set("Conductor", Conductor);
 		interp.variables.set("duoMode", duoMode);
@@ -755,9 +753,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("opponentPlayer", opponentPlayer);
 		interp.variables.set("demoMode", demoMode);
 		interp.variables.set("disableScoreChange", function(funny:Bool) {disableScoreChange = funny;});
-		interp.variables.set("strumLineY", strumLine.y);
-		interp.variables.set("hscriptPath", path);
-		interp.variables.set("health", health);
 		interp.variables.set("scoreTxt", scoreTxt);
 		interp.variables.set("difficTxt", difficTxt);
 		interp.variables.set('useSongBar', useSongBar);
@@ -858,8 +853,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("healthBar", healthBar);
 		interp.variables.set("healthBarBG", healthBarBG);
 		//interp.variables.set("currentTimingShown", currentTimingShown);
-		interp.variables.set("iconP1", iconP1);
-		interp.variables.set("iconP2", iconP2);
 
 		//funny numbers (how do I make them read only????????)
 		interp.variables.set("songScore", songScore);
@@ -900,6 +893,7 @@ class PlayState extends MusicBeatState
 			case 'screen': return SCREEN;
 			case 'shader': return SHADER;
 			case 'subtract': return SUBTRACT;
+			case 'normal': return NORMAL;
 		}
 		return NORMAL;
 	}
@@ -2848,25 +2842,13 @@ class PlayState extends MusicBeatState
 		if (disableScoreChange == false) {
 			scoreTxt.text = Ratings.CalculateRanking(songScore, songScoreDef, nps, accuracy);
 		}
-		if (perfectMode && !Ratings.CalculateFullCombo(Sick))
-		{
-			if (opponentPlayer)
-				health = 50;
-			else
-				health = -50;
-		}
-		if (fullComboMode && !Ratings.CalculateFullCombo(Shit)) {
-			if (opponentPlayer)
-				health = 50;
-			else
-				health = -50;
-		}
-		if (goodCombo && !Ratings.CalculateFullCombo(Good)) {
-			if (opponentPlayer)
-				health = 50;
-			else
-				health = -50;
-		}
+		var failedCombo =
+			(perfectMode && !Ratings.CalculateFullCombo(Sick)) ||
+			(fullComboMode && !Ratings.CalculateFullCombo(Shit)) ||
+			(goodCombo && !Ratings.CalculateFullCombo(Good));
+
+		if (failedCombo)
+			health = opponentPlayer ? 50 : -50;
 		accuracyTxt.text = "Accuracy:" + accuracy + "%";
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
