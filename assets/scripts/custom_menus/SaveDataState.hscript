@@ -208,7 +208,7 @@ function update(elapsed) {
 					var saveName = "save" + curSelected;
 					flixelSave.close();
 					preferredSave = curSelected;
-					flixelSave.bind(saveName, "ElAnthonyVixtin");
+					flixelSave.bind(saveName, "HomoErectus");
 					FlxG.sound.play(SUtil.getPath() + 'assets/sounds/custom_menu_sounds/'
 						+ CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/sounds/custom_menu_sounds/custom_menu_sounds.json")).customMenuConfirm+'/confirmMenu.ogg');
 					// don't edit the djkf
@@ -224,13 +224,13 @@ function update(elapsed) {
 				// this means the user confirmed!
 				var oldSave = flixelSave.name;
 				var saveName = "save" + curSelected;
-				flixelSave.bind(saveName, "ElAnthonyVixtin");
+				flixelSave.bind(saveName, "HomoErectus");
 				flixelSave.erase();
 				saves.members[curSelected].askToConfirm(false);
 				// sounds like someone farted into the mic. perfect for a delete sfx
 				FlxG.sound.play(SUtil.getPath() + 'assets/sounds/freshIntro.ogg');
 				flixelSave.data.songScores = ["tutorial" => 0];
-				flixelSave.bind(oldSave, "ElAnthonyVixtin");
+				flixelSave.bind(oldSave, "HomoErectus");
 				Highscore.load();
 			}
 		} else if (!inOptionsMenu) {

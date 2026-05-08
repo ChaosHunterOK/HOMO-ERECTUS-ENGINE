@@ -243,16 +243,14 @@ function deleteCoolText()
     }
 }
 
-function beatHit(beat)
-{
+function beatHit(beat) {
     logoBl.animation.play('bump');
     danceLeft = !danceLeft;
 
     if (gfTitle.animationType == "gfIdle"){
         if (danceLeft){
             gfDance.animation.play('danceRight');
-        }
-        else{
+        } else{
             gfDance.animation.play('danceLeft');
         }
     }
@@ -262,10 +260,8 @@ function beatHit(beat)
     if (gfTitle.animationType == "loopIdle"){
         gfDance.animation.play('loopyFunny');
     }
-
-    if (curBeat < 9) {
-        switch (curBeat)
-        {
+    if (beat < 9) {
+        switch (beat) {
             case 1:
                 createCoolText(coolDudes);
             case 3:
@@ -294,30 +290,6 @@ function beatHit(beat)
                 addMoreText('Funkin');
             case 16:
                 skipIntro();
-        }
-    } else {
-        if (curBeat == 9) {
-            createCoolText([curWacky[0]]);
-            shownWacky = 0;
-            wackyEndBeat = curBeat;
-        } else if (curBeat % 2 == 1 && shownWacky + 1 < curWacky.length) {
-            shownWacky += 1;
-            addMoreText(curWacky[shownWacky]);
-            wackyEndBeat = curBeat;
-        } else if (shownWacky == curWacky.length - 1){
-            trace(wackyEndBeat + " " + curBeat);
-            switch (curBeat - wackyEndBeat) {
-                case 1:
-                    deleteCoolText();
-                case 2:
-                    addMoreText(CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/data/gameInfo.json")).name_1);
-                case 3:
-                    addMoreText(CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/data/gameInfo.json")).name_2);
-                case 4:
-                    addMoreText(CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/data/gameInfo.json")).name_3);
-                case 5:
-                    skipIntro();
-            }
         }
     }
 }

@@ -270,7 +270,7 @@ class TitleState extends MusicBeatState
 		// DEBUG BULLSHIT
 		super.create();
 		FlxG.mouse.visible = false;
-		FlxG.save.bind("preferredSave", "ElAnthonyVixtin");
+		FlxG.save.bind("preferredSave", "HomoErectus");
 		var preferredSave:Int = 0;
 		if (Reflect.hasField(FlxG.save.data, "preferredSave")) {
 			preferredSave = FlxG.save.data.preferredSave;
@@ -279,7 +279,7 @@ class TitleState extends MusicBeatState
 		}
 
 		FlxG.save.close();
-		FlxG.save.bind("save"+preferredSave, 'ElAnthonyVixtin');
+		FlxG.save.bind("save"+preferredSave, 'HomoErectus');
 		PlayerSettings.init();
 		Highscore.load();
 
@@ -293,18 +293,17 @@ class TitleState extends MusicBeatState
 		#end
 	}
 
-	override function update(elapsed:Float)
+	override public function update(elapsed:Float):Void
 	{
 		callAllHScript("update", [elapsed]);
 		super.update(elapsed);
 	}
 
-	override function beatHit()
+	override public function beatHit():Void
 	{
 		super.beatHit();
 		FlxG.log.add(curBeat);
 		setAllHaxeVar('curBeat', curBeat);
 		callAllHScript('beatHit', [curBeat]);
 	}
-
 }
