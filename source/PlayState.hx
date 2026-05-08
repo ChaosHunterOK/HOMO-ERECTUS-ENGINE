@@ -3916,13 +3916,11 @@ class PlayState extends MusicBeatState
 				if(Math.isNaN(val1)) val1 = 1;
 				if(Math.isNaN(val2)) val2 = 0;
 
-				var newValue:Float = SONG.speed * val1;
+				var newValue:Float = daScrollSpeed * val1;
 
 				if(val2 <= 0)
 				{
 					daScrollSpeed = newValue;
-					SONG.speed = daScrollSpeed;
-
 					for (note in notes)
 					{
 						if (note != null && note.isSustainNote && !note.isHoldEnd)
@@ -3940,9 +3938,6 @@ class PlayState extends MusicBeatState
 
 						onUpdate: function(twn:FlxTween)
 						{
-							SONG.speed = daScrollSpeed;
-							daScrollSpeed = SONG.speed;
-
 							for (note in notes)
 							{
 								if (note != null && note.isSustainNote && !note.isHoldEnd)
@@ -3955,8 +3950,6 @@ class PlayState extends MusicBeatState
 
 						onComplete: function(twn:FlxTween)
 						{
-							SONG.speed = daScrollSpeed;
-							daScrollSpeed = SONG.speed;
 							songSpeedTween = null;
 
 							for (note in notes)

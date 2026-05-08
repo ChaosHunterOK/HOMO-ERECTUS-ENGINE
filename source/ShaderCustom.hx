@@ -379,59 +379,40 @@ class Shader extends FlxShaderFix {
 }
 
 class ShaderCustom extends Shader {
-	
-    public function setCamSize(x:Float, y:Float, width:Float, height:Float) {
+    public function setCamSize(x:Float,y:Float,width:Float,height:Float):Void
+    {
         if (data._camSize != null)
             data._camSize.value = [x, y, width, height];
     }
 
-    public function init(fragCode:String, vertCode:String) {
+    public function new(shaderName:String)
+    {
+        var fragPath = SUtil.getPath() + 'assets/shaders/$shaderName.frag';
+        var vertPath = SUtil.getPath() + 'assets/shaders/$shaderName.vert';
 
-    }
-    public function new(cShader:String /*, values:Map<String, Any>*/ ) {
-        //var mPath = Paths.modsPath;
+        var glVertexSource = "
+            #pragma header
 
-        var fragPath = SUtil.getPath() + "assets/shaders/" + cShader + ".frag";
-        var vertPath = SUtil.getPath() + "assets/shaders/" + cShader + ".vert";
-
-        var glVertexSource = "#pragma header
-        attribute float alpha;
-        attribute vec4 colorMultiplier;
-        attribute vec4 colorOffset;
-        uniform bool hasColorTransform;
-        
-        void main(void)
-        {
-            openfl_Alphav = openfl_Alpha;
-            openfl_TextureCoordv = openfl_TextureCoord;
-            if (openfl_HasColorTransform) {
-                    openfl_ColorMultiplierv = openfl_ColorMultiplier;
-                    openfl_ColorOffsetv = openfl_ColorOffset / 255.0;
-            }
-            gl_Position = openfl_Matrix * openfl_Position;
-            openfl_Alphav = openfl_Alpha * alpha;
-            if (hasColorTransform)
+            void main(void)
             {
-                    openfl_ColorOffsetv = colorOffset / 255.0;
-                    openfl_ColorMultiplierv = colorMultiplier;
+                #pragma body
             }
-        }".replace("#pragma body", Shader.entireFuckingCustomVertexBody).replace("#pragma header", Shader.entireFuckingCustomVertexHeader);
+        ";
 
         var glFragmentSource = "
-        #pragma header
-    
-        void main(void)
-        {
-            gl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);
-        }".replace("#pragma body", Shader.entireFuckingCustomFragmentBody).replace("#pragma header", Shader.entireFuckingCustomFragmentHeader).replace(" attribute ", " uniform ");
+            #pragma header
 
-        if (fragPath.trim() != "" && FNFAssets.exists(fragPath))
+            void main(void)
+            {
+                gl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);
+            }
+        ";
+
+        if (FNFAssets.exists(fragPath))
             glFragmentSource = FNFAssets.getText(fragPath);
-        
-        if (vertPath.trim() != "" && FNFAssets.exists(vertPath)) {
-            var vert = FNFAssets.getText(vertPath);
-            glVertexSource = vert;
-        }
+
+        if (FNFAssets.exists(vertPath))
+            glVertexSource = FNFAssets.getText(vertPath);
 
         super(glFragmentSource, glVertexSource);
     }
