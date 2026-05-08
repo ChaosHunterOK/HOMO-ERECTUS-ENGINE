@@ -3909,8 +3909,10 @@ class PlayState extends MusicBeatState
 			case 'Change Scroll Speed':
 				//if (songSpeedType == "constant")
 				//	return;
+
 				var val1:Float = Std.parseFloat(value1);
 				var val2:Float = Std.parseFloat(value2);
+
 				if(Math.isNaN(val1)) val1 = 1;
 				if(Math.isNaN(val2)) val2 = 0;
 
@@ -3919,15 +3921,55 @@ class PlayState extends MusicBeatState
 				if(val2 <= 0)
 				{
 					daScrollSpeed = newValue;
+					SONG.speed = daScrollSpeed;
+
+					for (note in notes)
+					{
+						if (note != null && note.isSustainNote && !note.isHoldEnd)
+						{
+							note.scale.y = note.getSustainScale();
+							note.updateHitbox();
+						}
+					}
 				}
 				else
 				{
-					songSpeedTween = FlxTween.tween(this, {daScrollSpeed: newValue}, val2, {ease: FlxEase.linear, onComplete:
-						function (twn:FlxTween)
+					songSpeedTween = FlxTween.tween(this, {daScrollSpeed: newValue}, val2,
+					{
+						ease: FlxEase.linear,
+
+						onUpdate: function(twn:FlxTween)
 						{
+							SONG.speed = daScrollSpeed;
+							daScrollSpeed = SONG.speed;
+
+							for (note in notes)
+							{
+								if (note != null && note.isSustainNote && !note.isHoldEnd)
+								{
+									note.scale.y = note.getSustainScale();
+									note.updateHitbox();
+								}
+							}
+						},
+
+						onComplete: function(twn:FlxTween)
+						{
+							SONG.speed = daScrollSpeed;
+							daScrollSpeed = SONG.speed;
 							songSpeedTween = null;
+
+							for (note in notes)
+							{
+								if (note != null && note.isSustainNote)
+								{
+									note.scale.y = note.getSustainScale();
+									note.updateHitbox();
+								}
+							}
 						}
 					});
+
 					modTweens.push(songSpeedTween);
 				}
 			case 'Setting Crossfades':

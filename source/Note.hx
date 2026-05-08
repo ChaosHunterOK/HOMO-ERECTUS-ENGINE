@@ -143,11 +143,14 @@ class Note extends DynamicSprite
 	public static var pixelscales:Array<Float> = [1, 0.9, 0.85, 0.76];
 	public static var swidths:Array<Float> = [160, 120, 110, 90];
 	public static var posRest:Array<Int> = [0, 35, 50, 70];
+	public var sustainScale:Float = 1;
+	public var isHoldEnd:Bool = false;
 	var lastNoteOffsetXForPixelAutoAdjusting:Float = 0;
 	var mania = PlayState.SONG.mania;
 
-	public static function getSustainScale():Float {
-		return (Conductor.stepCrochet / 100) * 1.1 * PlayState.instance.daScrollSpeed;
+	public function getSustainScale():Float {
+		var num = !isPixel ? 1.05 : PlayState.daPixelZoom * 1.25;
+		return (Conductor.stepCrochet / 100) * num * PlayState.instance.daScrollSpeed;
 	}
 	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?customImage:Null<BitmapData>, ?customXml:Null<String>, ?customEnds:Null<BitmapData>, ?LiftNote:Bool=false, ?animSuffix:String, ?numSuffix:Int)
 	{
@@ -204,9 +207,9 @@ class Note extends DynamicSprite
 			{
 				var prevAnimID = prevNote.getAnimID(mania);
 				prevNote.animation.play(colArray[prevAnimID] + 'hold');
-				var sustainScale = getSustainScale();
-				prevNote.scale.y = sustainScale;
+				prevNote.scale.y = prevNote.getSustainScale();
 				prevNote.updateHitbox();
+				isHoldEnd = true;
 			}
 		}
 		x += offsetX;
