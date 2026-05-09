@@ -3386,16 +3386,6 @@ class PlayState extends MusicBeatState
 
 				if (!daNote.hittedNote && (!daNote.mustPress && daNote.wasGoodHit && ((!duoMode && !opponentPlayer) || demoMode)))
 				{
-					camZooming = true;
-					dad.altAnim = "";
-					dad.altNum = 0;
-					
-					if (daNote.altNote)
-					{
-						dad.altAnim = '-alt';
-						dad.altNum = 1;
-					}
-					
 					dad.altNum = daNote.altNum;
 
 					/*if (SONG.notes[Math.floor(curStep / 16)] != null)
@@ -3459,13 +3449,6 @@ class PlayState extends MusicBeatState
 					
 				} else if (!daNote.hittedNote && (daNote.mustPress && daNote.wasGoodHit && (opponentPlayer || demoMode))) {
 					camZooming = true;
-					boyfriend.altAnim = "";
-					boyfriend.altNum = 0;
-					if (daNote.altNote)
-					{
-						boyfriend.altAnim = '-alt';
-						boyfriend.altNum = 1;
-					}
 					boyfriend.altNum = daNote.altNum;
 
 					/*

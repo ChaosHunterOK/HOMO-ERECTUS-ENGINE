@@ -238,8 +238,10 @@ class Character extends FlxSprite
 			}
 		}
 	}
-	public function sing(direction:Int, ?miss:Bool = false, ?alt:Int = 0) {
+	public function sing(direction:Int, ?miss:Bool = false, ?alt:Int = 0)
+	{
 		holdTimer = 0;
+
 		var directions = ["LEFT", "DOWN", "UP", "RIGHT"];
 		var maniaMap:Map<Int, Array<Int>> = [
 			6 => [0, 2, 3, 0, 1, 3], 
@@ -249,25 +251,37 @@ class Character extends FlxSprite
 
 		var ammo = Main.ammo[PlayState.mania];
 		var dirIdx = directions[direction];
-		
-		if (maniaMap.exists(ammo)) {
-			dirIdx = directions[maniaMap.get(ammo)[direction]];
-		}
 
-		var animName:String = "sing" + dirIdx;
-		
-		if (miss) {
-			if (animation.getByName(animName + "miss") != null) animName += "miss";
-			if (forceColor) color = 0xCFAFFF;
-		} else if (forceColor) {
+		if (maniaMap.exists(ammo))
+			dirIdx = directions[maniaMap.get(ammo)[direction]];
+
+		var baseAnim:String = "sing" + dirIdx;
+		var animToPlay:String = baseAnim;
+
+		// Miss anims
+		if (miss)
+		{
+			if (animation.getByName(baseAnim + "miss") != null)
+				animToPlay = baseAnim + "miss";
+
+			if (forceColor)
+				color = 0xCFAFFF;
+		}
+		else if (forceColor)
+		{
 			color = FlxColor.WHITE;
 		}
-		var altSuffix = (alt == 1) ? "-alt" : (alt > 1 ? "-" + alt + "alt" : "");
-		if (altSuffix != "" && animation.getByName(animName + altSuffix) != null) {
-			animName += altSuffix;
+		if (!miss && alt > 0)
+		{
+			var altSuffix = (alt == 1) ? "-alt" : "-" + alt + "alt";
+			var altAnim = baseAnim + altSuffix;
+
+			if (animation.getByName(altAnim) != null)
+				animToPlay = altAnim;
 		}
 
-		if (canSing) playAnim(animName, true);
+		if (canSing)
+			playAnim(animToPlay, true);
 	}
 	override function update(elapsed:Float)
     {

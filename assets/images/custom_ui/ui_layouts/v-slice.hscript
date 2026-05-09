@@ -1,0 +1,26 @@
+var displayedScore = 0;
+
+function start(song) {
+    difficTxt.visible = false;
+
+    disableScoreChange(true);
+    songPosBar.visible = false;
+    songPosBG.visible = false;
+    songName.visible = false;
+
+    scoreTxt.x = healthBarBG.x + healthBarBG.width - 190;
+    scoreTxt.size = 16;
+
+    if (downscroll)
+        scoreTxt.y = healthBarBG.y - 30;
+    else
+        scoreTxt.y = healthBarBG.y + 30;
+}
+
+function update(elapsed) {
+    displayedScore = Std.int(FlxMath.lerp(displayedScore, songScore, 0.15));
+    if (Math.abs(displayedScore - songScore) < 1)
+        displayedScore = songScore;
+
+    scoreTxt.text = "Score: " + displayedScore;
+}

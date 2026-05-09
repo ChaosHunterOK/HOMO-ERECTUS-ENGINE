@@ -41,9 +41,9 @@ class DialogueBox extends FlxSpriteGroup
 	var bgBLUE:Int;
 	var curMusic:String = '';
 	var charScale:Float;
-	var dialogueColor:Null<FlxColor>;
-	var shadowColor:Null<FlxColor> = FlxColor.WHITE;
-	var portraitColor:Null<FlxColor> = FlxColor.BLACK;
+	var dialogueColor:FlxColor = FlxColor.WHITE;
+	var shadowColor:FlxColor = FlxColor.WHITE;
+	var portraitColor:FlxColor = FlxColor.BLACK;
 	var fadeInTime:Float;
 	var fadeInLoop:Int;
 	var fadeOutTime:Float;
@@ -87,6 +87,9 @@ class DialogueBox extends FlxSpriteGroup
 	public function new(talkingRight:Bool = true, ?dialogueInput:String)
 	{	
 		super();
+		if (dialogueInput == null || dialogueInput.length == 0)
+			return;
+
 		if (dialogueInput.split('\n')[0] == ':dad: The game tried to get a dialog file but couldn\'t find it. Please make sure there is a dialog file named "dialog.txt".')
 			return;
 		_dialogue = {
@@ -248,36 +251,41 @@ class DialogueBox extends FlxSpriteGroup
 		#if mobile
 		var justTouched:Bool = false;
 
-for (touch in FlxG.touches.list)
-{
-	if (touch.justPressed)
-	{
-		justTouched = true;
-	}
-}
-#end
-
-		
-
-		if (PlayerSettings.player1.controls.SECONDARY) {
-			// skip all this shit
-			if (!isEnding)
-			{
-				endDialog();
-			}
-		} else if (#if mobile ( #end FlxG.keys.justPressed.ANY #if mobile || justTouched )#end && dialogueStarted == true)
+		for (touch in FlxG.touches.list)
 		{
-	
+			if (touch.justPressed)
+			{
+				justTouched = true;
+			}
+		}
+		#end
+
+		var pressed:Bool = FlxG.keys.justPressed.ANY;
+
+		#if mobile
+		pressed = pressed || justTouched;
+		#end
+
+		if (PlayerSettings.player1.controls.SECONDARY)
+		{
+			if (!isEnding)
+				endDialog();
+		}
+		else if (pressed && dialogueStarted)
+		{
 			remove(dialogue);
 
-			FlxG.sound.play(FNFAssets.getSound(SUtil.getPath() + 'assets/images/custom_dialogs/dialogClicks/$clickSound.ogg'), 0.8);
+			FlxG.sound.play(
+				FNFAssets.getSound(
+					SUtil.getPath() + 'assets/images/custom_dialogs/dialogClicks/$clickSound.ogg'
+				),
+				0.8
+			);
 
 			if (dialogueFile.info[1] == null && dialogueFile.info[0] != null)
 			{
 				if (!isEnding)
-				{
-					endDialog();					
-				}
+					endDialog();
 			}
 			else
 			{
@@ -332,10 +340,15 @@ for (touch in FlxG.touches.list)
 			if (curFlashTime > 0)
 			{
 				if (_dialogue.isPixel)
-					FlxG.sound.play(SUtil.getPath() + 'assets/sounds/shocker-pixel.ogg', 1);
+					FlxG.sound.play(
+						FNFAssets.getSound(SUtil.getPath() + 'assets/sounds/shocker-pixel.ogg'),
+						1
+					);
 				else
-					FlxG.sound.play(SUtil.getPath() + 'assets/sounds/shocker.ogg', 1);
-				
+					FlxG.sound.play(
+						FNFAssets.getSound(SUtil.getPath() + 'assets/sounds/shocker.ogg'),
+						1
+					);
 			}
 		});
 		remove(portrait);
@@ -410,7 +423,7 @@ for (touch in FlxG.touches.list)
 			box.y = 710 - box.height;
 
 			var data:String = FNFAssets.getJson(SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/' + curBox);
-			_dialogue = Json.parse(data);
+			_dialogue = cast Json.parse(data);
 
 			box.y += _dialogue.addY;
 		}
@@ -421,24 +434,27 @@ for (touch in FlxG.touches.list)
 
 		dropText.font = swagDialogue.font = curFont;
 		dropText.size = swagDialogue.size = curFontScale;
-
-		swagDialogue.sounds = swagDialogue.sounds = [cast FlxG.sound.load(
-			FNFAssets.getSound(SUtil.getPath() + 'assets/images/custom_dialogs/dialogSounds/$curSound.ogg'),
+		swagDialogue.sounds = [cast FlxG.sound.load(
+			FNFAssets.getSound(
+				SUtil.getPath() + 'assets/images/custom_dialogs/dialogSounds/$curSound.ogg'
+			),
 			0.6
 		)];
 
 		dropText.color = shadowColor;
 		swagDialogue.color = dialogueColor;
 
-		if (portraitColor != null)
-			portrait.color = portraitColor;
-
 		if (timeCut > 0)
 		{
 			new FlxTimer().start(curSpeed * timeCut, function(tmr:FlxTimer)
 			{
 				dialogueFile.info.remove(dialogueFile.info[0]);
-				FlxG.sound.play(SUtil.getPath() + 'assets/images/custom_dialogs/dialogClicks/$clickSound.ogg', 0.8);
+				FlxG.sound.play(
+					FNFAssets.getSound(
+						SUtil.getPath() + 'assets/images/custom_dialogs/dialogClicks/$clickSound.ogg'
+					),
+					0.8
+				);
 				startDialogue();
 			}, 1);
 		}

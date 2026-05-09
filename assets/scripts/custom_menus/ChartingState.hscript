@@ -1,11 +1,6 @@
 var UI_box;
 var copyedSection = 0;
 var checkedFlash = false;
-
-/**
-	* Array of notes showing when each section STARTS in STEPS
-	* Usually rounded up??
-	*/
 var curSection = 0;
 
 var eventStuff =

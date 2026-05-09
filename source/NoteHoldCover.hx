@@ -75,6 +75,12 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
         }
     //}
 
+    if (strumNote.isPixelNote){
+      glow.antialiasing = false;
+      sparks.antialiasing = false;
+      this.antialiasing = false;
+    }
+
     glow.alpha = 0.8 * strumNote.alpha;
     sparks.alpha = 0.8 * strumNote.alpha;
     this.alpha = 0.8 * strumNote.alpha;
@@ -181,6 +187,9 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
     this.visible = true;
     this.alpha = 0.8 * strumNote.alpha;
+    if (strumNote.isPixelNote){
+      this.antialiasing = false;
+    }
 
     if (glow != null) glow.visible = true;
     if (sparks != null) sparks.visible = true;
