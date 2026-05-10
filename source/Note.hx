@@ -548,6 +548,7 @@ class Note extends DynamicSprite
 	{
 		var curUiType:TUI = Reflect.field(Judgement.uiJson, PlayState.SONG.uiType);
 		this.isPixel = curUiType.isPixel;
+
 		animation = new FlxAnimationController(this);
 
 		if (isPixel)
@@ -561,26 +562,43 @@ class Note extends DynamicSprite
 		}
 
 		var animToPlay = getAnimID(mania);
+
 		if (isSustainNote)
 		{
+			if (OptionsHandler.options.downscroll)
+				flipY = true;
+
+			offsetX = 0;
+
+			animation.play(colArray[animToPlay] + 'holdend');
+
+			updateHitbox();
+
+			offsetX -= width / 2;
+
+			if (isPixel)
+				offsetX += 30;
 			if (prevNote != null && prevNote.isSustainNote)
 			{
-				animation.play(colArray[animToPlay] + 'holdend');
 				prevNote.animation.play(colArray[animToPlay] + 'hold');
+
+				prevNote.scale.y = prevNote.getSustainScale();
+				prevNote.updateHitbox();
 			}
-			else
-			{
-				animation.play(colArray[animToPlay] + 'holdend');
-			}
+			scale.y = getSustainScale();
+			updateHitbox();
 		}
 		else
 		{
 			var animName = colArray[animToPlay] + 'Scroll';
+
 			if (animation.getByName(animName) != null)
 				animation.play(animName);
 			else
 				animation.play('purpleScroll');
 		}
+
+		x += offsetX;
 	}
 
 	override function update(elapsed:Float)

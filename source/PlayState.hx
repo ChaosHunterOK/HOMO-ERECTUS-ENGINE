@@ -240,6 +240,7 @@ class PlayState extends MusicBeatState
 	public var shitBreakColor:FlxColor = 0xFF175DB3;
 	public var wayoffBreakColor:FlxColor = 0xFFAF0000;
 	public var missBreakColor:FlxColor = 0xFFDD0A93;
+	public var holdCovers:FlxTypedGroup<NoteHoldCover>;
 	
 	public static var instance:PlayState;
 	public static var customStateName:String = "";
@@ -398,7 +399,6 @@ class PlayState extends MusicBeatState
 	var exInterp:InterpEx = new InterpEx();
 	var haxeSprites:Map<String, FlxSprite> = [];
 	var traced:Bool = false;
-	var basePath = SUtil.getPath();
     public function callHscript(func_name:String, args:Array<Dynamic>, usehaxe:String) {
 		// if function doesn't exist
 			try{
@@ -615,6 +615,7 @@ class PlayState extends MusicBeatState
 		interp.variables.set("iconP2", iconP2);
 		interp.variables.set("strumLineY", strumLine.y);
 		interp.variables.set("hscriptPath", path);
+		interp.variables.set("holdCovers", holdCovers);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
@@ -1088,6 +1089,7 @@ class PlayState extends MusicBeatState
 	var useSongBar:Bool = true;
 	var songName:FlxText;
 	var uiSmelly:TUI;
+	var basePath = SUtil.getPath();
 	override public function create()
 	{
 		FNFAssets.clearStoredMemory();
@@ -2502,7 +2504,6 @@ class PlayState extends MusicBeatState
 		return arrSpr;
 	}
 	public var skipArrowStartTween:Bool = false; 
-	public var holdCovers:FlxTypedGroup<NoteHoldCover>;
 	private function generateStaticArrows(player:Int):Void
 	{
 		for (i in 0...Main.ammo[mania])
@@ -2566,49 +2567,32 @@ class PlayState extends MusicBeatState
 	}
 	function tweenCamIn():Void
 	{
-		var duration:Float = (Conductor.stepCrochet * 4) / 1000;
-
-		addTrackedTween(
-			FlxG.camera,
-			{ zoom: 1.3 },
-			duration,
-			{ ease: FlxEase.elasticInOut }
-		);
+		addTrackedTween(FlxG.camera,{zoom: 1.3},(Conductor.stepCrochet * 4 / 1000),{ease: FlxEase.elasticInOut});
 	}
-	public function addTrackedTween(
-	       Object:Dynamic,
-	       Values:Dynamic,
-	       Duration:Float,
-	       ?Options:flixel.tweens.FlxTween.TweenOptions
-	):FlxTween
+	public function addTrackedTween(Object:Dynamic, Values:Dynamic, Duration:Float, ?Options:TweenOptions):FlxTween
 	{
-	       var tweenOptions:flixel.tweens.FlxTween.TweenOptions = Options != null ? Options : {};
+		var tweenOptions:TweenOptions = Options != null ? Options : {};
 
-	       var originalOnComplete = tweenOptions.onComplete;
-	       var isCameraTween = (Object == FlxG.camera);
+		var originalOnComplete = tweenOptions.onComplete;
+		var isCameraTween = (Object == FlxG.camera || Object == camHUD);
 
-	       if (isCameraTween)
-		       cameraTweenActive = true;
-	       if (modTweens == null)
-		       modTweens = [];
+		if (isCameraTween)
+			cameraTweenActive = true;
+		tweenOptions.onComplete = function(twn:FlxTween)
+		{
+			modTweens.remove(twn);
 
-	       tweenOptions.onComplete = function(twn:FlxTween)
-	       {
-		       if (modTweens != null)
-			       modTweens.remove(twn);
+			if (isCameraTween)
+				cameraTweenActive = false;
 
-		       if (isCameraTween)
-			       cameraTweenActive = false;
+			if (originalOnComplete != null)
+				originalOnComplete(twn);
+		};
 
-		       if (originalOnComplete != null)
-			       originalOnComplete(twn);
-	       };
+		var tween = FlxTween.tween(Object, Values, Duration, tweenOptions);
+		modTweens.push(tween);
 
-	       var tween:FlxTween = FlxTween.tween(Object, Values, Duration, tweenOptions);
-
-	       modTweens.push(tween);
-
-	       return tween;
+		return tween;
 	}
 
 	public function cleanupDeadTweens():Void
@@ -3145,10 +3129,17 @@ class PlayState extends MusicBeatState
 			}
 		}
 
-		if (camZooming && !cameraTweenActive)
+		if (!cameraTweenActive)
 		{
-			FlxG.camera.zoom = FlxMath.lerp(defaultCamZoom, FlxG.camera.zoom, 0.95);
-			camHUD.zoom = FlxMath.lerp(1, camHUD.zoom, 0.95);
+			var camLerp = 1 - Math.exp(-elapsed * 6);
+
+			FlxG.camera.zoom = FlxMath.lerp(FlxG.camera.zoom, defaultCamZoom, camLerp);
+			camHUD.zoom = FlxMath.lerp(camHUD.zoom, 1, camLerp);
+			if (Math.abs(FlxG.camera.zoom - defaultCamZoom) < 0.001)
+				FlxG.camera.zoom = defaultCamZoom;
+
+			if (Math.abs(camHUD.zoom - 1) < 0.001)
+				camHUD.zoom = 1;
 		}
 
 		FlxG.watch.addQuick("beatShit", curBeat);
@@ -3256,8 +3247,6 @@ class PlayState extends MusicBeatState
 				#end
 
 			}
-
-			
 			// FlxG.switchState(new GameOverState(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
 		}
 		else if (((health <= 0 && !opponentPlayer) || (health >= 2 && opponentPlayer)) && !practiceDied && practiceMode) {
