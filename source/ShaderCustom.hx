@@ -159,7 +159,7 @@ class Shader extends FlxShaderFix {
         var field = Reflect.field(this.data, name);
         if (field == null) return;
         if (Std.isOfType(value, Array)) {
-            field.value = value.copy();
+            field.value = cast(value, Array<Dynamic>).copy();
         } else {
             field.value = [value];
         }
@@ -192,11 +192,11 @@ class Shader extends FlxShaderFix {
 
         if (storageType == "uniform")
         {
-            regex = ~/uniform ([A-Za-z0-9]+) ([A-Za-z0-9_]+)/;
+            regex = ~/uniform\s+([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)/;
         }
         else
         {
-            regex = ~/attribute ([A-Za-z0-9]+) ([A-Za-z0-9_]+)/;
+            regex = ~/attribute\s+([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)/;
         }
 
         while (regex.matchSub(source, lastMatch))
@@ -206,6 +206,8 @@ class Shader extends FlxShaderFix {
 
             if (StringTools.startsWith(name, "gl_"))
             {
+                position = regex.matchedPos();
+                lastMatch = position.pos + position.len;
                 continue;
             }
 
@@ -379,40 +381,59 @@ class Shader extends FlxShaderFix {
 }
 
 class ShaderCustom extends Shader {
-    public function setCamSize(x:Float,y:Float,width:Float,height:Float):Void
-    {
+	
+    public function setCamSize(x:Float, y:Float, width:Float, height:Float) {
         if (data._camSize != null)
             data._camSize.value = [x, y, width, height];
     }
 
-    public function new(shaderName:String)
-    {
-        var fragPath = SUtil.getPath() + 'assets/shaders/$shaderName.frag';
-        var vertPath = SUtil.getPath() + 'assets/shaders/$shaderName.vert';
+    public function init(fragCode:String, vertCode:String) {
 
-        var glVertexSource = "
-            #pragma header
+    }
+    public function new(cShader:String /*, values:Map<String, Any>*/ ) {
+        //var mPath = Paths.modsPath;
 
-            void main(void)
-            {
-                #pragma body
+        var fragPath = SUtil.getPath() + "assets/shaders/" + cShader + ".frag";
+        var vertPath = SUtil.getPath() + "assets/shaders/" + cShader + ".vert";
+
+        var glVertexSource = "#pragma header
+        attribute float alpha;
+        attribute vec4 colorMultiplier;
+        attribute vec4 colorOffset;
+        uniform bool hasColorTransform;
+        
+        void main(void)
+        {
+            openfl_Alphav = openfl_Alpha;
+            openfl_TextureCoordv = openfl_TextureCoord;
+            if (openfl_HasColorTransform) {
+                    openfl_ColorMultiplierv = openfl_ColorMultiplier;
+                    openfl_ColorOffsetv = openfl_ColorOffset / 255.0;
             }
-        ";
+            gl_Position = openfl_Matrix * openfl_Position;
+            openfl_Alphav = openfl_Alpha * alpha;
+            if (hasColorTransform)
+            {
+                    openfl_ColorOffsetv = colorOffset / 255.0;
+                    openfl_ColorMultiplierv = colorMultiplier;
+            }
+        }".replace("#pragma body", Shader.entireFuckingCustomVertexBody).replace("#pragma header", Shader.entireFuckingCustomVertexHeader);
 
         var glFragmentSource = "
-            #pragma header
+        #pragma header
+    
+        void main(void)
+        {
+            gl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);
+        }".replace("#pragma body", Shader.entireFuckingCustomFragmentBody).replace("#pragma header", Shader.entireFuckingCustomFragmentHeader).replace(" attribute ", " uniform ");
 
-            void main(void)
-            {
-                gl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);
-            }
-        ";
-
-        if (FNFAssets.exists(fragPath))
+        if (fragPath.trim() != "" && FNFAssets.exists(fragPath))
             glFragmentSource = FNFAssets.getText(fragPath);
-
-        if (FNFAssets.exists(vertPath))
-            glVertexSource = FNFAssets.getText(vertPath);
+        
+        if (vertPath.trim() != "" && FNFAssets.exists(vertPath)) {
+            var vert = FNFAssets.getText(vertPath);
+            glVertexSource = vert;
+        }
 
         super(glFragmentSource, glVertexSource);
     }

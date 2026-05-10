@@ -480,9 +480,10 @@ class CustomState extends MusicBeatState
         super.destroy();
     }
 
-	public function playSong(songName:String = 'tutorial', difficulty:Int = 1, ?returnState:String = ""):Void
+	public function playSong(songName:String = 'tutorial', difficulty:Dynamic = 1, ?returnState:String = ""):Void
 	{
 		FlxG.sound.music.stop();
+
 		if (returnState == "") 
 			PlayState.customStateName = customStateScriptName; 
 		else 
@@ -490,19 +491,41 @@ class CustomState extends MusicBeatState
 
 		PlayState.isStoryMode = false;
 		PlayState.isFreeplay = false;
-
+		var diff:Int = 1;
 		var diffSuffix:String = "";
-		switch (difficulty)
+
+		if (Std.isOfType(difficulty, String))
 		{
-			case 0: diffSuffix = "-easy";
-			case 2: diffSuffix = "-hard";
+			switch (difficulty.toLowerCase())
+			{
+				case "easy":
+					diff = 0;
+					diffSuffix = "-easy";
+				case "hard":
+					diff = 2;
+					diffSuffix = "-hard";
+				default:
+					diff = 1;
+					diffSuffix = "";
+			}
+		}
+		else
+		{
+			diff = Std.int(difficulty);
+
+			switch (diff)
+			{
+				case 0: diffSuffix = "-easy";
+				case 2: diffSuffix = "-hard";
+				default: diffSuffix = "";
+			}
 		}
 
 		trace('song loaded ' + songName + ' with difficulty ' + diffSuffix + ' returning to ' + PlayState.customStateName);
-		
+
 		try {
 			PlayState.SONG = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
-			PlayState.storyDifficulty = difficulty;
+			PlayState.storyDifficulty = diff;
 			LoadingState.loadAndSwitchState(new PlayState());
 		} catch(e) {
 			PlayState.customStateName = "";

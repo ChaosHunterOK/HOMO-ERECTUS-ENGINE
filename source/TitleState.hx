@@ -293,17 +293,18 @@ class TitleState extends MusicBeatState
 		#end
 	}
 
-	override public function update(elapsed:Float):Void
+	override function update(elapsed:Float)
 	{
 		callAllHScript("update", [elapsed]);
 		super.update(elapsed);
 	}
 
-	override public function beatHit():Void
+	override function beatHit()
 	{
 		super.beatHit();
 		FlxG.log.add(curBeat);
 		setAllHaxeVar('curBeat', curBeat);
 		callAllHScript('beatHit', [curBeat]);
 	}
+
 }

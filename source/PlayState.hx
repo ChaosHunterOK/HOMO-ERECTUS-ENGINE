@@ -398,6 +398,7 @@ class PlayState extends MusicBeatState
 	var exInterp:InterpEx = new InterpEx();
 	var haxeSprites:Map<String, FlxSprite> = [];
 	var traced:Bool = false;
+	var basePath = SUtil.getPath();
     public function callHscript(func_name:String, args:Array<Dynamic>, usehaxe:String) {
 		// if function doesn't exist
 			try{
@@ -1272,8 +1273,6 @@ class PlayState extends MusicBeatState
 		} else if (perfectMode || fullComboMode || goodCombo) {
 			dialogSuffix = "-perfect";
 		}
-
-		var basePath = SUtil.getPath();
 		var song = SONG.song.toLowerCase();
 
 		function resolveDialog(path:String, baseName:String):Null<String> {
@@ -1984,7 +1983,6 @@ class PlayState extends MusicBeatState
 			setSongTime(0);
 			return;
 		}
-		var basePath = SUtil.getPath();
 		var imgPath = basePath + "assets/images/";
 		var sndPath = basePath + "assets/sounds/";
 		var introAssets:Map<String, Array<String>> = [];
@@ -2568,38 +2566,49 @@ class PlayState extends MusicBeatState
 	}
 	function tweenCamIn():Void
 	{
-		addTrackedTween(FlxG.camera, {zoom: 1.3}, (Conductor.stepCrochet * 4 / 1000), {ease: FlxEase.elasticInOut});
+		var duration:Float = (Conductor.stepCrochet * 4) / 1000;
+
+		addTrackedTween(
+			FlxG.camera,
+			{ zoom: 1.3 },
+			duration,
+			{ ease: FlxEase.elasticInOut }
+		);
 	}
-	public function addTrackedTween(Object:Dynamic, Values:Dynamic, Duration:Float, ?Options:TweenOptions):FlxTween
+	public function addTrackedTween(
+	       Object:Dynamic,
+	       Values:Dynamic,
+	       Duration:Float,
+	       ?Options:flixel.tweens.FlxTween.TweenOptions
+	):FlxTween
 	{
-		var tweenOptions:TweenOptions = null;
-		if (Options != null) {
-			tweenOptions = Options;
-		} else {
-			tweenOptions = {};
-		}
-		
-		var originalOnComplete = tweenOptions.onComplete;
-		
-		var isCameraTween = (Object == FlxG.camera);
-		if (isCameraTween) {
-			cameraTweenActive = true;
-		}
-		
-		var tween = FlxTween.tween(Object, Values, Duration, tweenOptions);
-		modTweens.push(tween);
-		
-		tween.onComplete = function(twn:FlxTween)
-		{
-			modTweens.remove(twn);
-			if (isCameraTween) {
-				cameraTweenActive = false;
-			}
-			if (originalOnComplete != null)
-				originalOnComplete(twn);
-		};
-		
-		return tween;
+	       var tweenOptions:flixel.tweens.FlxTween.TweenOptions = Options != null ? Options : {};
+
+	       var originalOnComplete = tweenOptions.onComplete;
+	       var isCameraTween = (Object == FlxG.camera);
+
+	       if (isCameraTween)
+		       cameraTweenActive = true;
+	       if (modTweens == null)
+		       modTweens = [];
+
+	       tweenOptions.onComplete = function(twn:FlxTween)
+	       {
+		       if (modTweens != null)
+			       modTweens.remove(twn);
+
+		       if (isCameraTween)
+			       cameraTweenActive = false;
+
+		       if (originalOnComplete != null)
+			       originalOnComplete(twn);
+	       };
+
+	       var tween:FlxTween = FlxTween.tween(Object, Values, Duration, tweenOptions);
+
+	       modTweens.push(tween);
+
+	       return tween;
 	}
 
 	public function cleanupDeadTweens():Void
@@ -4881,8 +4890,6 @@ class PlayState extends MusicBeatState
 			- Conductor.songPosition, playingAsRpc);
 		#end
 	}
-
-
 	override function beatHit()
 	{
 		super.beatHit();
