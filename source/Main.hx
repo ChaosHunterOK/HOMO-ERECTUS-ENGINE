@@ -109,7 +109,11 @@ class Main extends Sprite
             if (options.fpsCap != null) framerate = options.fpsCap;
             if (options.showHaxeSplash != null) skipSplash = !options.showHaxeSplash;
         }
+        #if (haxe <= "4.11.0")
+        var game = new FlxGame(gameWidth, gameHeight, initialState, 1, framerate, framerate, skipSplash, false);
+        #else
         var game = new FlxGame(gameWidth, gameHeight, initialState, framerate, framerate, skipSplash, false);
+        #end
         addChild(game);
         setupOverlays(options);
         stage.align = "tl";
