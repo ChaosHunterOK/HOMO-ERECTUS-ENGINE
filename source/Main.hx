@@ -120,10 +120,6 @@ class Main extends Sprite
         stage.scaleMode = StageScaleMode.NO_SCALE;
 
         #if mobile SUtil.doTheCheck(); #end
-
-        #if CRASH_HANDLER
-        stage.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onCrash);
-        #end
     }
 
     private function setupOverlays(options:Dynamic):Void {
@@ -148,35 +144,4 @@ class Main extends Sprite
             addChild(memoryVar);
         }
     }
-
-    #if CRASH_HANDLER
-    function onCrash(e:UncaughtErrorEvent):Void {
-        var stack = CallStack.exceptionStack(true);
-        var report = new StringBuf();
-        var dateNow:String = Date.now().toString().replace(" ", "_").replace(":", "'");
-        
-        report.add('Uncaught Error: ${e.error}\n');
-        report.add("----------------------------------\nStack Trace:\n");
-
-        for (item in stack) {
-            switch (item) {
-                case FilePos(_, file, line, _): report.add('$file (line $line)\n');
-                case Method(c, m): report.add('$c [function $m]\n');
-                default:
-            }
-        }
-
-        report.add("----------------------------------\nCrash Handler:\n");
-
-        var crashPath:String = "./crash/Crash_" + dateNow + ".txt";
-        if (!FileSystem.exists("./crash/")) FileSystem.createDirectory("./crash/");
-        
-        File.saveContent(crashPath, report.toString());
-        
-        #if desktop DiscordClient.shutdown(); #end
-        
-        Application.current.window.alert(report.toString(), "Error!");
-        Sys.exit(1);
-    }
-    #end
 }
