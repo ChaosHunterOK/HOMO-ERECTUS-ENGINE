@@ -208,6 +208,8 @@ class PlayState extends MusicBeatState
 	private var player1Icon:String;
 	private var player2Icon:String;
 	public static var prevCamFollow:FlxObject;
+	public static var camStyle:FlxCameraFollowStyle = LOCKON;
+	public static var camEase:Null<Float->Float> = null;
 
 	//Shader shit lol
 	public var shaderUpdates:Array<Float->Void> = [];
@@ -616,6 +618,26 @@ class PlayState extends MusicBeatState
 		interp.variables.set("strumLineY", strumLine.y);
 		interp.variables.set("hscriptPath", path);
 		interp.variables.set("holdCovers", holdCovers);
+		interp.variables.set("camFollowStyle", camStyle);
+		interp.variables.set("camEase", camEase);
+		interp.variables.set("camSpeed", camSpeed);
+		interp.variables.set("setCamEase", function(ease:Float->Float) {
+			camEase = ease;
+		});
+		interp.variables.set("LOCKON", LOCKON);
+		interp.variables.set("PLATFORMER", PLATFORMER);
+		interp.variables.set("TOPDOWN", TOPDOWN);
+		interp.variables.set("TOPDOWN_TIGHT", TOPDOWN_TIGHT);
+		interp.variables.set("SCREEN_BY_SCREEN", SCREEN_BY_SCREEN);
+		interp.variables.set("NO_DEAD_ZONE", NO_DEAD_ZONE);
+		interp.variables.set("instantFollowCamera", instantFollowCamera);
+		interp.variables.set("setInstantFollowCamera", function (instant:Bool) {
+			instantFollowCamera = instant;
+		});
+		interp.variables.set("setCamSpeed", function (speed:Float) {
+			camSpeed = speed;
+		});
+		interp.variables.set("forceCamera", forceCamera);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
@@ -704,9 +726,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("removeGlobalSprite", removeGlobalSprite);
 		interp.variables.set("change_songSpeed", change_songSpeed);
 		interp.variables.set("flixG", FlxG);
-
-		interp.variables.set("forceCamera", forceCamera);
-		interp.variables.set("instantFollowCamera", instantFollowCamera);
 
 		//Shader Shit
 		interp.variables.set("addPulseEffect", addPulseEffect);
@@ -841,13 +860,25 @@ class PlayState extends MusicBeatState
 
 			container.updateBar = function() {
 				var value:Float = Reflect.getProperty(container.parentRef, variable);
-				var percent = (value - min) / (max - min);
+				var percent:Float = (value - min) / (max - min);
 				percent = FlxMath.bound(percent, 0, 1);
 
-				var split = width * percent;
+				var split:Int = Std.int(width * percent);
 
-				leftFill.clipRect = new FlxRect(0, 0, Std.int(split), height);
-				rightFill.clipRect = new FlxRect(Std.int(split), 0, Std.int(width - split), height);
+				if (leftFill.clipRect == null)
+					leftFill.clipRect = new FlxRect();
+
+				if (rightFill.clipRect == null)
+					rightFill.clipRect = new FlxRect();
+
+				leftFill.clipRect.set(0, 0, split, height);
+				rightFill.clipRect.set(split, 0, width - split, height);
+
+				leftFill.clipRect = leftFill.clipRect;
+				rightFill.clipRect = rightFill.clipRect;
+
+				leftFill.dirty = true;
+				rightFill.dirty = true;
 			};
 
 			return container;
@@ -1475,7 +1506,7 @@ class PlayState extends MusicBeatState
 
 		if (!instantFollowCamera)
 		{
-			FlxG.camera.follow(camFollow, LOCKON, camSpeed);
+			FlxG.camera.follow(camFollow, camStyle, 1);
 		}
 		// FlxG.camera.setScrollBounds(0, FlxG.width, 0, FlxG.height);
 		FlxG.camera.zoom = defaultCamZoom;
@@ -2938,7 +2969,19 @@ class PlayState extends MusicBeatState
 			#if desktop
 			iconRPC = player1Icon + "-dazed";
 			#end
-		}	
+		}
+
+		if (camEase != null)
+		{
+			var eased = camEase(elapsed * camSpeed);
+			if (eased < 0) eased = 0;
+			if (eased > 1) eased = 1;
+			FlxG.camera.followLerp = eased;
+		}
+		else
+		{
+			FlxG.camera.followLerp = camSpeed;
+		}
 		
 		// duo mode shouldn't show low health
 		if (properHealth < 20 && !duoMode) {
@@ -4610,15 +4653,12 @@ class PlayState extends MusicBeatState
 		var strums = playerOne ? playerStrums : enemyStrums;
 		strums.forEach(function(spr:StrumNote)
 		{
+			if (spr == null) return;
 			if (!holdArray[spr.ID] && spr.holdStarted)
 			{
 				spr.holdStarted = false;
 				spr.holdCover.playEnd();
 			}
-		});
-		strums.forEach(function(spr:StrumNote)
-		{
-			if (spr == null) return;
 			if (controlArray[spr.ID] && spr.animation.curAnim.name != "confirm")
 			{
 				spr.playAnim("pressed");

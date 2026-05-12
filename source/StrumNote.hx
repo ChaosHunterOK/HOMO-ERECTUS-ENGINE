@@ -9,7 +9,6 @@ using StringTools;
 import DynamicSprite.DynamicAtlasFrames;
 import PlayState;
 import NoteHoldCover;
-//a StrumNote can fixed that spin angle offsets
 @:access(flixel.animation.FlxAnimationController)
 class StrumNote extends FlxSprite
 {
@@ -219,7 +218,6 @@ class StrumNote extends FlxSprite
 				resetAnim = 0;
 			}
 		}
-		//if(animation.curAnim != null){ //my bad i was upset
 		if(animation.curAnim.name == 'confirm' && !isPixelNote) {
 			var daOffset = [0.0,0.0];
 			if (animOffsets.exists('confirm'))
@@ -228,8 +226,6 @@ class StrumNote extends FlxSprite
 				}
 			offset.x = (frameWidth - width) * 0.5+ daOffset[0];
 		offset.y = (frameHeight - height) * 0.5 + daOffset[1];
-			
-		//}
 		}
 
 		super.update(elapsed);
@@ -260,7 +256,6 @@ class StrumNote extends FlxSprite
 		offset.y = (frameHeight - height) * 0.5 + daOffset[1];
 		centerOrigin();
 		if(animation.curAnim == null || animation.curAnim.name == 'static') {
-	//do nothing...since no shader... or you can add stuff here idk lol
 		} else {
 			if(animation.curAnim.name == 'confirm' && !isPixelNote) {
 				centerOrigin();
@@ -277,7 +272,5 @@ class StrumNote extends FlxSprite
 		var baseY:Float = strum.downScroll ? FlxG.height - 150 : 50; 
 		strum.x = baseX + (targetX != null ? targetX : 0);
 		strum.y = baseY + (targetY != null ? targetY : 0);
-
-		//strum.updateHitbox();
 	}
 }
