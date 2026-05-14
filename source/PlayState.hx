@@ -373,6 +373,7 @@ class PlayState extends MusicBeatState
 	var poisonMultiplier:Float = 0;
 	var goodCombo:Bool = false;
 	var isUsingSounds:Bool = false;
+	var camProgress:Float = 0;
 	public var player1GoodHitSignal:Signal<Note>;
 	public var player2GoodHitSignal:Signal<Note>;
 	private var judgementList:Array<String> = [];
@@ -619,6 +620,9 @@ class PlayState extends MusicBeatState
 		interp.variables.set("hscriptPath", path);
 		interp.variables.set("holdCovers", holdCovers);
 		interp.variables.set("camFollowStyle", camStyle);
+		interp.variables.set("setCamFollowStyle", function(style:FlxCameraFollowStyle) {
+			camStyle = style;
+		});
 		interp.variables.set("camEase", camEase);
 		interp.variables.set("camSpeed", camSpeed);
 		interp.variables.set("setCamEase", function(ease:Float->Float) {
@@ -1506,7 +1510,7 @@ class PlayState extends MusicBeatState
 
 		if (!instantFollowCamera)
 		{
-			FlxG.camera.follow(camFollow, camStyle, 1);
+			FlxG.camera.follow(camFollow, camStyle, camSpeed);
 		}
 		// FlxG.camera.setScrollBounds(0, FlxG.width, 0, FlxG.height);
 		FlxG.camera.zoom = defaultCamZoom;
@@ -2915,11 +2919,13 @@ class PlayState extends MusicBeatState
 
 		var hitSpeed = 0.50;
 		
-		if (CoolUtil.fps == 120)
-			hitSpeed = 0.25;
-		
-		if (CoolUtil.fps == 240)
-			hitSpeed = 0.125;
+		switch (CoolUtil.fps)
+		{
+			case 120:
+				hitSpeed = 0.25;
+			case 240:
+				hitSpeed = 0.125;
+		}
 
 		iconP1.setGraphicSize(Std.int(FlxMath.lerp(150, iconP1.width, hitSpeed)));
 		iconP2.setGraphicSize(Std.int(FlxMath.lerp(150, iconP2.width, hitSpeed)));
@@ -2969,18 +2975,6 @@ class PlayState extends MusicBeatState
 			#if desktop
 			iconRPC = player1Icon + "-dazed";
 			#end
-		}
-
-		if (camEase != null)
-		{
-			var eased = camEase(elapsed * camSpeed);
-			if (eased < 0) eased = 0;
-			if (eased > 1) eased = 1;
-			FlxG.camera.followLerp = eased;
-		}
-		else
-		{
-			FlxG.camera.followLerp = camSpeed;
 		}
 		
 		// duo mode shouldn't show low health
@@ -3068,58 +3062,58 @@ class PlayState extends MusicBeatState
 			}
 		}
 
+		var section = PlayState.SONG.notes[Std.int(curStep / 16)];
 		if (endingSong)
 			return;
-		if (generatedMusic && PlayState.SONG.notes[Std.int(curStep / 16)] != null)
+		if (section != null)
 		{
-			if (curBeat % 4 == 0)
+			var mustHit = section.mustHitSection;
+			setAllHaxeVar("mustHit", mustHit);
+			inline function updateCamFollow(char:Character, defaultX:Float, defaultY:Float)
 			{
-				// trace(PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection);
-			}
-			setAllHaxeVar("mustHit", PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection);
-			if (!PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection)
-			{
-				if (!instantFollowCamera && !forceCamera)
+				if (char.isCustom)
 				{
-					camFollow.setPosition(dad.getMidpoint().x + 150, dad.getMidpoint().y - 100);
-				}
-				// camFollow.setPosition(lucky.getMidpoint().x - 120, lucky.getMidpoint().y + 210);
-				callAllHScript("playerTwoTurn", []);
-				if (dad.isCustom) {
-					if (!instantFollowCamera && !forceCamera)
-					{
-						camFollow.y = dad.getMidpoint().y + dad.followCamY;
-						camFollow.x = dad.getMidpoint().x + dad.followCamX;
-					}
-				}
-				if (!opponentPlayer || !duoMode)
-				vocals.volume = 1;
-			}
-		
-		// Instant camera follow
-		if (instantFollowCamera && generatedMusic && PlayState.SONG.notes[Std.int(curStep / 16)] != null)
-		{
-			if (!forceCamera)
-			{
-				if (!PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection)
-				{
-					camFollow.setPosition(dad.getMidpoint().x + 150, dad.getMidpoint().y - 100);
-					if (dad.isCustom) {
-						camFollow.y = dad.getMidpoint().y + dad.followCamY;
-						camFollow.x = dad.getMidpoint().x + dad.followCamX;
-					}
+					camFollow.setPosition(
+						char.getMidpoint().x + char.followCamX,
+						char.getMidpoint().y + char.followCamY
+					);
 				}
 				else
 				{
-					camFollow.setPosition(boyfriend.getMidpoint().x - 100, boyfriend.getMidpoint().y - 100);
-					if (boyfriend.isCustom) {
-						camFollow.y = boyfriend.getMidpoint().y + boyfriend.followCamY;
-						camFollow.x = boyfriend.getMidpoint().x + boyfriend.followCamX;
-					}
+					camFollow.setPosition(
+						char.getMidpoint().x + defaultX,
+						char.getMidpoint().y + defaultY
+					);
 				}
 			}
-			FlxG.camera.focusOn(camFollow.getPosition());
-		}
+			if (!mustHit)
+			{
+				if (!instantFollowCamera && !forceCamera)
+				{
+					updateCamFollow(dad, 150, -100);
+				}
+
+				callAllHScript("playerTwoTurn", []);
+
+				if (!opponentPlayer || !duoMode)
+					vocals.volume = 1;
+			}
+			if (instantFollowCamera && generatedMusic)
+			{
+				if (!forceCamera)
+				{
+					if (!mustHit)
+					{
+						updateCamFollow(dad, 150, -100);
+					}
+					else
+					{
+						updateCamFollow(boyfriend, -100, -100);
+					}
+				}
+
+				FlxG.camera.focusOn(camFollow.getPosition());
+			}
 		
 			var currentIconState = poisonTimes != 0
 			? "Being Posioned"
@@ -3133,7 +3127,7 @@ class PlayState extends MusicBeatState
 				health -= poisonMultiplier * (opponentPlayer ? -1 : 1)/ 700000;
 			}
 			playingAsRpc = "Playing as " + (opponentPlayer ? player2Icon : player1Icon) + " | " + currentIconState;
-			if (PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection)
+			if (section.mustHitSection)
 			{
 				if (!instantFollowCamera && !forceCamera)
 				{
@@ -3224,10 +3218,7 @@ class PlayState extends MusicBeatState
 		// RESET = Quick Game Over Screen
 		if (controls.RESET && !inCutscene)
 		{
-			if (opponentPlayer)
-				health = 2;
-			else
-				health = 0;
+			health = opponentPlayer ? 2 : 0;
 			trace("RESET = True");
 		}
 

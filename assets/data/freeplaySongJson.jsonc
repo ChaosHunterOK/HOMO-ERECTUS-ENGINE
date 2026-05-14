@@ -112,11 +112,6 @@
         "week": 7
       },
       {
-        "name": "god-eater",
-        "character": "dad",
-        "week": 6
-      },
-      {
         "name": "Test",
         "character": "face",
         "week": 6,
@@ -134,17 +129,6 @@
     {
       "name": "Bopeebo",
       "character": "dad",
-      "week": 1
-    },
-    {
-      "name": "Fresh",
-      "character": "dad",
-        "week" : 1
-   ]
-   },
-  */
-]
-     "character": "dad",
       "week": 1
     },
     {

@@ -485,6 +485,5 @@ class DialogueBox extends FlxSpriteGroup
 		shadowColor = dialogueFile.info[0].textShadowColor;
 		portraitColor = dialogueFile.info[0].portraitColor;
 		timeCut = dialogueFile.info[0].skipAfter;
-
 	}
 }
