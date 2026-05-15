@@ -1133,13 +1133,13 @@ class PlayState extends MusicBeatState
 		Note.getSpecialFrames = true;
 		Note.specialNoteJson = null;
 		instance = this;
-		if (FNFAssets.exists(SUtil.getPath() + 'assets/images/custom_notetypes/noteInfo.json')) {
-			Note.specialNoteJson = CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + 'assets/images/custom_notetypes/noteInfo.json'));
+		if (FNFAssets.exists(basePath + 'assets/images/custom_notetypes/noteInfo.json')) {
+			Note.specialNoteJson = CoolUtil.parseJson(FNFAssets.getText(basePath + 'assets/images/custom_notetypes/noteInfo.json'));
 		}
-		else if (FNFAssets.exists(SUtil.getPath() + 'assets/data/${SONG.song.toLowerCase()}/noteInfo.json')) {  //Oudated function
-			Note.specialNoteJson = CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + 'assets/data/${SONG.song.toLowerCase()}/noteInfo.json'));
+		else if (FNFAssets.exists(basePath + 'assets/data/${SONG.song.toLowerCase()}/noteInfo.json')) {  //Oudated function
+			Note.specialNoteJson = CoolUtil.parseJson(FNFAssets.getText(basePath + 'assets/data/${SONG.song.toLowerCase()}/noteInfo.json'));
 		}
-		Judgement.uiJson = CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/ui.json'));
+		Judgement.uiJson = CoolUtil.parseJson(FNFAssets.getText(basePath + 'assets/images/custom_ui/ui_packs/ui.json'));
 		uiSmelly = Reflect.field(Judgement.uiJson, SONG.uiType);
 
 		misses = 0;
@@ -1149,7 +1149,7 @@ class PlayState extends MusicBeatState
 		shits = 0;
 		ss = true;
 		Note.NOTE_AMOUNT = SONG.preferredNoteAmount;
-		judgementList = CoolUtil.coolTextFile(SUtil.getPath() + 'assets/data/judgements.txt');
+		judgementList = CoolUtil.coolTextFile(basePath + 'assets/data/judgements.txt');
 		preferredJudgement = judgementList[OptionsHandler.options.preferJudgement];
 		if (preferredJudgement == 'none' || SONG.forceJudgements) {
 			preferredJudgement = SONG.uiType;
@@ -1522,13 +1522,13 @@ class PlayState extends MusicBeatState
 		trace('gay');
 		if (useSongBar) {
 			// todo, add options
-			var lmao = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/healthBar.png');
-		if (FNFAssets.exists(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'timeBar.png'))
-			lmao = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'timeBar.png');
-		else if (FNFAssets.exists(SUtil.getPath() + 'assets/images/timeBar.png'))
-			lmao = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/timeBar.png');
+			var lmao = FNFAssets.getBitmapData(basePath + 'assets/images/healthBar.png');
+		if (FNFAssets.exists(basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'timeBar.png'))
+			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'timeBar.png');
+		else if (FNFAssets.exists(basePath + 'assets/images/timeBar.png'))
+			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/timeBar.png');
         else
-			lmao = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/healthBar.png');
+			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/healthBar.png');
 			songPosBG = new FlxSprite(0, 10).loadGraphic(lmao);
 			if (downscroll)
 				songPosBG.y = FlxG.height * 0.9 + 45;
@@ -1547,16 +1547,16 @@ class PlayState extends MusicBeatState
 			songName = new FlxText(songPosBG.x + (songPosBG.width / 2) - 20, songPosBG.y, 0, SONG.song, 16);
 			if (downscroll)
 				songName.y -= 3;
-			songName.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			songName.setFormat(basePath + "assets/fonts/vcr.ttf", 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			songName.scrollFactor.set();
 			add(songName);
 			songName.cameras = [camHUD];
 		}
-		var lmao = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/healthBar.png');
-		if (FNFAssets.exists(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'healthBar.png'))
-			lmao = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'healthBar.png');
+		var lmao = FNFAssets.getBitmapData(basePath + 'assets/images/healthBar.png');
+		if (FNFAssets.exists(basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'healthBar.png'))
+			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'healthBar.png');
 		else
-			lmao = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/healthBar.png');
+			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/healthBar.png');
 		healthBarBG = new FlxSprite(0, FlxG.height * 0.9).loadGraphic(lmao);
 		if (downscroll)
 			healthBarBG.y = 50;
@@ -1578,21 +1578,21 @@ class PlayState extends MusicBeatState
 		add(healthBar);
 
 		scoreTxt = new FlxText(healthBarBG.x, healthBarBG.y + 40, 0, "", 200);
-		scoreTxt.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		scoreTxt.setFormat(basePath + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		scoreTxt.scrollFactor.set();
 
 		healthTxt = new FlxText(healthBarBG.x + healthBarBG.width - 300, scoreTxt.y, 0, "", 200);
-		healthTxt.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		healthTxt.setFormat(basePath + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		healthTxt.scrollFactor.set();
 		healthTxt.visible = false;
 		accuracyTxt = new FlxText(healthBarBG.x, scoreTxt.y, 0, "", 200);
-		accuracyTxt.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		accuracyTxt.setFormat(basePath + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		accuracyTxt.scrollFactor.set();
 		// shitty work around but okay
 		accuracyTxt.visible = false;
 		difficTxt = new FlxText(10, FlxG.height, 0, "", 150);
 		
-		difficTxt.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 15, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		difficTxt.setFormat(basePath + "assets/fonts/vcr.ttf", 15, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		difficTxt.scrollFactor.set();
 		difficTxt.y -= difficTxt.height;
 		if (downscroll) {
@@ -1643,34 +1643,34 @@ class PlayState extends MusicBeatState
 		addAndroidControls();
 		#end
 		
-		var stageJson = CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/images/custom_stages/custom_stages.json"));
-		makeHaxeState("stages", SUtil.getPath() + "assets/images/custom_stages/" + SONG.stage + "/", "../"+Reflect.field(stageJson, SONG.stage));
+		var stageJson = CoolUtil.parseJson(FNFAssets.getText(basePath + "assets/images/custom_stages/custom_stages.json"));
+		makeHaxeState("stages", basePath + "assets/images/custom_stages/" + SONG.stage + "/", "../"+Reflect.field(stageJson, SONG.stage));
 		trace('stage done');
 		var modchartPushed:Array<String> = [];
-		if(FileSystem.exists(SUtil.getPath() + "assets/data/" + SONG.song.toLowerCase() + "/"))
+		if(FileSystem.exists(basePath + "assets/data/" + SONG.song.toLowerCase() + "/"))
 			{
-				for (file in FileSystem.readDirectory(SUtil.getPath() + "assets/data/" + SONG.song.toLowerCase() + "/"))
+				for (file in FileSystem.readDirectory(basePath + "assets/data/" + SONG.song.toLowerCase() + "/"))
 				{
 		if (file.endsWith('.hscript') && !modchartPushed.contains(file))
 		{
 			hscriptIsModChart.set(file.substr(0, file.length - 8),true);
-			makeHaxeState(file.substr(0, file.length - 8), SUtil.getPath() + "assets/data/" + SONG.song.toLowerCase() + "/", file.substr(0, file.length - 8));	
+			makeHaxeState(file.substr(0, file.length - 8), basePath + "assets/data/" + SONG.song.toLowerCase() + "/", file.substr(0, file.length - 8));	
 		}
 	}
 	}
 		
-		var uiJson = CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/images/custom_ui/ui_layouts/ui.json"));
-		makeHaxeStateUI("ui", SUtil.getPath() + "assets/images/custom_ui/ui_layouts/" + Reflect.field(uiJson, 'layout') + "/", "../" + Reflect.field(uiJson, 'layout') + ".hscript");
+		var uiJson = CoolUtil.parseJson(FNFAssets.getText(basePath + "assets/images/custom_ui/ui_layouts/ui.json"));
+		makeHaxeStateUI("ui", basePath + "assets/images/custom_ui/ui_layouts/" + Reflect.field(uiJson, 'layout') + "/", "../" + Reflect.field(uiJson, 'layout') + ".hscript");
 		trace('ui done');
 
 		var scriptPushed:Array<String> = [];
-		if(FileSystem.exists(SUtil.getPath() + "assets/scripts/"))
+		if(FileSystem.exists(basePath + "assets/scripts/"))
 			{
-				for (file in FileSystem.readDirectory(SUtil.getPath() + "assets/scripts/"))
+				for (file in FileSystem.readDirectory(basePath + "assets/scripts/"))
 				{
 		if (file.endsWith('.hscript') && !scriptPushed.contains(file))
 		{
-			makeHaxeState(file.substr(0, file.length - 8), SUtil.getPath() + "assets/scripts/", file.substr(0, file.length - 8));	
+			makeHaxeState(file.substr(0, file.length - 8), basePath + "assets/scripts/", file.substr(0, file.length - 8));	
 		}
 	}
 	}
@@ -1699,10 +1699,10 @@ class PlayState extends MusicBeatState
 		}
 
 		var useSong = SUtil.getPath() + "assets/music/" + SONG.song + "_Inst" + TitleState.soundExt;
-		if (FNFAssets.exists(SUtil.getPath() + "assets/music/" + SONG.song + "_" + SONG.player1 + "_Inst" + TitleState.soundExt))
-			useSong = SUtil.getPath() + "assets/music/" + SONG.song + "_" + SONG.player1 + "_Inst" + TitleState.soundExt;
-		if (OptionsHandler.options.stressTankmen && FNFAssets.exists(SUtil.getPath() + "assets/music/" + SONG.song + "/Shit_Inst.ogg"))
-			useSong = SUtil.getPath() + "assets/music/" + SONG.song + "/Shit_Inst.ogg";
+		if (FNFAssets.exists(basePath + "assets/music/" + SONG.song + "_" + SONG.player1 + "_Inst" + TitleState.soundExt))
+			useSong = basePath + "assets/music/" + SONG.song + "_" + SONG.player1 + "_Inst" + TitleState.soundExt;
+		if (OptionsHandler.options.stressTankmen && FNFAssets.exists(basePath + "assets/music/" + SONG.song + "/Shit_Inst.ogg"))
+			useSong = basePath + "assets/music/" + SONG.song + "/Shit_Inst.ogg";
 
 		FNFAssets.precacheSound(useSong);
 
@@ -1720,9 +1720,9 @@ class PlayState extends MusicBeatState
 		if (type > 2)
 			type = 2;
 
-		if (FNFAssets.exists(SUtil.getPath() + 'assets/data/' + SONG.song.toLowerCase() + '/' + file + '.txt'))
+		if (FNFAssets.exists(basePath + 'assets/data/' + SONG.song.toLowerCase() + '/' + file + '.txt'))
 		{
-			var cFile = FNFAssets.getText(SUtil.getPath() + 'assets/data/' + SONG.song.toLowerCase() + '/' + file + '.txt');
+			var cFile = FNFAssets.getText(basePath + 'assets/data/' + SONG.song.toLowerCase() + '/' + file + '.txt');
 
 			var fileSplit = cFile.split('\n');
 
@@ -2935,20 +2935,18 @@ class PlayState extends MusicBeatState
 		practiceDieIcon.updateHitbox();
 		var iconOffset:Int = 26;
 		
-		if (poisonTimes > 0 && !barShowingPoison) {
-			var leftSideFill = opponentPlayer ? dad.poisonColorEnemy : dad.enemyColor;
-			var rightSideFill = opponentPlayer ? boyfriend.bfColor : boyfriend.poisonColor;
-			healthBar.createFilledBar(leftSideFill, rightSideFill);
-			barShowingPoison = true;
-		} else if (poisonTimes == 0 && barShowingPoison) {
-			var leftSideFill = opponentPlayer ? dad.opponentColor : dad.enemyColor;
-			var rightSideFill = opponentPlayer ? boyfriend.bfColor : boyfriend.playerColor;
-			if (duoMode) {
+		if (poisonTimes > 0 != barShowingPoison)
+		{
+			var leftSideFill = opponentPlayer ? (poisonTimes > 0 ? dad.poisonColorEnemy : dad.opponentColor) : dad.enemyColor;
+			var rightSideFill = opponentPlayer ? boyfriend.bfColor : (poisonTimes > 0 ? boyfriend.poisonColor : boyfriend.playerColor);
+
+			if (duoMode && poisonTimes == 0)
+			{
 				leftSideFill = dad.opponentColor;
 				rightSideFill = boyfriend.bfColor;
 			}
 			healthBar.createFilledBar(leftSideFill, rightSideFill);
-			barShowingPoison = false;
+			barShowingPoison = poisonTimes > 0;
 		}
 
 		iconP1.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01) - iconOffset);

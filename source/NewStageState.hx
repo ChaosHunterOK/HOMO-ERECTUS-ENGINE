@@ -24,6 +24,7 @@ import haxe.io.Path;
 
 class NewStageState extends MusicBeatState
 {
+    var spritePaths:Map<FlxSprite, String> = new Map();
 	var epicHscripts:Array<String> = [];
     var editorGroup:FlxTypedGroup<FlxSprite>;
     var assetGroup:FlxTypedGroup<FlxSprite>;
@@ -592,10 +593,13 @@ class NewStageState extends MusicBeatState
                     }
                 }
                 if (!clickedEditor) {
-                    for (spr in assetGroup) {
+                    for (i in 0...assetGroup.members.length) {
+                        var spr = assetGroup.members[i];
+
                         if (spr != null && FlxG.mouse.overlaps(spr)) {
                             var newObj = new FlxSprite(FlxG.mouse.x, FlxG.mouse.y);
                             newObj.loadGraphic(spr.graphic);
+                            spritePaths.set(newObj, epicFiles[i]);
                             newObj.updateHitbox();
                             if (snapToGrid) {
                                 newObj.x = Math.round(newObj.x / gridSize) * gridSize;
@@ -821,6 +825,12 @@ class NewStageState extends MusicBeatState
             updateObjectProperties();
             addToHistory({type: "add", sprite: newObj, data: null});
             updateStatus();
+
+            var originalPath = spritePaths.get(selectedSprite);
+            if (originalPath != null) {
+                spritePaths.set(newObj, originalPath);
+            }
+            editorGroup.add(newObj);
         }
     }
     
@@ -871,7 +881,8 @@ class NewStageState extends MusicBeatState
 
 	function writeCharacters() {
 		#if sys
-		var pathDir = SUtil.getPath() + 'assets/images/custom_stages/' + nameText.text;
+        var pathDir2 = SUtil.getPath() + 'assets/images/custom_stages/';
+		var pathDir = pathDir2 + nameText.text;
 
 		if (!FileSystem.exists(pathDir)) {
 			FileSystem.createDirectory(pathDir);
@@ -896,15 +907,14 @@ class NewStageState extends MusicBeatState
 
 			var fileName = "unknown.png";
 
-			#if sys
-			for (path in epicFiles) {
-				var p = new Path(path);
-				if (spr.graphic != null) {
-					fileName = p.file + "." + p.ext;
-					break;
-				}
-			}
-			#end
+            #if sys
+            var originalPath = spritePaths.get(spr);
+
+            if (originalPath != null) {
+                var p = new Path(originalPath);
+                fileName = p.file + "." + p.ext;
+            }
+            #end
 
 			hscriptContent += '    var spr$id = new FlxSprite(${spr.x}, ${spr.y}).loadGraphic(hscriptPath + "$fileName");\n';
 			hscriptContent += '    spr$id.scale.set(${spr.scale.x}, ${spr.scale.y});\n';
@@ -921,7 +931,7 @@ class NewStageState extends MusicBeatState
 		hscriptContent += 'function update(elapsed) {}\n';
 		hscriptContent += 'function beatHit(beat) {}\n';
 
-		var hscriptPath = pathDir + '/${nameText.text}.hscript';
+		var hscriptPath = pathDir2 + '${nameText.text}.hscript';
 		File.saveContent(hscriptPath, hscriptContent);
 
 		trace("generated i suppose");
