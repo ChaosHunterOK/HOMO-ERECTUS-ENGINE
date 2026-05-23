@@ -37,6 +37,7 @@
 	<!-- _____________________________ Path Settings ____________________________ -->
 	<define name="CRASH_HANDLER"/>
 	<define name="VIDEOS_ALLOWED" if="web || windows || mobile"/>
+	<define name="FLX_NO_GENERIC" />
 
 	<set name="BUILD_DIR" value="export/debug" if="debug" />
 	<set name="BUILD_DIR" value="export/release" unless="debug" />

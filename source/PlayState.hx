@@ -703,23 +703,20 @@ class PlayState extends MusicBeatState
 		});
 
 		interp.variables.set("getHaxeActor", getHaxeActor);
-		interp.variables.set("scaleChar", function (char:String, amount:Float) {
-			switch(char) {
-				case 'boyfriend':
-					remove(boyfriend);
-					boyfriend.setGraphicSize(Std.int(boyfriend.width * amount));
-					boyfriend.y *= amount;
-					add(boyfriend);
-				case 'dad':
-					remove(dad);
-					dad.setGraphicSize(Std.int(dad.width * amount));
-					dad.y *= amount;
-					add(dad);
-				case 'gf':
-					remove(gf);
-					gf.setGraphicSize(Std.int(gf.width * amount));
-					gf.y *= amount;
-					add(gf);
+		interp.variables.set("scaleChar", function(char:String, amount:Float) {
+			var target = switch (char) {
+				case "boyfriend": boyfriend;
+				case "dad": dad;
+				case "gf": gf;
+				default: null;
+			};
+
+			if (target != null) {
+				remove(target);
+				target.setGraphicSize(Std.int(target.width * amount));
+				target.updateHitbox();
+				target.y *= amount;
+				add(target);
 			}
 		});
 		interp.variables.set("preloadCharsFromFile", preloadCharsFromFile);
@@ -1311,13 +1308,16 @@ class PlayState extends MusicBeatState
 			dialogSuffix = "-perfect";
 		}
 		var song = SONG.song.toLowerCase();
+		var assetPath = basePath + 'assets/'; // Cache base path
 
 		function resolveDialog(path:String, baseName:String):Null<String> {
-			var normal = basePath + path + baseName + ".txt";
-			var withSuffix = basePath + path + baseName + dialogSuffix + ".txt";
-
+			var withSuffix = assetPath + path + baseName + dialogSuffix + ".txt";
+			if (FNFAssets.exists(withSuffix)) {
+				return withSuffix;
+			}
+			var normal = assetPath + path + baseName + ".txt";
 			if (FNFAssets.exists(normal)) {
-				return FNFAssets.exists(withSuffix) ? withSuffix : normal;
+				return normal;
 			}
 			return null;
 		}
@@ -1522,14 +1522,14 @@ class PlayState extends MusicBeatState
 		trace('gay');
 		if (useSongBar) {
 			// todo, add options
-			var lmao = FNFAssets.getBitmapData(basePath + 'assets/images/healthBar.png');
-		if (FNFAssets.exists(basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'timeBar.png'))
-			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'timeBar.png');
-		else if (FNFAssets.exists(basePath + 'assets/images/timeBar.png'))
-			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/timeBar.png');
-        else
-			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/healthBar.png');
-			songPosBG = new FlxSprite(0, 10).loadGraphic(lmao);
+			var timeBarPath = basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'timeBar.png';
+			var altTimeBarPath = basePath + 'assets/images/timeBar.png';
+			var defaultPath = basePath + 'assets/images/healthBar.png';
+			var timeBarGraphic = FNFAssets.getBitmapData(
+				FNFAssets.exists(timeBarPath) ? timeBarPath :
+				FNFAssets.exists(altTimeBarPath) ? altTimeBarPath : defaultPath
+			);
+			songPosBG = new FlxSprite(0, 10).loadGraphic(timeBarGraphic);
 			if (downscroll)
 				songPosBG.y = FlxG.height * 0.9 + 45;
 			songPosBG.screenCenter(X);
@@ -1552,12 +1552,11 @@ class PlayState extends MusicBeatState
 			add(songName);
 			songName.cameras = [camHUD];
 		}
-		var lmao = FNFAssets.getBitmapData(basePath + 'assets/images/healthBar.png');
-		if (FNFAssets.exists(basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'healthBar.png'))
-			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'healthBar.png');
-		else
-			lmao = FNFAssets.getBitmapData(basePath + 'assets/images/healthBar.png');
-		healthBarBG = new FlxSprite(0, FlxG.height * 0.9).loadGraphic(lmao);
+		var healthBarPath = basePath + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + 'healthBar.png';
+		var healthBarGraphic = FNFAssets.getBitmapData(
+			FNFAssets.exists(healthBarPath) ? healthBarPath : basePath + 'assets/images/healthBar.png'
+		);
+		healthBarBG = new FlxSprite(0, FlxG.height * 0.9).loadGraphic(healthBarGraphic);
 		if (downscroll)
 			healthBarBG.y = 50;
 		healthBarBG.screenCenter(X);
@@ -1567,32 +1566,29 @@ class PlayState extends MusicBeatState
 		healthBar = new FlxBar(healthBarBG.x + 4, healthBarBG.y + 4, RIGHT_TO_LEFT, Std.int(healthBarBG.width - 8), Std.int(healthBarBG.height - 8), this,
 			'health', 0, 2);
 		healthBar.scrollFactor.set();
-		var leftSideFill = opponentPlayer ? dad.opponentColor : dad.enemyColor;
-		if (duoMode)
-			leftSideFill = dad.opponentColor;
-		var rightSideFill = opponentPlayer ? boyfriend.bfColor : boyfriend.playerColor;
-		if (duoMode)
-			rightSideFill = boyfriend.bfColor;
+		var leftSideFill = duoMode ? dad.opponentColor : (opponentPlayer ? dad.opponentColor : dad.enemyColor);
+		var rightSideFill = duoMode ? boyfriend.bfColor : (opponentPlayer ? boyfriend.bfColor : boyfriend.playerColor);
 		healthBar.createFilledBar(leftSideFill, rightSideFill);
 		// healthBar
 		add(healthBar);
 
+		var fontPath = basePath + "assets/fonts/vcr.ttf";
 		scoreTxt = new FlxText(healthBarBG.x, healthBarBG.y + 40, 0, "", 200);
-		scoreTxt.setFormat(basePath + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		scoreTxt.setFormat(fontPath, 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		scoreTxt.scrollFactor.set();
 
 		healthTxt = new FlxText(healthBarBG.x + healthBarBG.width - 300, scoreTxt.y, 0, "", 200);
-		healthTxt.setFormat(basePath + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		healthTxt.setFormat(fontPath, 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		healthTxt.scrollFactor.set();
 		healthTxt.visible = false;
 		accuracyTxt = new FlxText(healthBarBG.x, scoreTxt.y, 0, "", 200);
-		accuracyTxt.setFormat(basePath + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		accuracyTxt.setFormat(fontPath, 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		accuracyTxt.scrollFactor.set();
 		// shitty work around but okay
 		accuracyTxt.visible = false;
 		difficTxt = new FlxText(10, FlxG.height, 0, "", 150);
 		
-		difficTxt.setFormat(basePath + "assets/fonts/vcr.ttf", 15, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
+		difficTxt.setFormat(fontPath, 15, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		difficTxt.scrollFactor.set();
 		difficTxt.y -= difficTxt.height;
 		if (downscroll) {
@@ -1643,7 +1639,7 @@ class PlayState extends MusicBeatState
 		addAndroidControls();
 		#end
 		
-		var stageJson = CoolUtil.parseJson(FNFAssets.getText(basePath + "assets/images/custom_stages/custom_stages.json"));
+		var stageJson:Dynamic = CoolUtil.parseJson(FNFAssets.getText(basePath + "assets/images/custom_stages/custom_stages.json"));
 		makeHaxeState("stages", basePath + "assets/images/custom_stages/" + SONG.stage + "/", "../"+Reflect.field(stageJson, SONG.stage));
 		trace('stage done');
 		var modchartPushed:Array<String> = [];
@@ -1658,7 +1654,6 @@ class PlayState extends MusicBeatState
 		}
 	}
 	}
-		
 		var uiJson = CoolUtil.parseJson(FNFAssets.getText(basePath + "assets/images/custom_ui/ui_layouts/ui.json"));
 		makeHaxeStateUI("ui", basePath + "assets/images/custom_ui/ui_layouts/" + Reflect.field(uiJson, 'layout') + "/", "../" + Reflect.field(uiJson, 'layout') + ".hscript");
 		trace('ui done');
@@ -1926,55 +1921,46 @@ class PlayState extends MusicBeatState
 			}
 		});
 	}
-	function videoIntro(filename:String, ?finishfunk:Void->Void = null) 
+	function videoIntro(filename:String, ?finishfunk:Void->Void = null)
 	{
 		#if VIDEOS_ALLOWED
-		var foundFile:Bool = false;
-
-		if(FNFAssets.exists(filename)) {
-			foundFile = true;
-		}
-
-		if(foundFile) {
-			inCutscene = true;
-			var bg = new FlxSprite(-FlxG.width, -FlxG.height).makeGraphic(FlxG.width * 3, FlxG.height * 3, FlxColor.BLACK);
-			bg.scrollFactor.set();
-			bg.cameras = [camHUD];
-			add(bg);
-
-			var daVideo = new FlxVideo();
-			daVideo.play(filename);
-
-
-			daVideo.onEndReached.add(function()
-				{
-					daVideo.dispose();
-					remove(bg);
-					if (finishfunk == null)
-						startCountdown();
-					else
-						finishfunk();
-					return;
-				}, true);
-
-			return;
-		}
-		else
+		if (!FNFAssets.exists(filename))
 		{
 			FlxG.log.warn('Couldnt find video file: ' + filename);
-			if (finishfunk == null)
-				startCountdown();
-			else
+
+			if (finishfunk != null)
 				finishfunk();
+			else
+				startCountdown();
 
 			return;
 		}
 
-		//startAndEnd();
+		inCutscene = true;
+		var bg = new FlxSprite(-FlxG.width, -FlxG.height).makeGraphic(FlxG.width * 3, FlxG.height * 3, FlxColor.BLACK);
+		bg.scrollFactor.set();
+		bg.cameras = [camHUD];
+		add(bg);
+
+		var daVideo = new FlxVideo();
+		daVideo.play(filename);
+
+		daVideo.onEndReached.add(function()
+		{
+			daVideo.dispose();
+			remove(bg);
+
+			if (finishfunk != null)
+				finishfunk();
+			else
+				startCountdown();
+		}, true);
+
 		#else
+
 		FlxG.log.warn('Platform not supported!');
 		startCountdown();
-			return;
+
 		#end
 	}
 	
@@ -2118,32 +2104,26 @@ class PlayState extends MusicBeatState
 	}
 	public function setSongTime(time:Float)
 	{
-		if(time < 0) time = 0;
-
-		FlxG.sound.music.pause();
-		vocals.pause();
-		if (isUsingSounds)
-			vsounds.pause();
-
-		FlxG.sound.music.time = time;
-		FlxG.sound.music.play();
-
-		if (Conductor.songPosition <= vocals.length)
-		{
-			vocals.time = time;
-		}
-		vocals.play();
-
-		if (isUsingSounds){
-			if (Conductor.songPosition <= vocals.length)
-				{
-					vsounds.time = time;
-				}
-			vsounds.play();
-		}
-
+		if (time < 0)
+			time = 0;
 		Conductor.songPosition = time;
 		songTime = time;
+		var music = FlxG.sound.music;
+		music.pause();
+		music.time = time;
+		music.play();
+		vocals.pause();
+		if (time <= vocals.length)
+			vocals.time = time;
+
+		vocals.play();
+		if (isUsingSounds)
+		{
+			vsounds.pause();
+			if (time <= vsounds.length)
+				vsounds.time = time;
+			vsounds.play();
+		}
 	}
 
 	public function clearNotesBefore(time:Float)

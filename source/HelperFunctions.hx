@@ -1,91 +1,78 @@
 class HelperFunctions
 {
-	public static function truncateFloat(number:Float, precision:Int):Float
-	{
-		var num = number;
-		num = num * Math.pow(10, precision);
-		num = Math.round(num) / Math.pow(10, precision);
-		return num;
-	}
-	public static var a1 = 0.254829592;
-	public static var a2 = -0.284496736;
-	public static var a3 = 1.421413741;
-	public static var a4 = -1.453152027;
-	public static var a5 = 1.061405429;
-	public static var p = 0.3275911;
+	static inline var A1:Float = 0.254829592;
+	static inline var A2:Float = -0.284496736;
+	static inline var A3:Float = 1.421413741;
+	static inline var A4:Float = -1.453152027;
+	static inline var A5:Float = 1.061405429;
+	static inline var P:Float = 0.3275911;
+	static inline var MAX_POINTS:Float = 1.0;
+	static inline var MISS_WEIGHT:Float = -5.5;
+	static inline var RIDIC:Float = 5.0;
+	static inline var MAX_BOO_WEIGHT:Float = 180.0;
+	static inline var ZERO:Float = 65.0;
+	static inline var DEV:Float = 22.7;
 
-	public static function erf(x:Float):Float
+	public static inline function truncateFloat(number:Float, precision:Int):Float
 	{
-		// Save the sign of x
-		var sign = 1;
-		if (x < 0)
-			sign = -1;
+		var mult = Math.pow(10, precision);
+		return Math.round(number * mult) / mult;
+	}
+	public static inline function erf(x:Float):Float
+	{
+		var sign = (x < 0) ? -1 : 1;
 		x = Math.abs(x);
-
-		// A&S formula 7.1.26
-		var t = 1.0 / (1.0 + p * x);
-		var y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-
-		return sign * y;
+		var t = 1.0 / (1.0 + P * x);
+		var poly = (((((A5 * t + A4) * t + A3) * t + A2) * t + A1) * t);
+		return sign * (1.0 - poly * Math.exp(-x * x));
 	}
-
 	public static function getNotes():Int
 	{
-		var notes:Int = 0;
-		for (i in 0...PlayState.SONG.notes.length)
+		var total = 0;
+		var songNotes = PlayState.SONG.notes;
+
+		for (section in songNotes)
 		{
-			for (ii in 0...PlayState.SONG.notes[i].sectionNotes.length)
+			for (note in section.sectionNotes)
 			{
-				var n = PlayState.SONG.notes[i].sectionNotes[ii];
-				if (n[1] <= 0)
-					notes++;
+				if (note[1] <= 0)
+					total++;
 			}
 		}
-		return notes;
-	}
 
+		return total;
+	}
 	public static function getHolds():Int
 	{
-		var notes:Int = 0;
-		for (i in 0...PlayState.SONG.notes.length)
+		var total = 0;
+		var songNotes = PlayState.SONG.notes;
+
+		for (section in songNotes)
 		{
-			trace(PlayState.SONG.notes[i]);
-			for (ii in 0...PlayState.SONG.notes[i].sectionNotes.length)
+			for (note in section.sectionNotes)
 			{
-				var n = PlayState.SONG.notes[i].sectionNotes[ii];
-				trace(n);
-				if (n[1] > 0)
-					notes++;
+				if (note[1] > 0)
+					total++;
 			}
 		}
-		return notes;
-	}
 
-	public static function getMapMaxScore():Int
+		return total;
+	}
+	public static inline function getMapMaxScore():Int
 	{
-		return (getNotes() * 350);
+		return getNotes() * 350;
 	}
-	// wife 3 is from eterna rhythm or whatever
-	// it's not porn :(
-	public static function wife3(maxms:Float, ts:Float)
+	public static inline function wife3(maxms:Float, ts:Float):Float
 	{
-		var max_points = 1.0;
-		var miss_weight = -5.5;
-		var ridic = 5;
-		var max_boo_weight = 180;
-		var ts_pow = 0.75;
-		var zero = 65 * (Math.pow(1, ts_pow));
-		var power = 2.5;
-		var dev = 22.7 * (Math.pow(1, ts_pow));
+		if (maxms <= RIDIC)
+			return MAX_POINTS;
 
-		if (maxms <= ridic) // anything below this (judge scaled) threshold is counted as full pts
-			return max_points;
-		else if (maxms <= zero) // ma/pa region, exponential
-			return max_points * erf((zero - maxms) / dev);
-		else if (maxms <= max_boo_weight) // cb region, linear
-			return (maxms - zero) * miss_weight / (max_boo_weight - zero);
-		else
-			return miss_weight;
+		if (maxms <= ZERO)
+			return MAX_POINTS * erf((ZERO - maxms) / DEV);
+
+		if (maxms <= MAX_BOO_WEIGHT)
+			return (maxms - ZERO) * MISS_WEIGHT / (MAX_BOO_WEIGHT - ZERO);
+
+		return MISS_WEIGHT;
 	}
-
 }
