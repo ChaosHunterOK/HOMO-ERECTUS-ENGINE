@@ -246,6 +246,16 @@ class PlayState extends MusicBeatState
 	
 	public static var instance:PlayState;
 	public static var customStateName:String = "";
+	private var noteModifiers:Map<Note, {xOffset:Float, yOffset:Float, rotation:Float, scaleX:Float, scaleY:Float, skewX:Float, skewY:Float, colorAlpha:Float}> = new Map();
+	private var notePosUpdateFuncs:Array<Note->Void> = [];
+	public var currentNoteScrollMult:Float = 1.0;
+	public var scrollPatternActive:Bool = false;
+	private var scrollPatternPoints:Array<{time:Float, mult:Float}> = [];
+	private var noteEffects:Map<String, Array<Note->Void>> = new Map();
+	public var jukeboxMode:Bool = false;
+	public var bumpOffset:Float = 0;
+	private var onScrollSpeedChange:Array<Float->Void> = [];
+	private var onScrollPatternChange:Array<String->Void> = [];
 
 	private var camZooming:Bool = false;
 	private var curSong:String = "";
@@ -642,6 +652,24 @@ class PlayState extends MusicBeatState
 			camSpeed = speed;
 		});
 		interp.variables.set("forceCamera", forceCamera);
+		interp.variables.set("setNoteOffset", setNoteOffset);
+		interp.variables.set("rotateNote", rotateNote);
+		interp.variables.set("scaleNote", scaleNote);
+		interp.variables.set("skewNote", skewNote);
+		interp.variables.set("setNoteAlpha", setNoteAlpha);
+		interp.variables.set("addNoteUpdateFunc", addNoteUpdateFunc);
+		interp.variables.set("clearNoteUpdateFuncs", clearNoteUpdateFuncs);
+		interp.variables.set("setScrollSpeedMult", setScrollSpeedMult);
+		interp.variables.set("addScrollPatternPoint", addScrollPatternPoint);
+		interp.variables.set("clearScrollPattern", clearScrollPattern);
+		interp.variables.set("getCurrentScrollMult", getCurrentScrollMult);
+		interp.variables.set("onScrollPatternChanged", onScrollPatternChanged);
+		interp.variables.set("getNoteModifiers", getNoteModifiers);
+		interp.variables.set("resetNoteModifiers", resetNoteModifiers);
+		interp.variables.set("clearAllNoteModifiers", clearAllNoteModifiers);
+		interp.variables.set("currentNoteScrollMult", currentNoteScrollMult);
+		interp.variables.set("scrollPatternActive", scrollPatternActive);
+		interp.variables.set("jukeboxMode", jukeboxMode);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
@@ -1054,6 +1082,120 @@ class PlayState extends MusicBeatState
 		//noteKillOffset = 350 / songSpeed;
 		return value;
 	}
+	public function setNoteOffset(note:Note, offsetX:Float, offsetY:Float):Void {
+		if (note == null) return;
+		if (!noteModifiers.exists(note)) {
+			noteModifiers.set(note, {xOffset: 0, yOffset: 0, rotation: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0, colorAlpha: 1});
+		}
+		var mod = noteModifiers.get(note);
+		mod.xOffset = offsetX;
+		mod.yOffset = offsetY;
+	}
+	public function rotateNote(note:Note, angle:Float):Void {
+		if (note == null) return;
+		if (!noteModifiers.exists(note)) {
+			noteModifiers.set(note, {xOffset: 0, yOffset: 0, rotation: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0, colorAlpha: 1});
+		}
+		noteModifiers.get(note).rotation = angle;
+		note.angle = angle;
+	}
+	public function scaleNote(note:Note, scaleX:Float, ?scaleY:Null<Float>):Void {
+		if (note == null) return;
+		if (scaleY == null) scaleY = scaleX;
+		if (!noteModifiers.exists(note)) {
+			noteModifiers.set(note, {xOffset: 0, yOffset: 0, rotation: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0, colorAlpha: 1});
+		}
+		var mod = noteModifiers.get(note);
+		mod.scaleX = scaleX;
+		mod.scaleY = scaleY;
+		note.scale.set(scaleX, scaleY);
+		note.updateHitbox();
+	}
+	public function skewNote(note:Note, skewX:Float, skewY:Float):Void {
+		if (note == null) return;
+		if (!noteModifiers.exists(note)) {
+			noteModifiers.set(note, {xOffset: 0, yOffset: 0, rotation: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0, colorAlpha: 1});
+		}
+		var mod = noteModifiers.get(note);
+		mod.skewX = skewX;
+		mod.skewY = skewY;
+	}
+	public function setNoteAlpha(note:Note, alpha:Float):Void {
+		if (note == null) return;
+		if (!noteModifiers.exists(note)) {
+			noteModifiers.set(note, {xOffset: 0, yOffset: 0, rotation: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0, colorAlpha: 1});
+		}
+		var mod = noteModifiers.get(note);
+		mod.colorAlpha = alpha;
+		note.alpha = alpha;
+	}
+	public function addNoteUpdateFunc(func:Note->Void):Void {
+		notePosUpdateFuncs.push(func);
+	}
+	public function clearNoteUpdateFuncs():Void {
+		notePosUpdateFuncs.splice(0, notePosUpdateFuncs.length);
+	}
+	public function setScrollSpeedMult(mult:Float):Void {
+		currentNoteScrollMult = Math.max(0.1, mult);
+		for (callback in onScrollSpeedChange) {
+			callback(currentNoteScrollMult);
+		}
+	}
+	public function addScrollPatternPoint(time:Float, speedMult:Float):Void {
+		scrollPatternPoints.push({time: time, mult: speedMult});
+		scrollPatternPoints.sort((a, b) -> Std.int(a.time - b.time));
+		scrollPatternActive = true;
+		for (callback in onScrollPatternChange) {
+			callback("point_added");
+		}
+	}
+	public function clearScrollPattern():Void {
+		scrollPatternPoints.splice(0, scrollPatternPoints.length);
+		scrollPatternActive = false;
+		currentNoteScrollMult = 1.0;
+		for (callback in onScrollPatternChange) {
+			callback("cleared");
+		}
+	}
+	public function getCurrentScrollMult():Float {
+		if (!scrollPatternActive || scrollPatternPoints.length == 0) {
+			return currentNoteScrollMult;
+		}
+
+		var curTime = Conductor.songPosition;
+		var prevPoint = scrollPatternPoints[0];
+		var nextPoint = scrollPatternPoints[0];
+
+		for (point in scrollPatternPoints) {
+			if (point.time <= curTime) prevPoint = point;
+			if (point.time >= curTime && nextPoint.time < point.time) nextPoint = point;
+		}
+		if (prevPoint.time == nextPoint.time) {
+			return prevPoint.mult;
+		}
+
+		var alpha = (curTime - prevPoint.time) / (nextPoint.time - prevPoint.time);
+		alpha = Math.max(0, Math.min(1, alpha));
+		return FlxMath.lerp(prevPoint.mult, nextPoint.mult, alpha);
+	}
+	public function onScrollPatternChanged(callback:String->Void):Void {
+		onScrollPatternChange.push(callback);
+	}
+	public function getNoteModifiers(note:Note):Dynamic {
+		if (!noteModifiers.exists(note)) {
+			noteModifiers.set(note, {xOffset: 0, yOffset: 0, rotation: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0, colorAlpha: 1});
+		}
+		return noteModifiers.get(note);
+	}
+	public function resetNoteModifiers(note:Note):Void {
+		if (noteModifiers.exists(note)) {
+			noteModifiers.remove(note);
+		}
+	}
+	public function clearAllNoteModifiers():Void {
+		noteModifiers.clear();
+	}
+
 	function instanceExClass(classname:String, args:Array<Dynamic> = null) {
 		return exInterp.createScriptClassInstance(classname, args);
 	}
@@ -1510,7 +1652,7 @@ class PlayState extends MusicBeatState
 
 		if (!instantFollowCamera)
 		{
-			FlxG.camera.follow(camFollow, camStyle, camSpeed);
+			FlxG.camera.follow(camFollow, camStyle, 1);
 		}
 		// FlxG.camera.setScrollBounds(0, FlxG.width, 0, FlxG.height);
 		FlxG.camera.zoom = defaultCamZoom;
@@ -2461,6 +2603,21 @@ class PlayState extends MusicBeatState
 
 				var newCharacter:String = event.value2;
 				addCharacterToList(newCharacter, charType);
+			case 'Set Scroll Speed':
+				var speedMult = Std.parseFloat(event.value1);
+				if (!Math.isNaN(speedMult)) {
+					setScrollSpeedMult(speedMult);
+				}
+			case 'Add Scroll Pattern Point':
+				var timeOffset = Std.parseFloat(event.value1);
+				var speedMult = Std.parseFloat(event.value2);
+				if (!Math.isNaN(timeOffset) && !Math.isNaN(speedMult)) {
+					addScrollPatternPoint(Conductor.songPosition + timeOffset, speedMult);
+				}
+			case 'Clear Scroll Pattern':
+				clearScrollPattern();
+			case 'Jukebox Mode':
+				jukeboxMode = event.value1.toLowerCase() == 'true' || event.value1 == '1';
 		}
 
 		if(!eventPushedMap.exists(event.event)) {
@@ -2774,6 +2931,16 @@ class PlayState extends MusicBeatState
 		setAllHaxeVar('gfSpeed', gfSpeed);
 		setAllHaxeVar('health', health);
 		callAllHScript('update', [elapsed]);
+		for (note in notes.members) {
+			if (note != null && noteModifiers.exists(note)) {
+				var mod = noteModifiers.get(note);
+				note.x += mod.xOffset;
+				note.y += mod.yOffset;
+			}
+			for (updateFunc in notePosUpdateFuncs) {
+				if (note != null) updateFunc(note);
+			}
+		}
 
 		var membersArr = members;
 		var shaderUpdatesArr = shaderUpdates;
@@ -2786,6 +2953,20 @@ class PlayState extends MusicBeatState
 				if (updateBar != null)
 					updateBar();
 			}
+		}
+
+		if (camEase != null)
+		{
+			camProgress += elapsed;
+			if (camProgress > 1)
+				camProgress = 1;
+
+			var eased = camEase(camProgress);
+			FlxG.camera.followLerp = eased * camSpeed;
+		}
+		else
+		{
+			FlxG.camera.followLerp = camSpeed;
 		}
 
 		for (name in hscriptStates.keys()) {
@@ -3220,6 +3401,7 @@ class PlayState extends MusicBeatState
 			deathCounter++;
 			
 			if (inALoop) {
+				cleanupMemory();
 				FlxG.resetState();
 			} else {
 				// 1 / 1000 chance for Gitaroo Man easter egg
@@ -5005,5 +5187,86 @@ class PlayState extends MusicBeatState
 		FlxTween.tween(cFd, { alpha: 0 }, cfDuration, {
 			onComplete: function(_:FlxTween) cFd.kill()
 		});
+	}
+	public function cleanupMemory():Void
+	{
+		try {
+			// Stop audio
+			if (vocals != null) {
+				vocals.stop();
+				vocals.destroy();
+			}
+			if (vsounds != null) {
+				vsounds.stop();
+				vsounds.destroy();
+			}
+			if (FlxG.sound.music != null) {
+				FlxG.sound.music.stop();
+			}
+			for (tween in modTweens) {
+				if (tween != null && !tween.finished) {
+					tween.cancel();
+				}
+			}
+			modTweens.splice(0, modTweens.length);
+
+			for (timer in modTimers) {
+				if (timer != null && !timer.finished) {
+					timer.cancel();
+				}
+			}
+			modTimers.splice(0, modTimers.length);
+			for (key in boyfriendMap.keys()) {
+				var char = boyfriendMap.get(key);
+				if (char != null) {
+					char.destroy();
+				}
+			}
+			boyfriendMap.clear();
+
+			for (key in dadMap.keys()) {
+				var char = dadMap.get(key);
+				if (char != null) {
+					char.destroy();
+				}
+			}
+			dadMap.clear();
+
+			for (key in gfMap.keys()) {
+				var char = gfMap.get(key);
+				if (char != null) {
+					char.destroy();
+				}
+			}
+			gfMap.clear();
+			for (key in spriteZone.keys()) {
+				var spr = spriteZone.get(key);
+				if (spr != null) {
+					spr.destroy();
+				}
+			}
+			spriteZone.clear();
+			if (unspawnNotes != null) unspawnNotes.splice(0, unspawnNotes.length);
+			if (eventNotes != null) eventNotes.splice(0, eventNotes.length);
+			if (notes != null) {
+				notes.clear();
+				notes.destroy();
+			}
+			eventPushedMap.clear();
+			if (hscriptStates != null) hscriptStates.clear();
+			if (hscriptIsModChart != null) hscriptIsModChart.clear();
+			if (haxeSprites != null) {
+				for (key in haxeSprites.keys()) {
+					var spr = haxeSprites.get(key);
+					if (spr != null) spr.destroy();
+				}
+				haxeSprites.clear();
+			}
+			if (notesHitArray != null) notesHitArray.splice(0, notesHitArray.length);
+			openfl.system.System.gc();
+		}
+		catch (e:Dynamic) {
+			trace("Error during memory cleanup: " + e);
+		}
 	}
 }

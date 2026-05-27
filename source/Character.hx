@@ -83,6 +83,12 @@ class Character extends FlxSprite
 	public var heyTimer:Float = 0;
 	public var specialAnim:Bool = false;
 	public var idleSuffix:String = '';
+	private static final DIRECTIONS:Array<String> = ["LEFT", "DOWN", "UP", "RIGHT"];
+	private static final MANIA_MAP:Map<Int, Array<Int>> = [
+		6 => [0, 2, 3, 0, 1, 3],
+		7 => [0, 2, 3, 2, 0, 1, 3],
+		9 => [0, 1, 2, 3, 2, 0, 1, 2, 3]
+	];
 
 	public var animationLoops:Map<String, Bool>;
     public var singDuration:Float = 4;
@@ -147,6 +153,7 @@ class Character extends FlxSprite
 	public var isDie:Bool = false;
 	public var isPixel:Bool = false;
 	private var interp:Interp;
+	public var freezeSingOnLastFrame:Bool = false;
 	function get_stunned():Bool {
 		if (OptionsHandler.options.useMissStun){
 			return stunned;
@@ -167,27 +174,7 @@ class Character extends FlxSprite
 				method(args[0], args[1]);
 		}
 	}
-	function mixtex(frames1:FlxAtlasFrames, frames2:FlxAtlasFrames) {
-		for (frame in frames2.frames){
-			frames1.pushFrame(frame);
-		}
-		return frames1;
-	}
-	/* coming soon flipping offsets
-	public function flipChar(animRef:String = "idle"):Void
-	{
-		playAnim(animRef);
-		var widthCenter = frameWidth;
-		flipX = !flipX;
-		for (anim => offsets in animOffsets)
-		{
-			var daAnim = animOffsets.get(anim);
-			var daOffX = daAnim[0];
-			daAnim[0] = widthCenter - daOffX * -1;
-			animOffsets.set(anim, daAnim);
-		}
-	}
-	*/
+
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
 		animOffsets = new Map<String, Array<Dynamic>>();
@@ -242,28 +229,20 @@ class Character extends FlxSprite
 	{
 		holdTimer = 0;
 
-		var directions = ["LEFT", "DOWN", "UP", "RIGHT"];
-		var maniaMap:Map<Int, Array<Int>> = [
-			6 => [0, 2, 3, 0, 1, 3], 
-			7 => [0, 2, 3, 2, 0, 1, 3],
-			9 => [0, 1, 2, 3, 2, 0, 1, 2, 3]
-		];
-
 		var ammo = Main.ammo[PlayState.mania];
-		var dirIdx = directions[direction];
+		var dirIdx = DIRECTIONS[direction];
 
-		if (maniaMap.exists(ammo))
-			dirIdx = directions[maniaMap.get(ammo)[direction]];
+		if (MANIA_MAP.exists(ammo))
+			dirIdx = DIRECTIONS[MANIA_MAP.get(ammo)[direction]];
 
 		var baseAnim:String = "sing" + dirIdx;
 		var animToPlay:String = baseAnim;
 
-		// Miss anims
 		if (miss)
 		{
-			if (animation.getByName(baseAnim + "miss") != null)
-				animToPlay = baseAnim + "miss";
-
+			var missAnim = baseAnim + "miss";
+			if (animation.getByName(missAnim) != null)
+				animToPlay = missAnim;
 			if (forceColor)
 				color = 0xCFAFFF;
 		}
@@ -271,11 +250,11 @@ class Character extends FlxSprite
 		{
 			color = FlxColor.WHITE;
 		}
+
 		if (!miss && alt > 0)
 		{
 			var altSuffix = (alt == 1) ? "-alt" : "-" + alt + "alt";
 			var altAnim = baseAnim + altSuffix;
-
 			if (animation.getByName(altAnim) != null)
 				animToPlay = altAnim;
 		}
@@ -315,7 +294,21 @@ class Character extends FlxSprite
 			if (animation.curAnim.name.startsWith('sing'))
 			{
 				holdTimer += elapsed;
-				if (instantIdleOnSingEnd && animation.curAnim.finished)
+				if (freezeSingOnLastFrame)
+				{
+					if (animation.curAnim.finished && !isFreezing)
+					{
+						isFreezing = true;
+						animation.curAnim.curFrame = animation.curAnim.frames.length - 1;
+						animation.curAnim.paused = true;
+					}
+				}
+				else
+				{
+					isFreezing = false;
+				}
+
+				if (instantIdleOnSingEnd && animation.curAnim.finished && !isFreezing)
 				{
 					dance();
 					holdTimer = 0;
@@ -323,10 +316,13 @@ class Character extends FlxSprite
 			}
 
 			var shouldLock:Bool = beingControlled && sustainLock;
-			if (!shouldLock)
+			if (!shouldLock && !isFreezing)
 			{
 				if (holdTimer >= Conductor.stepCrochet * singDuration * 0.001)
 				{
+					if (animation.curAnim != null)
+						animation.curAnim.paused = false;
+
 					dance();
 					holdTimer = 0;
 				}
@@ -375,10 +371,8 @@ class Character extends FlxSprite
 
 	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
 	{
-		var forcedLoop:Bool = false;
-		if (animationLoops.exists(AnimName)) {
-			forcedLoop = animationLoops.get(AnimName);
-		}
+		isFreezing = false;
+		var forcedLoop:Bool = animationLoops.exists(AnimName) && animationLoops.get(AnimName);
 
 		if (!syncFrames)
 			animation.play(AnimName, Force, Reversed, Frame);
@@ -392,54 +386,24 @@ class Character extends FlxSprite
 			if (animation.curAnim.finished) animation.curAnim.restart();
 		}
 
-		var animName = "";
-		if (animation.curAnim == null) {
-			if (isDie)
-				animName = "firstDeath";
-			else
-				animName = "idle";
-			trace("dead");
+		var animName = (animation.curAnim != null) ? animation.curAnim.name : (isDie ? "firstDeath" : "idle");
+
+		var offsetMap = useOtherOffsets ? animOffsets2 : animOffsets;
+		if (offsetMap.exists(animName)) {
+			var daOffset = offsetMap.get(animName);
+			offset.set(daOffset[0], daOffset[1]);
 		} else {
-			// kalm
-			animName = animation.curAnim.name;
+			offset.set(0, 0);
 		}
 
-		if (!useOtherOffsets)
-		{
-			if (animOffsets.exists(animName))
-			{
-				var daOffset = animOffsets.get(animName);
-				offset.set(daOffset[0], daOffset[1]);
-			}
-			else
-				offset.set(0, 0);
-		}
-		else
-		{
-			if (animOffsets2.exists(animName))
-			{
-				var daOffset = animOffsets2.get(animName);
-				offset.set(daOffset[0], daOffset[1]);
-			}
-			else
-				offset.set(0, 0);
-		}
-
-		// should spooky be on this?
-		if (likeGf)
-		{
-			if (AnimName == 'singLEFT')
-			{
-				danced = true;
-			}
-			else if (AnimName == 'singRIGHT')
-			{
-				danced = false;
-			}
-
-			if (AnimName == 'singUP' || AnimName == 'singDOWN')
-			{
-				danced = !danced;
+		if (likeGf) {
+			switch(AnimName) {
+				case 'singLEFT':
+					danced = true;
+				case 'singRIGHT':
+					danced = false;
+				case 'singUP' | 'singDOWN':
+					danced = !danced;
 			}
 		}
 	}

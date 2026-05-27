@@ -33,6 +33,10 @@ class FNFAssets {
     public static var _file:FileReference;
 	public static var currentTrackedAssets:Map<String, FlxGraphic> = [];
 	public static var currentTrackedSounds:Map<String, Sound> = [];
+	private static var MAX_ASSET_CACHE_SIZE:Int = 50;
+	private static var MAX_SOUND_CACHE_SIZE:Int = 30;
+	private static var assetAccessOrder:Array<String> = [];
+	private static var soundAccessOrder:Array<String> = [];
 	private static function resolvePath(id:String):String {
 		#if sys
 		return Assets.exists(id) ? Assets.getPath(id) : id;
@@ -166,39 +170,48 @@ class FNFAssets {
 
 	public static function getImage(id:String):Null<FlxGraphic>
 		{
-			var newBitmap:BitmapData = null;
-			if (currentTrackedAssets.exists(id))
-				{
-					return currentTrackedAssets.get(id);
-				}
-				else{
-			if(FileSystem.exists(id)) {
-				if(!currentTrackedAssets.exists(id)) {
-					newBitmap = BitmapData.fromFile(id);
-					var newGraphic:FlxGraphic = FlxGraphic.fromBitmapData(newBitmap, false, id);
-					newGraphic.persist = true;
-			        newGraphic.destroyOnNoUse = false;
-					currentTrackedAssets.set(id, newGraphic);
-					return newGraphic;
-				}
-				
+			if (!FileSystem.exists(id)) return null;
+			if (currentTrackedAssets.exists(id)) {
+				updateLRU(id, assetAccessOrder);
+				return currentTrackedAssets.get(id);
 			}
-		}
-	
-			return null;
+			if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE) {
+				evictOldestAsset();
+			}
+			try {
+				var newBitmap:BitmapData = BitmapData.fromFile(id);
+				var newGraphic:FlxGraphic = FlxGraphic.fromBitmapData(newBitmap, false, id);
+				newGraphic.persist = true;
+				newGraphic.destroyOnNoUse = false;
+				currentTrackedAssets.set(id, newGraphic);
+				assetAccessOrder.push(id);
+				return newGraphic;
+			} catch (e:Any) {
+				trace("Error loading image " + id + ": " + e);
+				return null;
+			}
 		}
 	public static function getGraphicData(id:String):Null<FlxGraphic>
 	{
-		if(FileSystem.exists(id)) {
-			if(!currentTrackedAssets.exists(id)) {
-				var newBitmap:BitmapData = BitmapData.fromFile(id);
-				var newGraphic:FlxGraphic = FlxGraphic.fromBitmapData(newBitmap, false, id);
-				currentTrackedAssets.set(id, newGraphic);
-			}
+		if (!FileSystem.exists(id)) return null;
+		if (currentTrackedAssets.exists(id)) {
+			updateLRU(id, assetAccessOrder);
 			return currentTrackedAssets.get(id);
 		}
-
-		return null;
+		if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE) {
+			evictOldestAsset();
+		}
+		
+		try {
+			var newBitmap:BitmapData = BitmapData.fromFile(id);
+			var newGraphic:FlxGraphic = FlxGraphic.fromBitmapData(newBitmap, false, id);
+			currentTrackedAssets.set(id, newGraphic);
+			assetAccessOrder.push(id);
+			return newGraphic;
+		} catch (e:Any) {
+			trace("Error loading graphic " + id + ": " + e);
+			return null;
+		}
 	}
 
 	public static function precacheSound(path:String):Sound
@@ -211,13 +224,28 @@ class FNFAssets {
 			throw "Out of scope";
 
 		var path = resolvePath(id);
-
-		if (currentTrackedSounds.exists(path))
+		if (currentTrackedSounds.exists(path)) {
+			updateLRU(path, soundAccessOrder);
 			return currentTrackedSounds.get(path);
-
-		var snd = Sound.fromFile(path);
-		currentTrackedSounds.set(path, snd);
-		return snd;
+		}
+		if (getMapSize(currentTrackedSounds) >= MAX_SOUND_CACHE_SIZE) {
+			evictOldestSound();
+		}
+		
+		try {
+			if (!FileSystem.exists(path)) {
+				trace("Warning: Sound file does not exist: " + path);
+				return null;
+			}
+			
+			var snd = Sound.fromFile(path);
+			currentTrackedSounds.set(path, snd);
+			soundAccessOrder.push(path);
+			return snd;
+		} catch (e:Any) {
+			trace("Error loading sound " + path + ": " + e);
+			return null;
+		}
 		#else
 		return Assets.getSound(id, useCache);
 		#end
@@ -279,37 +307,142 @@ class FNFAssets {
 		cleanupFileReference();
 		FlxG.log.error("Problem saving Level data");
 	}
+	private static function getMapSize<K, V>(map:Map<K, V>):Int
+	{
+		var count = 0;
+		for (key in map.keys()) {
+			count++;
+		}
+		return count;
+	}
+	
+	private static function updateLRU(id:String, orderArray:Array<String>):Void
+	{
+		var index = orderArray.indexOf(id);
+		if (index >= 0) {
+			orderArray.splice(index, 1);
+		}
+		orderArray.push(id);
+	}
+	
+	private static function evictOldestAsset():Void
+	{
+		if (assetAccessOrder.length == 0) return;
+		
+		var oldestId = assetAccessOrder.shift();
+		var asset = currentTrackedAssets.get(oldestId);
+		if (asset != null) {
+			try {
+				asset.destroy();
+			} catch (e:Any) {}
+		}
+		currentTrackedAssets.remove(oldestId);
+		trace("Evicted asset from cache: " + oldestId);
+	}
+	private static function evictOldestSound():Void
+	{
+		if (soundAccessOrder.length == 0) return;
+		
+		var oldestId = soundAccessOrder.shift();
+		var sound = currentTrackedSounds.get(oldestId);
+		if (sound != null) {
+			try {
+				Assets.cache.clear(oldestId);
+			} catch (e:Any) {}
+		}
+		currentTrackedSounds.remove(oldestId);
+		trace("Evicted sound from cache: " + oldestId);
+	}
+
 	public static function clearStoredMemory(?cleanUnused:Bool = false):Void {
 		@:privateAccess {
-			// Clear tracked assets
-			for (key in currentTrackedAssets.keys()) {
-				var obj = currentTrackedAssets.get(key);
-				if (obj != null) {
-					openfl.Assets.cache.removeBitmapData(key);
-					FlxG.bitmap._cache.remove(key);
-					obj.destroy();
+			try {
+				var keysToRemove:Array<String> = [];
+				for (key in currentTrackedAssets.keys()) {
+					keysToRemove.push(key);
 				}
-			}
-			currentTrackedAssets.clear();
-			for (key in FlxG.bitmap._cache.keys()) {
-				var obj = FlxG.bitmap._cache.get(key);
-				if (obj != null) {
-					openfl.Assets.cache.removeBitmapData(key);
-					FlxG.bitmap._cache.remove(key);
-					obj.destroy();
+				for (key in keysToRemove) {
+					var obj = currentTrackedAssets.get(key);
+					if (obj != null) {
+						try { openfl.Assets.cache.removeBitmapData(key); } catch(e:Any) {}
+						try { FlxG.bitmap._cache.remove(key); } catch(e:Any) {}
+						obj.destroy();
+					}
+					currentTrackedAssets.remove(key);
 				}
+				currentTrackedAssets.clear();
+				var bitmapKeysToRemove:Array<String> = [];
+				for (key in FlxG.bitmap._cache.keys()) {
+					bitmapKeysToRemove.push(key);
+				}
+				for (key in bitmapKeysToRemove) {
+					var obj = FlxG.bitmap._cache.get(key);
+					if (obj != null) {
+						try { openfl.Assets.cache.removeBitmapData(key); } catch(e:Any) {}
+						try { FlxG.bitmap._cache.remove(key); } catch(e:Any) {}
+						try { obj.destroy(); } catch(e:Any) {}
+					}
+				}
+				EdtNote.coolCustomGraphics = [];
+				Note.specialFramesKey = [];
+				Note.gotSpecialFrames = [];
+			} catch(e:Any) {
+				trace("Error clearing bitmap assets: " + e);
 			}
-			EdtNote.coolCustomGraphics = [];
-			Note.specialFramesKey = [];
-			Note.gotSpecialFrames = [];
 		}
-		for (key in currentTrackedSounds.keys()) {
-			Assets.cache.clear(key);
+
+		try {
+			var soundKeysToRemove:Array<String> = [];
+			for (key in currentTrackedSounds.keys()) {
+				soundKeysToRemove.push(key);
+			}
+			for (key in soundKeysToRemove) {
+				try { Assets.cache.clear(key); } catch(e:Any) {}
+				currentTrackedSounds.remove(key);
+			}
+			currentTrackedSounds.clear();
+		} catch(e:Any) {
+			trace("Error clearing sounds: " + e);
 		}
-		currentTrackedSounds.clear();
-		openfl.Assets.cache.clear("assets");
-		openfl.Assets.cache.clear("assets/sounds");
-		openfl.Assets.cache.clear("assets/music");
-		System.gc();
+
+		try {
+			openfl.Assets.cache.clear("assets");
+			openfl.Assets.cache.clear("assets/sounds");
+			openfl.Assets.cache.clear("assets/music");
+		} catch(e:Any) {
+			trace("Error clearing asset cache: " + e);
+		}
+		
+		assetAccessOrder.splice(0, assetAccessOrder.length);
+		soundAccessOrder.splice(0, soundAccessOrder.length);
+		
+		openfl.system.System.gc();
+	}
+	
+	public static function unloadAsset(id:String):Void
+	{
+		if (currentTrackedAssets.exists(id)) {
+			var asset = currentTrackedAssets.get(id);
+			if (asset != null) {
+				try {
+					asset.destroy();
+				} catch (e:Any) {}
+			}
+			currentTrackedAssets.remove(id);
+			var index = assetAccessOrder.indexOf(id);
+			if (index >= 0) assetAccessOrder.splice(index, 1);
+		}
+	}
+	
+	public static function unloadSound(id:String):Void
+	{
+		if (currentTrackedSounds.exists(id)) {
+			try {
+				Assets.cache.clear(id);
+			} catch (e:Any) {}
+			currentTrackedSounds.remove(id);
+			var index = soundAccessOrder.indexOf(id);
+			if (index >= 0) soundAccessOrder.splice(index, 1);
+		}
 	}
 }
