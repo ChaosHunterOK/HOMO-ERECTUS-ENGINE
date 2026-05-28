@@ -10,6 +10,9 @@ import flixel.FlxState;
 import flixel.FlxSprite;
 import flixel.input.keyboard.FlxKey;
 using Lambda;
+
+typedef KeyLayoutEntry = {name:String, field:String};
+
 class ControlsState extends MusicBeatState {
     var askToBind:FlxTypedSpriteGroup<FlxSprite>;
     var bindTxt:FlxText;
@@ -17,8 +20,79 @@ class ControlsState extends MusicBeatState {
     var grpBind:FlxTypedGroup<Alphabet>;
     var awaitingFor:Int = -1;
     var curSelected:Int = 0;
+    static final KEY_LAYOUTS:Array<Array<KeyLayoutEntry>> = [
+        //4 keys
+        [
+            {name: "Left", field: "left"},
+            {name: "Down", field: "down"},
+            {name: "Up", field: "up"},
+            {name: "Right", field: "right"}
+        ],
+        //6/7 keys
+        [
+            {name: "Left-6/7k", field: "A1"},
+            {name: "Up-6/7k", field: "A2"},
+            {name: "Right-6/7k", field: "A3"},
+            {name: "Middle-7k", field: "A4"},
+            {name: "Left2-6/7k", field: "A5"},
+            {name: "Down-6/7k", field: "A6"},
+            {name: "Right2-6/7k", field: "A7"}
+        ],
+        //9 keys
+        [
+            {name: "Left-9k", field: "B1"},
+            {name: "Down-9k", field: "B2"},
+            {name: "Up-9k", field: "B3"},
+            {name: "Right-9k", field: "B4"},
+            {name: "Middle-9k", field: "B5"},
+            {name: "Left2-9k", field: "B6"},
+            {name: "Down2-9k", field: "B7"},
+            {name: "Up2-9k", field: "B8"},
+            {name: "Right2-9k", field: "B9"}
+        ]
+    ];
+    inline function keysToString(keys:Array<FlxKey>):String {
+        return keys.map(key -> FlxKey.toStringMap.get(key)).join(",");
+    }
+    function getKeyBindText(globalIndex:Int):String {
+        var offset = 0;
+        for (layout in KEY_LAYOUTS) {
+            if (globalIndex < offset + layout.length) {
+                var localIndex = globalIndex - offset;
+                var entry = layout[localIndex];
+                var keys:Array<FlxKey> = Reflect.field(FlxG.save.data.keys, entry.field);
+                return '${entry.name}: ${keysToString(keys)}';
+            }
+            offset += layout.length;
+        }
+        return "Invalid";
+    }
+    function getKeysForIndex(index:Int):Array<FlxKey> {
+        var offset = 0;
+        for (layout in KEY_LAYOUTS) {
+            if (index < offset + layout.length) {
+                var localIndex = index - offset;
+                var entry = layout[localIndex];
+                return Reflect.field(FlxG.save.data.keys, entry.field);
+            }
+            offset += layout.length;
+        }
+        return [];
+    }
+    function setKeysForIndex(index:Int, keys:Array<FlxKey>):Void {
+        var offset = 0;
+        for (layout in KEY_LAYOUTS) {
+            if (index < offset + layout.length) {
+                var localIndex = index - offset;
+                var entry = layout[localIndex];
+                Reflect.setField(FlxG.save.data.keys, entry.field, keys);
+                return;
+            }
+            offset += layout.length;
+        }
+    }
+    
     override function create() {
-        
         FlxG.mouse.visible = true;
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(SUtil.getPath() + 'assets/images/menuBG.png');
 		bg.scrollFactor.x = 0;
@@ -28,8 +102,9 @@ class ControlsState extends MusicBeatState {
 		bg.screenCenter();
 		bg.antialiasing = true;
 		add(bg); 
+        
         askToBind = new FlxTypedSpriteGroup<FlxSprite>();
-        var askGraphic = new FlxSprite().makeGraphic(Std.int(FlxG.width/2),Std.int(FlxG.height/2), FlxColor.YELLOW);
+        var askGraphic = new FlxSprite().makeGraphic(Std.int(FlxG.width/2), Std.int(FlxG.height/2), FlxColor.YELLOW);
         bindTxt = new FlxText(60, 20, 0, "Waiting for input\n (press esc or enter to stop binding)");
         bindTxt.setFormat(null, 24, FlxColor.BLACK);
         askToBind.add(askGraphic);
@@ -37,87 +112,23 @@ class ControlsState extends MusicBeatState {
         askToBind.visible = false;
         askToBind.x = 500;
         askToBind.y = 80;
+        
         grpBind = new FlxTypedGroup<Alphabet>();
         add(grpBind);
 
-        for (i in 0...4) {
-			var coolText = switch (i)
-			{
-				case 0:
-					'Left: ${FlxG.save.data.keys.left.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 1:
-					'Down: ${FlxG.save.data.keys.down.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 2:
-					'Up: ${FlxG.save.data.keys.up.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 3:
-					'Right: ${FlxG.save.data.keys.right.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				default:
-					'how did we get here';
-			}
-			var songText:Alphabet = new Alphabet(0, (70 * i) + 30, coolText, true, false, false, null, null, null, true);
-			songText.itemType = "Classic";
-			songText.isMenuItem = true;
-			songText.targetY = i;
-			grpBind.add(songText);
+        var itemIndex = 0;
+        for (layout in KEY_LAYOUTS) {
+            for (i => entry in layout) {
+                var text = getKeyBindText(itemIndex);
+                var songText:Alphabet = new Alphabet(0, (70 * itemIndex) + 30, text, true, false, false, null, null, null, true);
+                songText.itemType = "Classic";
+                songText.isMenuItem = true;
+                songText.targetY = itemIndex;
+                grpBind.add(songText);
+                itemIndex++;
+            }
         }
 
-		for (i in 0...7) {
-			var coolText6K = switch (i)
-			{
-				case 0:
-					'Left-6/7k: ${FlxG.save.data.keys.A1.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 1:
-					'Up-6/7k: ${FlxG.save.data.keys.A2.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 2:
-					'Right-6/7k: ${FlxG.save.data.keys.A3.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 3:
-					'Middle-7k: ${FlxG.save.data.keys.A4.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 4:
-					'Left2-6/7k: ${FlxG.save.data.keys.A5.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 5:
-					'Down-6/7k: ${FlxG.save.data.keys.A6.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 6:
-					'Right2-6/7k: ${FlxG.save.data.keys.A7.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				default:
-					'how did we get here';
-			}
-			var songText:Alphabet = new Alphabet(0, (70 * (i + 4)) + 30, coolText6K, true, false, false, null, null, null, true);
-			songText.itemType = "Classic";
-			songText.isMenuItem = true;
-			songText.targetY = i + 4;
-			grpBind.add(songText);
-        }
-
-		for (i in 0...9) {
-			var coolText9K = switch (i)
-			{
-				case 0:
-					'Left-9k: ${FlxG.save.data.keys.B1.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 1:
-					'Down-9k: ${FlxG.save.data.keys.B2.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 2:
-					'Up-9k: ${FlxG.save.data.keys.B3.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 3:
-					'Right-9k: ${FlxG.save.data.keys.B4.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 4:
-					'Middle-9k: ${FlxG.save.data.keys.B5.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-			    case 5:
-					'Left2-9k: ${FlxG.save.data.keys.B6.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 6:
-					'Down2-9k: ${FlxG.save.data.keys.B7.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 7:
-					'Up2-9k: ${FlxG.save.data.keys.B8.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 8:
-					'Right2-9k: ${FlxG.save.data.keys.B9.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				default:
-					'how did we get here';
-			}
-			var songText:Alphabet = new Alphabet(0, (70 * (i + 11)) + 30, coolText9K, true, false, false, null, null, null, true);
-			songText.itemType = "Classic";
-			songText.isMenuItem = true;
-			songText.targetY = i + 11;
-			grpBind.add(songText);
-        }
         add(askToBind);
 		#if mobile
 		addVirtualPad(UP_DOWN, A_B);
@@ -172,13 +183,13 @@ class ControlsState extends MusicBeatState {
 		// insert(1, curOverlay);
 	}
 	var currentKeys:Array<FlxKey> = [];
+    
     override function update(elapsed:Float) {
         super.update(elapsed);
+        
         if (!askingToBind) {
-			if (controls.ACCEPT)
-			{
+			if (controls.ACCEPT) {
 				awaitingFor = curSelected;
-				// SUS?
 				askingToBind = true;
                 askToBind.visible = true;
 			}
@@ -193,113 +204,22 @@ class ControlsState extends MusicBeatState {
         } else {
 			if (FlxG.keys.firstJustPressed() == ESCAPE || FlxG.keys.firstJustPressed() == ENTER) {
 				if (currentKeys.length != 0) {
-					switch (awaitingFor)
-					{
-						case 0:
-							FlxG.save.data.keys.left = currentKeys;
-						case 1:
-							FlxG.save.data.keys.down = currentKeys;
-						case 2:
-							FlxG.save.data.keys.up = currentKeys;
-						case 3:
-							FlxG.save.data.keys.right = currentKeys;
-						case 4:
-							FlxG.save.data.keys.A1 = currentKeys;
-						case 5:
-							FlxG.save.data.keys.A2 = currentKeys;
-						case 6:
-							FlxG.save.data.keys.A3 = currentKeys;
-						case 7:
-							FlxG.save.data.keys.A4 = currentKeys;
-						case 8:
-							FlxG.save.data.keys.A5 = currentKeys;
-						case 9:
-							FlxG.save.data.keys.A6 = currentKeys;
-						case 10:
-							FlxG.save.data.keys.A7 = currentKeys;
-						case 11:
-							FlxG.save.data.keys.B1 = currentKeys;
-						case 12:
-							FlxG.save.data.keys.B2 = currentKeys;
-						case 13:
-							FlxG.save.data.keys.B3 = currentKeys;
-						case 14:
-							FlxG.save.data.keys.B4 = currentKeys;
-						case 15:
-							FlxG.save.data.keys.B5 = currentKeys;
-						case 16:
-							FlxG.save.data.keys.B6 = currentKeys;
-						case 17:
-							FlxG.save.data.keys.B7 = currentKeys;
-						case 18:
-							FlxG.save.data.keys.B8 = currentKeys;
-						case 19:
-							FlxG.save.data.keys.B9 = currentKeys;
-					}
-					var coolText = switch (awaitingFor)
-					{
-						case 0:
-							'Left: ${FlxG.save.data.keys.left.map(function (key:FlxKey) { return FlxKey.toStringMap.get(key);}).join(",")}';
-						case 1:
-							'Down: ${FlxG.save.data.keys.down.map(function (key:FlxKey) { return FlxKey.toStringMap.get(key);}).join(",")}';
-						case 2:
-							'Up: ${FlxG.save.data.keys.up.map(function (key:FlxKey) { return FlxKey.toStringMap.get(key);}).join(",")}';
-						case 3:
-							'Right: ${FlxG.save.data.keys.right.map(function (key:FlxKey) { return FlxKey.toStringMap.get(key);}).join(",")}';
-							case 4:
-								'Left-6/7k: ${FlxG.save.data.keys.A1.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-							case 5:
-								'Up-6/7k: ${FlxG.save.data.keys.A2.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-							case 6:
-								'Right-6/7k: ${FlxG.save.data.keys.A3.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-							case 7:
-								'Middle-7k: ${FlxG.save.data.keys.A4.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-							case 8:
-								'Left2-6/7k: ${FlxG.save.data.keys.A5.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-							case 9:
-								'Down-6/7k: ${FlxG.save.data.keys.A6.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-							case 10:
-								'Right2-6/7k: ${FlxG.save.data.keys.A7.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';	
-				case 11:
-					'Left-9k: ${FlxG.save.data.keys.B1.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 12:
-					'Down-9k: ${FlxG.save.data.keys.B2.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 13:
-					'Up-9k: ${FlxG.save.data.keys.B3.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 14:
-					'Right-9k: ${FlxG.save.data.keys.B4.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 15:
-					'Middle-9k: ${FlxG.save.data.keys.B5.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-			    case 16:
-					'Left2-9k: ${FlxG.save.data.keys.B6.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 17:
-					'Down2-9k: ${FlxG.save.data.keys.B7.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 18:
-					'Up2-9k: ${FlxG.save.data.keys.B8.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-				case 19:
-					'Right2-9k: ${FlxG.save.data.keys.B9.map(function (key:FlxKey) {return FlxKey.toStringMap.get(key);}).join(",")}';
-						default:
-							'how did we get here';
-					}
+					setKeysForIndex(awaitingFor, currentKeys);
 					FlxG.save.flush();
-					grpBind.members[awaitingFor] = new Alphabet(0, (70 * awaitingFor) + 30, coolText, true, false, false, null, null, null, true);
+					
+					var text = getKeyBindText(awaitingFor);
+					grpBind.members[awaitingFor] = new Alphabet(0, (70 * awaitingFor) + 30, text, true, false, false, null, null, null, true);
 					grpBind.members[awaitingFor].itemType = "Classic";
 					grpBind.members[awaitingFor].isMenuItem = true;
 					grpBind.members[awaitingFor].targetY = 0;
 				}
-				
-				
-				// then reeset everything
 				awaitingFor = -1;
 				askingToBind = false;
-				askToBind.visible= false;
+				askToBind.visible = false;
 				currentKeys = [];
 			} else if (FlxG.keys.firstJustPressed() != -1) {
-                // blush 
-                // add the first key pressed
                 currentKeys.push(FlxG.keys.firstJustPressed());
             }
         }
-        
     }
 }

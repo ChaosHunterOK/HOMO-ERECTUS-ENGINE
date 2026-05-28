@@ -540,7 +540,6 @@ class PlayState extends MusicBeatState
 		}
 	function sameVarsIdk(interp:Dynamic, path:String) {
 		#if mobile
-		interp.variables.set("addVirtualPad", addVirtualPad);
 		interp.variables.set("removeVirtualPad", removeVirtualPad);
 		interp.variables.set("addPadCamera", addPadCamera);
 		interp.variables.set("addAndroidControls", addAndroidControls);
@@ -2456,11 +2455,10 @@ class PlayState extends MusicBeatState
 
 				swagNote.altNote = altNote;
 				swagNote.crossFade = crossFade;
-
 				swagNote.altNum = section.altAnim
 					? (section.altAnimNum == null ? (section.altAnim ? 1 : 0) : section.altAnimNum)
 					: (songNotes[3] == null ? (altNote ? 1 : 0) : songNotes[3]);
-
+				
 				if (duoMode) swagNote.duoMode = true;
 				if (opponentPlayer) swagNote.oppMode = true;
 				if (demoMode) swagNote.funnyMode = true;
@@ -2481,15 +2479,14 @@ class PlayState extends MusicBeatState
 						if (OptionsHandler.options.emuOsuLifts && susLength < susNote)
 						{
 							var liftNote = new Note(daStrumTime + (stepCrochet * susNote) + stepCrochet, daNoteData, oldNote, false, null, null, null, true);
-
 							if (duoMode) liftNote.duoMode = true;
 							if (opponentPlayer) liftNote.oppMode = true;
 							if (demoMode) liftNote.funnyMode = true;
 
-							unspawnNotes.push(liftNote);
-
 							liftNote.mustPress = gottaHitNote;
 							if (liftNote.mustPress) liftNote.x += halfWidth;
+
+							unspawnNotes.push(liftNote);
 						}
 						else if (susLength > susNote)
 						{
@@ -2497,20 +2494,15 @@ class PlayState extends MusicBeatState
 								daStrumTime + (stepCrochet * susNote) + (stepCrochet / FlxMath.roundDecimal(daScrollSpeed, 2)),
 								daNoteData, oldNote, true
 							);
-
 							if (duoMode) sustainNote.duoMode = true;
 							if (opponentPlayer) sustainNote.oppMode = true;
 							if (demoMode) sustainNote.funnyMode = true;
-
-							unspawnNotes.push(sustainNote);
-
 							sustainNote.shouldBeSung = shouldSing;
 							sustainNote.ignoreHealthMods = ignoreHealthMods;
 							sustainNote.timingMultiplier = timeThingy;
 							sustainNote.healMultiplier = noteHeal;
 							sustainNote.damageMultiplier = noteDamage;
 							sustainNote.consistentHealth = consitentNote;
-
 							sustainNote.mustPress = gottaHitNote;
 							sustainNote.altNote = swagNote.altNote;
 							sustainNote.crossFade = swagNote.crossFade;
@@ -2518,8 +2510,8 @@ class PlayState extends MusicBeatState
 							sustainNote.coolId = swagNote.coolId;
 							sustainNote.dontCountNote = swagNote.dontCountNote;
 							sustainNote.dontMiss = swagNote.dontMiss;
-
 							if (sustainNote.mustPress) sustainNote.x += halfWidth;
+							unspawnNotes.push(sustainNote);
 						}
 					}
 				}
@@ -2678,40 +2670,31 @@ class PlayState extends MusicBeatState
 	public var skipArrowStartTween:Bool = false; 
 	private function generateStaticArrows(player:Int):Void
 	{
+		var shouldTween:Bool = !isStoryMode && !skipArrowStartTween;
+		var strumGroup = player == 1 ? playerStrums : enemyStrums;
+		var comboGroup = player == 1 ? playerComboBreak : enemyComboBreak;
+
 		for (i in 0...Main.ammo[mania])
 		{
-			// FlxG.log.add(i);
 			var babyArrow:StrumNote = new StrumNote(42, strumLine.y, i, player);
 			babyArrow.downScroll = downscroll;
+			babyArrow.ID = i;
 
-			if (!isStoryMode && !skipArrowStartTween)
+			if (shouldTween)
 			{
 				babyArrow.y -= 10;
 				babyArrow.alpha = 0;
 				FlxTween.tween(babyArrow, {y: babyArrow.y + 10, alpha: 1}, 1, {ease: FlxEase.circOut, startDelay: 0.5 + (0.2 * i)});
 			}
-			
-			babyArrow.ID = i;
 
-			if (player == 1)
-			{
-				playerStrums.add(babyArrow);
-			} else {
-				enemyStrums.add(babyArrow);
-			}
+			strumGroup.add(babyArrow);
 			strumLineNotes.add(babyArrow);
 			holdCovers.add(babyArrow.holdCover);
 			babyArrow.postAddedToGroup();
-			// does not need to be unique because it uses special thingies
 			var comboBreakThing = new FlxSprite(babyArrow.x, 0).makeGraphic(Std.int(babyArrow.width), FlxG.height, FlxColor.WHITE);
 			comboBreakThing.visible = false;
 			comboBreakThing.alpha = 0.6;
-
-			if (player == 1) {
-				playerComboBreak.add(comboBreakThing);
-			} else {
-				enemyComboBreak.add(comboBreakThing);
-			}
+			comboGroup.add(comboBreakThing);
 		}
 	}
 	function comboBreak(dir:Int, playerOne:Bool = true, rating:String = 'miss') {
@@ -3210,14 +3193,11 @@ class PlayState extends MusicBeatState
 		{
 			var time:Float = 3000;//shit be werid on 4:3
 			if(daScrollSpeed < 1) time /= daScrollSpeed;
-
 			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
 			{
 				var dunceNote:Note = unspawnNotes[0];
 				notes.insert(0, dunceNote);
-
-				var index:Int = unspawnNotes.indexOf(dunceNote);
-				unspawnNotes.splice(index, 1);
+				unspawnNotes.splice(0, 1);
 			}
 		}
 
