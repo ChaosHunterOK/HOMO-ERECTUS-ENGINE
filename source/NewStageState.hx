@@ -70,7 +70,7 @@ class NewStageState extends MusicBeatState
         FlxG.mouse.visible = true;
         lastMousePos = new FlxPoint();
         
-        var bg:FlxSprite = new FlxSprite().loadGraphic(SUtil.getPath() + 'assets/images/menuBGBlue.png');
+        var bg:FlxSprite = new FlxSprite().loadGraphic(SUtil.getPath() + 'assets/images/menuDesat.png');
         bg.color = 0xFF222222;
         bg.scrollFactor.set();
         add(bg);
@@ -137,81 +137,85 @@ class NewStageState extends MusicBeatState
     function createToolbar()
     {
         toolbar = new FlxTypedGroup<FlxSprite>();
-        var xThingy = 80;
-        // Toolbar background
-        var toolbarBg = new FlxSprite(10, 10).makeGraphic(FlxG.width - 340, 30, 0xCC1a1a2e);
+
+        var startX = 32;
+        var y = 16;
+        var spacing = 2;
+        var x = startX;
+
+        var toolbarBg = new FlxSprite(10, 10).makeGraphic(FlxG.width - 340, 30, 0xcc000000);
         toolbar.add(toolbarBg);
-        
-        // Grid toggle button
-		gridToggleBtn = new FlxButton(10 + xThingy, 12, "Grid", function() {
-			showGrid = !showGrid;
-			drawGrid();
-			updateStatus();
-		});
+
+        gridToggleBtn = new FlxButton(x, y, "Grid", function() {
+            showGrid = !showGrid;
+            drawGrid();
+            updateStatus();
+        });
         toolbar.add(gridToggleBtn);
-        
-        // Snap toggle button
-		snapToggleBtn = new FlxButton(10 + xThingy + 60, 12, "Snap", function() {
-			snapToGrid = !snapToGrid;
-			updateStatus();
-		});
+        x += Std.int(gridToggleBtn.width + spacing);
+
+        snapToggleBtn = new FlxButton(x, y, "Snap", function() {
+            snapToGrid = !snapToGrid;
+            updateStatus();
+        });
         toolbar.add(snapToggleBtn);
-        
-        // Delete button
-        deleteBtn = new FlxButton(10 + xThingy + 120, 12, "Del", function() {
+        x += Std.int(snapToggleBtn.width + spacing);
+
+        deleteBtn = new FlxButton(x, y, "Del", function() {
             deleteSelected();
         });
         toolbar.add(deleteBtn);
-        
-        // Duplicate button
-        duplicateBtn = new FlxButton(10 + xThingy + 180, 12, "Dup", function() {
+        x += Std.int(deleteBtn.width + spacing);
+
+        duplicateBtn = new FlxButton(x, y, "Dup", function() {
             duplicateSelected();
         });
         toolbar.add(duplicateBtn);
-        
-        // Layer up
-        layerUpBtn = new FlxButton(10 + xThingy + 240, 12, "↑", function() {
+        x += Std.int(duplicateBtn.width + spacing);
+
+        layerUpBtn = new FlxButton(x, y, "Layer up", function() {
             moveLayerUp();
         });
         toolbar.add(layerUpBtn);
-        
-        // Layer down
-        layerDownBtn = new FlxButton(10 + xThingy + 300, 12, "↓", function() {
+        x += Std.int(layerUpBtn.width + spacing);
+
+        layerDownBtn = new FlxButton(x, y, "Layer down", function() {
             moveLayerDown();
         });
         toolbar.add(layerDownBtn);
-        
-        // Zoom controls
-        var zoomOutBtn = new FlxButton(10 + xThingy + 360, 12, "-", function() {
+        x += Std.int(layerDownBtn.width + spacing);
+
+        var zoomOutBtn = new FlxButton(x, y, "-", function() {
             FlxG.camera.zoom = Math.max(0.1, FlxG.camera.zoom - 0.1);
         });
         toolbar.add(zoomOutBtn);
-        
-        var zoomInBtn = new FlxButton(10 + xThingy + 390, 12, "+", function() {
+        x += Std.int(zoomOutBtn.width + spacing);
+
+        var zoomInBtn = new FlxButton(x, y, "+", function() {
             FlxG.camera.zoom = Math.min(5, FlxG.camera.zoom + 0.1);
         });
         toolbar.add(zoomInBtn);
-        
-        // Reset view
-        var resetBtn = new FlxButton(10 + xThingy + 420, 12, "Reset", function() {
+        x += Std.int(zoomInBtn.width + spacing);
+
+        var resetBtn = new FlxButton(x, y, "Reset", function() {
             FlxG.camera.zoom = 1;
             FlxG.camera.x = 0;
             FlxG.camera.y = 0;
         });
         toolbar.add(resetBtn);
-        
-        // Undo button
-        var undoBtn = new FlxButton(10 + xThingy + 480, 12, "Undo", function() {
+        x += Std.int(resetBtn.width + spacing);
+
+        var undoBtn = new FlxButton(x, y, "Undo", function() {
             undo();
         });
         toolbar.add(undoBtn);
-        
-        // Redo button
-        var redoBtn = new FlxButton(10 + xThingy + 540, 12, "Redo", function() {
+        x += Std.int(undoBtn.width + spacing);
+
+        var redoBtn = new FlxButton(x, y, "Redo", function() {
             redo();
         });
         toolbar.add(redoBtn);
-        
+
         add(toolbar);
     }
     
@@ -486,7 +490,9 @@ class NewStageState extends MusicBeatState
 		var w = Std.int(selectedSprite.width);
 		var h = Std.int(selectedSprite.height);
 
-		selectionBox.makeGraphic(w + 4, h + 4, FlxColor.TRANSPARENT);
+		if (selectionBox.width != w + 4 || selectionBox.height != h + 4) {
+            selectionBox.makeGraphic(w + 4, h + 4, FlxColor.TRANSPARENT);
+        }
 		selectionBox.x = selectedSprite.x - 2;
 		selectionBox.y = selectedSprite.y - 2;
 		selectionBox.pixels.fillRect(new openfl.geom.Rectangle(0, 0, w + 4, 2), FlxColor.BLUE);
@@ -893,12 +899,7 @@ class NewStageState extends MusicBeatState
 			var dest = pathDir + '/' + coolPath.file + '.' + coolPath.ext;
 			safeCopy(epicFile, dest);
 		}
-		var hscriptContent = '// Stage: ${nameText.text}\n';
-		hscriptContent += '// Generated by Stage Editor\n\n';
-
-		hscriptContent += 'function start(song) {\n';
-		hscriptContent += '    setDefaultZoom(${zoomStepper.value});\n\n';
-
+		var hscriptContent = '';
 		var id = 0;
 
 		for (spr in editorGroup.members)
@@ -930,6 +931,13 @@ class NewStageState extends MusicBeatState
 		hscriptContent += '}\n\n';
 		hscriptContent += 'function update(elapsed) {}\n';
 		hscriptContent += 'function beatHit(beat) {}\n';
+        hscriptContent += 'function stepHit(step) {}\n';
+		hscriptContent += 'function playerTwoTurn() {}\n';
+        hscriptContent += 'function playerTwoMiss() {}\n';
+		hscriptContent += 'function playerTwoSing() {}\n';
+        hscriptContent += 'function playerOneTurn() {}\n';
+        hscriptContent += 'function playerOneMiss() {}\n';
+		hscriptContent += 'function playerOneSing() {}\n';
 
 		var hscriptPath = pathDir2 + '${nameText.text}.hscript';
 		File.saveContent(hscriptPath, hscriptContent);

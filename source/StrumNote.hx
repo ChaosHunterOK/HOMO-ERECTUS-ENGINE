@@ -25,6 +25,7 @@ class StrumNote extends FlxSprite
 	public var holdStarted:Bool = false;
 	public var holdEnding:Bool = false;
 	var wasHolding:Bool = false;
+	public var opponentIndex:Int = 0;
 
 	public function new(x:Float, y:Float, leData:Int, player:Int) {
 		animOffsets = new Map<String, Array<Float>>();
@@ -144,9 +145,7 @@ class StrumNote extends FlxSprite
 		animation.addByPrefix('white', 'arrowSPACE');
 
 		if (animation.getByName('white') == null)
-		{
 			animation.addByPrefix('white', 'arrowUP');
-		}
 
 		if (flippedNotes)
 		{
@@ -166,19 +165,13 @@ class StrumNote extends FlxSprite
 		if(animation.curAnim != null) lastAnim = animation.curAnim.name;
 
 		if(isPixelNote)
-		{
 			loadPixelNoteAnims();
-		}
 		else
-		{
 			loadSparrowNoteAnims();
-		}
 		updateHitbox();
 
 		if(lastAnim != null)
-		{
 			playAnim(lastAnim, true);
-		}
 	}
 
 	public function reloadSkin():Void
@@ -188,13 +181,9 @@ class StrumNote extends FlxSprite
 		animation = new FlxAnimationController(this);
 
 		if (isPixelNote)
-		{
 			loadGraphic(FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/arrows-pixels.png"), true, 17, 17);
-		}
 		else
-		{
 			frames = DynamicAtlasFrames.fromSparrow(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.png", SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.xml");
-		}
 
 		loadNoteAnims();
 		playAnim('static');
@@ -221,11 +210,9 @@ class StrumNote extends FlxSprite
 		if(animation.curAnim.name == 'confirm' && !isPixelNote) {
 			var daOffset = [0.0,0.0];
 			if (animOffsets.exists('confirm'))
-				{
-					daOffset = animOffsets.get('confirm');
-				}
+				daOffset = animOffsets.get('confirm');
 			offset.x = (frameWidth - width) * 0.5+ daOffset[0];
-		offset.y = (frameHeight - height) * 0.5 + daOffset[1];
+			offset.y = (frameHeight - height) * 0.5 + daOffset[1];
 		}
 
 		super.update(elapsed);
@@ -249,17 +236,13 @@ class StrumNote extends FlxSprite
 		animation.play(anim, force);
 		var daOffset = [0.0,0.0];
 		if (animOffsets.exists(anim))
-			{
-		 daOffset = animOffsets.get(anim);
-			}
+		 	daOffset = animOffsets.get(anim);
 		offset.x = (frameWidth - width) * 0.5 +daOffset[0];
 		offset.y = (frameHeight - height) * 0.5 + daOffset[1];
 		centerOrigin();
 		if(animation.curAnim == null || animation.curAnim.name == 'static') {
 		} else {
-			if(animation.curAnim.name == 'confirm' && !isPixelNote) {
-				centerOrigin();
-			}
+			if(animation.curAnim.name == 'confirm' && !isPixelNote) centerOrigin();
 		}
 	}
 	public static function resetStrumPosition(strum:StrumNote, ?targetX:Null<Float> = null, ?targetY:Null<Float> = null):Void {

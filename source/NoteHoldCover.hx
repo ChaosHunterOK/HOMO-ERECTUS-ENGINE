@@ -22,6 +22,21 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     this.strumNote = strumNote;
     setupHoldNoteCover(strumNote);
   }
+
+  private function getManiaIdx():Int {
+    var NOTE_AMOUNT = Main.ammo[PlayState.SONG.mania];
+    var maniaIdx:Int = 0;
+    if (NOTE_AMOUNT == 6) maniaIdx = 1;
+    else if (NOTE_AMOUNT == 7) maniaIdx = 2;
+    else if (NOTE_AMOUNT == 9) maniaIdx = 3;
+    return maniaIdx;
+  }
+
+  private function getColorIdx():Int {
+    var maniaIdx = getManiaIdx();
+    var ammo = Main.ammo[PlayState.SONG.mania];
+    return Note.maniaData[maniaIdx][strumNote.noteData % ammo];
+  }
   function setupHoldNoteCover(strumNote:StrumNote):Void
   {
     glow = new FlxSprite();
@@ -31,9 +46,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     add(sparks);
 
     var curUiType:TUI = Reflect.field(Judgement.uiJson, PlayState.SONG.uiType);
-    var maniaIdx:Int = Std.int(Math.max(0, Math.min(Note.maniaData.length - 1, PlayState.SONG.mania - 1)));
-    var ammo = Main.ammo[PlayState.SONG.mania];
-    var colorIdx = Note.maniaData[maniaIdx][strumNote.noteData % ammo];
+    var colorIdx = getColorIdx();
     var color = Note.colArray[colorIdx];
     var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
 
@@ -110,9 +123,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     glow.visible = true;
     if (sparks != null) sparks.visible = true;
     glow.setPosition(this.x, this.y);
-    var maniaIdx:Int = Std.int(Math.max(0, Math.min(Note.maniaData.length - 1, PlayState.SONG.mania - 1)));
-    var ammo = Main.ammo[PlayState.SONG.mania];
-    var colorIdx = Note.maniaData[maniaIdx][strumNote.noteData % ammo];
+    var colorIdx = getColorIdx();
     var color = Note.colArray[colorIdx];
     var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
     var anim = 'holdCoverStart' + colorTitle;
@@ -128,9 +139,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     glow.visible = true;
     if (sparks != null) sparks.visible = true;
     glow.setPosition(this.x, this.y);
-    var maniaIdx:Int = Std.int(Math.max(0, Math.min(Note.maniaData.length - 1, PlayState.SONG.mania - 1)));
-    var ammo = Main.ammo[PlayState.SONG.mania];
-    var colorIdx = Note.maniaData[maniaIdx][strumNote.noteData % ammo];
+    var colorIdx = getColorIdx();
     var color = Note.colArray[colorIdx];
     var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
     var animName = 'holdCover' + colorTitle;
@@ -162,9 +171,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
         glow.setPosition(this.x, this.y);
 
-        var maniaIdx:Int = Std.int(Math.max(0, Math.min(Note.maniaData.length - 1, PlayState.SONG.mania - 1)));
-        var ammo = Main.ammo[PlayState.SONG.mania];
-        var colorIdx = Note.maniaData[maniaIdx][strumNote.noteData % ammo];
+        var colorIdx = getColorIdx();
         var color = Note.colArray[colorIdx];
         var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
 
@@ -197,9 +204,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
   public function onAnimationFinished(animationName:String):Void
   {
-    var maniaIdx:Int = Std.int(Math.max(0, Math.min(Note.maniaData.length - 1, PlayState.SONG.mania - 1)));
-    var ammo = Main.ammo[PlayState.SONG.mania];
-    var colorIdx = Note.maniaData[maniaIdx][strumNote.noteData % ammo];
+    var colorIdx = getColorIdx();
     var color = Note.colArray[colorIdx];
     var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
     

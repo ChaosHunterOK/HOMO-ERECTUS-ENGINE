@@ -31,13 +31,21 @@ var record;
 var recordPixel;
 var curOverlay;
 var infoPanel;
+var menuSoundsJson;
+var customMenuScrollSound;
+var customMenuMusicJson;
+var diffJson;
 
 function create()
 {
-	if (songs == null) songs = [];
-	if (iconArray == null) iconArray = [];
-	if (grpSongs == null) grpSongs = new FlxGroup();
-	if (infoPanel == null) infoPanel = new SongInfoPanel(0, 0, "", 0);
+	songs = [];
+	iconArray = [];
+	grpSongs = new FlxGroup();
+
+	menuSoundsJson = CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/sounds/custom_menu_sounds/custom_menu_sounds.json"));
+	customMenuScrollSound = SUtil.getPath() + 'assets/sounds/custom_menu_sounds/' + menuSoundsJson.customMenuScroll + '/scrollMenu' + TitleState.soundExt;
+	diffJson = CoolUtil.parseJson(FNFAssets.getJson(SUtil.getPath() + "assets/images/custom_difficulties/difficulties"));
+	customMenuMusicJson = CoolUtil.parseJson(FNFAssets.getJson(SUtil.getPath() + "assets/music/custom_menu_music/custom_menu_music"));
 
 	for (songSnippet in FreeplayState.currentSongList) 
 	{
@@ -102,16 +110,10 @@ function create()
 	}
 
 	curDifficulty = DifficultyIcons.getDefaultDiffFP();
-	if (FlxG.sound.music != null)
-	{
-		if (!FlxG.sound.music.playing)
-			FlxG.sound.playMusic(SUtil.getPath() + 'assets/music/freakyMenu' + TitleState.soundExt);
-	}
-
-	if (!FlxG.sound.music.playing)
+	if (FlxG.sound.music == null || !FlxG.sound.music.playing)
 	{
 		FlxG.sound.playMusic(FNFAssets.getSound(SUtil.getPath() + 'assets/music/custom_menu_music/'
-			+ CoolUtil.parseJson(FNFAssets.getJson(SUtil.getPath() + "assets/music/custom_menu_music/custom_menu_music")).Menu
+			+ customMenuMusicJson.Menu
 			+ '/freakyMenu'
 			+ TitleState.soundExt));
 	}
@@ -229,9 +231,8 @@ function update(elapsed)
 	var accepted = controls.ACCEPT;
 	if (debugTarget)
 	{
-		if (FlxG.keys.justPressed.F5) {
+		if (FlxG.keys.justPressed.F5)
 			Highscore.saveScore('Tutorial', 0, 1, 0, Sick);
-		}
 	}
 	if (FreeplayState.soundTest && soundTestSong != null) {
 		Conductor.songPosition += FlxG.elapsed * 1000;
@@ -298,8 +299,14 @@ function update(elapsed)
 			var shit = "";
 			
 			FlxG.sound.music.stop();
-			if (vocals != null && vocals.playing)
-				vocals.stop();
+			if (vocals != null)
+			{
+				if (vocals.playing)
+					vocals.stop();
+				FlxG.sound.list.remove(vocals);
+				vocals.destroy();
+				vocals = null;
+			}
 			soundTestSong = Song.loadFromJson(songs[curSelected].songName.toLowerCase(), songs[curSelected].songName.toLowerCase());
 			if (soundTestSong.needsVoices)
 			{
@@ -369,8 +376,6 @@ function update(elapsed)
 				LoadingState.loadAndSwitchState(new PlayState(), true);
 			}
 		}
-		
-
 	}
 }
 
@@ -398,14 +403,16 @@ function changeDiff(change)
 		switch (curDifficulty) {
 			case 0:
 				diffText.text = "Both tracks";
-			case 1:
-				diffText.text = "Inst Only";
-			case 2:
-				diffText.text = "Vocals Only";
+					break;
+				case 1:
+					diffText.text = "Inst Only";
+					break;
+				case 2:
+					diffText.text = "Vocals Only";
+					break;
+					
 		}
-		
 	}
-	// do it here for the sweet sweet gold record
 	infoPanel.changeSong(songs[curSelected].songName, curDifficulty);
 	if (OptionsHandler.options.style)
 	{
@@ -427,11 +434,8 @@ function stepHit(step)
 	if (FreeplayState.soundTest && soundTestSong != null && soundTestSong.needsVoices && curDifficulty == 0)
 	{
 		if (vocals.time > Conductor.songPosition + 20 || vocals.time < Conductor.songPosition - 20)
-		{
 			resyncVocals();
-		}
 	}
-
 }
 
 function resyncVocals()
@@ -448,7 +452,8 @@ function resyncVocals()
 function changeSelection(change)
 {
 
-	FlxG.sound.play(SUtil.getPath() + 'assets/sounds/custom_menu_sounds/'+CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/sounds/custom_menu_sounds/custom_menu_sounds.json")).customMenuScroll+'/scrollMenu' + TitleState.soundExt, 0.4);
+	if (customMenuScrollSound != null)
+		FlxG.sound.play(customMenuScrollSound, 0.4);
 
 	curSelected += change;
 
@@ -468,7 +473,7 @@ function changeSelection(change)
 		FlxG.sound.playMusic(musicUsed, 0);
 	}
 
-	var bullShit = 0;
+	var itemIndex = 0;
 	for (i in 0...iconArray.length)
 	{
 		iconArray[i].alpha = 0.6;
@@ -477,8 +482,8 @@ function changeSelection(change)
 	iconArray[curSelected].alpha = 1;
 	for (item in grpSongs.members)
 	{
-		item.targetY = bullShit - curSelected;
-		bullShit++;
+		item.targetY = itemIndex - curSelected;
+		itemIndex++;
 
 		item.alpha = 0.6;
 
@@ -486,12 +491,6 @@ function changeSelection(change)
 		{
 			item.alpha = 1;
 		}
-	}
-	var dealphaedColors = [];
-	for (color in (Reflect.field(charJson,songs[curSelected].songCharacter).colors)) {
-		var newColor = colorFromString(color);
-		//newColor.alphaFloat = 0.5;
-		dealphaedColors.push(newColor);
 	}
 	
 	changeDiff(0);
@@ -506,7 +505,6 @@ function changeSelection(change)
 	if (OptionsHandler.options.style) {
 		record.changeColor(coolors, songs[curSelected].songCharacter, songs[curSelected].week,
 			songs[curSelected].songName, curDifficulty);
-		
 	}
 	
 	infoPanel.changeSong(songs[curSelected].songName, curDifficulty);

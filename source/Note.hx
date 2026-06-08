@@ -100,6 +100,7 @@ class Note extends DynamicSprite
 	public var altNum:Int = 0;
 	public var dontMiss:Bool = false;
 	public var isPixel:Bool = false;
+	public var opponentIndex:Int = 0;
 	public static var swagWidth:Float = 0.7;
 	public static var PURP_NOTE:Int = 0;
 	public static var GREEN_NOTE:Int = 2;
@@ -155,11 +156,9 @@ class Note extends DynamicSprite
 	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?customImage:Null<BitmapData>, ?customXml:Null<String>, ?customEnds:Null<BitmapData>, ?LiftNote:Bool=false, ?animSuffix:String, ?numSuffix:Int)
 	{
 		super();
-		if (prevNote == null) prevNote = this;
+		this.prevNote = prevNote != null ? prevNote : this;
 		
 		NOTE_AMOUNT = Main.ammo[mania];
-
-		this.prevNote = prevNote;
 		this.isSustainNote = sustainNote;
 		this.isLiftNote = LiftNote;
 		this.strumTime = strumTime;
@@ -371,6 +370,12 @@ class Note extends DynamicSprite
 		return maniaData[maniaIdx][noteData % NOTE_AMOUNT];
 	}
 
+	private function addFallbackAnim(anim:String, fallback:String):Void
+	{
+		if (animation.getByName(anim) == null)
+			animation.addByPrefix(anim, fallback);
+	}
+
 	function loadNoteAnims(?animSuffix:String)
 	{
 		animation.addByPrefix('greenScroll', 'green${animSuffix}0');
@@ -383,20 +388,11 @@ class Note extends DynamicSprite
 		animation.addByPrefix('cherryScroll', 'cherry${animSuffix}0');
 		animation.addByPrefix('cyanScroll', 'cyan${animSuffix}0');
 
-		if (animation.getByName('whiteScroll') == null)
-			animation.addByPrefix('whiteScroll', 'green${animSuffix}0');
-
-		if (animation.getByName('yellowScroll') == null)
-			animation.addByPrefix('yellowScroll', 'purple${animSuffix}0');
-
-		if (animation.getByName('lilaScroll') == null)
-			animation.addByPrefix('lilaScroll', 'blue${animSuffix}0');
-
-		if (animation.getByName('cherryScroll') == null)
-			animation.addByPrefix('cherryScroll', 'green${animSuffix}0');
-
-		if (animation.getByName('cyanScroll') == null)
-			animation.addByPrefix('cyanScroll', 'red${animSuffix}0');
+		addFallbackAnim('whiteScroll', 'green${animSuffix}0');
+		addFallbackAnim('yellowScroll', 'purple${animSuffix}0');
+		addFallbackAnim('lilaScroll', 'blue${animSuffix}0');
+		addFallbackAnim('cherryScroll', 'green${animSuffix}0');
+		addFallbackAnim('cyanScroll', 'red${animSuffix}0');
 
 		if (isSustainNote)
 		{
@@ -410,20 +406,11 @@ class Note extends DynamicSprite
 			animation.addByPrefix('cherryholdend', 'cherry hold end${animSuffix}');
 			animation.addByPrefix('cyanholdend', 'cyan hold end${animSuffix}');
 
-			if (animation.getByName('whiteholdend') == null)
-				animation.addByPrefix('whiteholdend', 'green hold end${animSuffix}');
-	
-			if (animation.getByName('yellowholdend') == null)
-				animation.addByPrefix('yellowholdend', 'pruple hold end${animSuffix}');
-	
-			if (animation.getByName('lilaholdend') == null)
-				animation.addByPrefix('lilaholdend', 'blue hold end${animSuffix}');
-	
-			if (animation.getByName('cherryholdend') == null)
-				animation.addByPrefix('cherryholdend', 'green hold end${animSuffix}');
-	
-			if (animation.getByName('cyanholdend') == null)
-				animation.addByPrefix('cyanholdend', 'red hold end${animSuffix}');
+			addFallbackAnim('whiteholdend', 'green hold end${animSuffix}');
+			addFallbackAnim('yellowholdend', 'pruple hold end${animSuffix}');
+			addFallbackAnim('lilaholdend', 'blue hold end${animSuffix}');
+			addFallbackAnim('cherryholdend', 'green hold end${animSuffix}');
+			addFallbackAnim('cyanholdend', 'red hold end${animSuffix}');
 
 			animation.addByPrefix('purplehold', 'purple hold piece${animSuffix}');
 			animation.addByPrefix('greenhold', 'green hold piece${animSuffix}');
@@ -435,20 +422,11 @@ class Note extends DynamicSprite
 			animation.addByPrefix('cherryhold', 'cherry hold piece${animSuffix}');
 			animation.addByPrefix('cyanhold', 'cyan hold piece${animSuffix}');
 
-			if (animation.getByName('whitehold') == null)
-				animation.addByPrefix('whitehold', 'green hold piece${animSuffix}');
-	
-			if (animation.getByName('yellowhold') == null)
-				animation.addByPrefix('yellowhold', 'pruple hold piece${animSuffix}');
-	
-			if (animation.getByName('lilahold') == null)
-				animation.addByPrefix('lilahold', 'blue hold piece${animSuffix}');
-	
-			if (animation.getByName('cherryhold') == null)
-				animation.addByPrefix('cherryhold', 'green hold piece${animSuffix}');
-	
-			if (animation.getByName('cyanhold') == null)
-				animation.addByPrefix('cyanhold', 'red hold piece${animSuffix}');
+			addFallbackAnim('whitehold', 'green hold piece${animSuffix}');
+			addFallbackAnim('yellowhold', 'pruple hold piece${animSuffix}');
+			addFallbackAnim('lilahold', 'blue hold piece${animSuffix}');
+			addFallbackAnim('cherryhold', 'green hold piece${animSuffix}');
+			addFallbackAnim('cyanhold', 'red hold piece${animSuffix}');
 		}
 
 		if (isLiftNote)
@@ -462,20 +440,12 @@ class Note extends DynamicSprite
 			animation.addByPrefix('lilaScroll', 'lila lift${animSuffix}');
 			animation.addByPrefix('cherryScroll', 'cherry lift${animSuffix}');
 			animation.addByPrefix('cyanScroll', 'cyan lift${animSuffix}');
-			if (animation.getByName('whiteScroll') == null)
-				animation.addByPrefix('whiteScroll', 'green lift${animSuffix}');
-	
-			if (animation.getByName('yellowScroll') == null)
-				animation.addByPrefix('yellowScroll', 'purple lift${animSuffix}');
-	
-			if (animation.getByName('lilaScroll') == null)
-				animation.addByPrefix('lilaScroll', 'blue lift${animSuffix}');
-	
-			if (animation.getByName('cherryScroll') == null)
-				animation.addByPrefix('cherryScroll', 'green lift${animSuffix}');
-	
-			if (animation.getByName('cyanScroll') == null)
-				animation.addByPrefix('cyanScroll', 'purple lift${animSuffix}');
+
+			addFallbackAnim('whiteScroll', 'green lift${animSuffix}');
+			addFallbackAnim('yellowScroll', 'purple lift${animSuffix}');
+			addFallbackAnim('lilaScroll', 'blue lift${animSuffix}');
+			addFallbackAnim('cherryScroll', 'green lift${animSuffix}');
+			addFallbackAnim('cyanScroll', 'red lift${animSuffix}');
 		}
 		if (nukeNote)
 		{
@@ -489,20 +459,11 @@ class Note extends DynamicSprite
 			animation.addByPrefix('cherryScroll', 'cherry nuke${animSuffix}');
 			animation.addByPrefix('cyanScroll', 'cyan nuke${animSuffix}');
 
-			if (animation.getByName('whiteScroll') == null)
-				animation.addByPrefix('whiteScroll', 'green nuke${animSuffix}');
-	
-			if (animation.getByName('yellowScroll') == null)
-				animation.addByPrefix('yellowScroll', 'purple nuke${animSuffix}');
-	
-			if (animation.getByName('lilaScroll') == null)
-				animation.addByPrefix('lilaScroll', 'blue nuke${animSuffix}');
-	
-			if (animation.getByName('cherryScroll') == null)
-				animation.addByPrefix('cherryScroll', 'green nuke${animSuffix}');
-	
-			if (animation.getByName('cyanScroll') == null)
-				animation.addByPrefix('cyanScroll', 'purple nuke${animSuffix}');
+			addFallbackAnim('whiteScroll', 'green nuke${animSuffix}');
+			addFallbackAnim('yellowScroll', 'purple nuke${animSuffix}');
+			addFallbackAnim('lilaScroll', 'blue nuke${animSuffix}');
+			addFallbackAnim('cherryScroll', 'green nuke${animSuffix}');
+			addFallbackAnim('cyanScroll', 'red nuke${animSuffix}');
 		}
 		
 		if (mineNote)
@@ -516,20 +477,12 @@ class Note extends DynamicSprite
 			animation.addByPrefix('lilaScroll', 'lila mine${animSuffix}');
 			animation.addByPrefix('cherryScroll', 'cherry mine${animSuffix}');
 			animation.addByPrefix('cyanScroll', 'cyan mine${animSuffix}');
-			if (animation.getByName('whiteScroll') == null)
-				animation.addByPrefix('whiteScroll', 'green mine${animSuffix}');
-	
-			if (animation.getByName('yellowScroll') == null)
-				animation.addByPrefix('yellowScroll', 'purple mine${animSuffix}');
-	
-			if (animation.getByName('lilaScroll') == null)
-				animation.addByPrefix('lilaScroll', 'blue mine${animSuffix}');
-	
-			if (animation.getByName('cherryScroll') == null)
-				animation.addByPrefix('cherryScroll', 'green mine${animSuffix}');
-	
-			if (animation.getByName('cyanScroll') == null)
-				animation.addByPrefix('cyanScroll', 'purple mine${animSuffix}');
+
+			addFallbackAnim('whiteScroll', 'green mine${animSuffix}');
+			addFallbackAnim('yellowScroll', 'purple mine${animSuffix}');
+			addFallbackAnim('lilaScroll', 'blue mine${animSuffix}');
+			addFallbackAnim('cherryScroll', 'green mine${animSuffix}');
+			addFallbackAnim('cyanScroll', 'red mine${animSuffix}');
 		}
 		if (dontEdit) {
 			animation.addByPrefix('greenScroll', specialNoteInfo.animNames[2]);
@@ -552,11 +505,8 @@ class Note extends DynamicSprite
 		animation = new FlxAnimationController(this);
 
 		if (isPixel)
-		{
 			handlePixelAssets(curUiType, null, null);
-		}
-		else
-		{
+		else{
 			Note.getFrames = true;
 			handleSparrowAssets(curUiType, null);
 		}

@@ -141,8 +141,21 @@ class DialogueBox extends FlxSpriteGroup
 		portrait.visible = false;
 
 		box = new FlxSprite(-20, 45);
-		box.frames = FlxAtlasFrames.fromSparrow(FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/$curBox.png'),
-			FNFAssets.getText(SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/$curBox.xml'));
+		var pngPath = SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/$curBox.png';
+		var xmlPath = SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/$curBox.xml';
+
+		if (Assets.exists(pngPath) && Assets.exists(xmlPath))
+		{
+			box.frames = FlxAtlasFrames.fromSparrow(
+				FNFAssets.getBitmapData(pngPath),
+				FNFAssets.getText(xmlPath)
+			);
+		}
+		else
+		{
+			trace('Missing dialogue box assets: ' + curBox);
+			return;
+		}
 		box.animation.addByPrefix('open', 'open', 24, false);
 		box.animation.addByPrefix('normal', 'normal', 24, true);
 		box.animation.play('open');
@@ -234,7 +247,7 @@ class DialogueBox extends FlxSpriteGroup
 
 		dropText.text = swagDialogue.text;
 
-		if (box.animation.curAnim != null)
+		if (box != null && box.animation != null && box.animation.curAnim != null)
 		{
 			if (box.animation.curAnim.name == 'open' && box.animation.curAnim.finished)
 			{
@@ -353,8 +366,22 @@ class DialogueBox extends FlxSpriteGroup
 		});
 		remove(portrait);
 		portrait = new FlxSprite(-20, 40);
-		portrait.frames = FlxAtlasFrames.fromSparrow(FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_chars/$curCharacter/portrait.png'),
-			FNFAssets.getText(SUtil.getPath() + 'assets/images/custom_chars/$curCharacter/portrait.xml'));
+		var pngPath = SUtil.getPath() + 'assets/images/custom_chars/$curCharacter/portrait.png';
+		var xmlPath = SUtil.getPath() + 'assets/images/custom_chars/$curCharacter/portrait.xml';
+
+		if (Assets.exists(pngPath) && Assets.exists(xmlPath))
+		{
+			portrait.frames = FlxAtlasFrames.fromSparrow(
+				FNFAssets.getBitmapData(pngPath),
+				FNFAssets.getText(xmlPath)
+			);
+		}
+		else
+		{
+			trace('Missing portrait assets: ' + curCharacter);
+			return;
+		}
+
 		portrait.animation.addByPrefix(curEmotion, curEmotion, 24, false);
 		portrait.setGraphicSize(Std.int(portrait.width * 0.9));
 		portrait.updateHitbox();
@@ -408,8 +435,21 @@ class DialogueBox extends FlxSpriteGroup
 			remove(box);
 			box = new FlxSprite(-20, 45);
 
-			box.frames = FlxAtlasFrames.fromSparrow(FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/$curBox.png'),
-				FNFAssets.getText(SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/$curBox.xml'));
+			var pngPath = SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/$curBox.png';
+			var xmlPath = SUtil.getPath() + 'assets/images/custom_dialogs/dialogBoxes/$curBox.xml';
+
+			if (Assets.exists(pngPath) && Assets.exists(xmlPath))
+			{
+				box.frames = FlxAtlasFrames.fromSparrow(
+					FNFAssets.getBitmapData(pngPath),
+					FNFAssets.getText(xmlPath)
+				);
+			}
+			else
+			{
+				trace('Missing dialogue box assets: ' + curBox);
+				return;
+			}
 			box.animation.addByPrefix('open', 'open', 24, false);
 			box.animation.addByPrefix('normal', 'normal', 24, true);
 
@@ -479,7 +519,8 @@ class DialogueBox extends FlxSpriteGroup
 		curSpeed = dialogueFile.info[0].writingSpeed;
 		curFlip = dialogueFile.info[0].flipSides;
 		oldBox = curBox;
-		curBox = dialogueFile.info[0].dialogueBox;
+		if (dialogueFile.info[0].dialogueBox != null && dialogueFile.info[0].dialogueBox != "")
+			curBox = dialogueFile.info[0].dialogueBox;
 		curSound = dialogueFile.info[0].dialogueSound;
 		dialogueColor = dialogueFile.info[0].textColor;
 		shadowColor = dialogueFile.info[0].textShadowColor;

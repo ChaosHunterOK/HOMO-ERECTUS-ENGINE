@@ -27,6 +27,7 @@ var bfInitWidth;
 var camBG;
 var camHUD;
 var gridBG;
+var saveOffsetsButton;
 
 function start(daAnix, daOtherAnix)
 {
@@ -90,6 +91,14 @@ function create()
     loadCharButton.scrollFactor.set();
     add(loadCharButton);
 
+    saveOffsetsButton = new FlxButton(1195, 120, "Save Offsets", function()
+    {
+        saveOffsets();
+    });
+    saveOffsetsButton.cameras = [camHUD];
+    saveOffsetsButton.scrollFactor.set();
+    add(saveOffsetsButton);
+
     textAnim = new FlxText(300, 16);
     textAnim.size = 26;
     textAnim.scrollFactor.set();
@@ -118,6 +127,48 @@ function create()
     FlxG.camera.follow(camFollow);
     if (mobile)
         addVirtualPad('full', 'a_b_c_x_y_z');
+}
+
+function escapeRegex(str)
+{
+    var specials = ['\\', '.', '+', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|'];
+    for (c in specials)
+        str = str.replace(c, '\\' + c);
+    return str;
+}
+
+function saveOffsets()
+{
+    #if sys
+    var path = "assets/images/custom_chars/" + char.curCharacter + ".hscript";
+
+    if (!sys.FileSystem.exists(path))
+    {
+        trace("Couldn't find: " + path);
+        return;
+    }
+
+    var content = sys.io.File.getContent(path);
+
+    for (anim in char.animOffsets.keys())
+    {
+        var offset = char.animOffsets.get(anim);
+        var escapedAnim = escapeRegex(anim);
+
+        var regex = new EReg(
+            '(char\\.)?addOffset\\s*\\(\\s*["\']' + escapedAnim + '["\']\\s*,\\s*-?\\d+\\s*(?:,\\s*-?\\d+\\s*)?\\)\\s*;?',
+            "g"
+        );
+
+        content = regex.replace(
+            content,
+            'char.addOffset("' + anim + '", ' + offset[0] + ', ' + offset[1] + ');'
+        );
+    }
+
+    sys.io.File.saveContent(path, content);
+    trace("Updated offsets in " + path);
+    #end
 }
 
 function genBoyOffsets(pushList)

@@ -154,6 +154,7 @@ class GameOverSubstate extends MusicBeatSubstate
 		interp.variables.set("addVirtualPads", addVirtualPads);
 		interp.variables.set("addPadcam", addPadcam);
 		interp.variables.set("visPressed", visPressed);
+		interp.variables.set("setCameras", setCameras);
 		try{
 			trace("set stuff");
 			interp.execute(program);
@@ -241,5 +242,10 @@ class GameOverSubstate extends MusicBeatSubstate
 		super.stepHit();
 		setAllHaxeVar('curStep', curStep);
 		callAllHScript("stepHit", [curStep]);
+	}
+
+	function setCameras()
+	{
+		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 	}
 }

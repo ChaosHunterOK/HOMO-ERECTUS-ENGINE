@@ -45,6 +45,7 @@ function start(xPos, yPos, isPlayer)
 	FlxG.camera.target = null;
 
 	bf.playAnim('firstDeath');
+	setCameras();
 	if (mobile){
 		addVirtualPads('none', 'a_b');
 		addPadcam();

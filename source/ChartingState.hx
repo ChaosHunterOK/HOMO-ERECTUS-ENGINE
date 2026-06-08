@@ -1,5 +1,10 @@
 package;
 
+import openfl.media.Sound;
+import flixel.util.FlxColor;
+import openfl.geom.Rectangle;
+import flixel.FlxSprite;
+import lime.media.AudioBuffer;
 import Section.SwagSection;
 import Song.SwagSong;
 import Conductor.BPMChangeEvent;
@@ -39,6 +44,7 @@ import openfl.utils.ByteArray;
 import lime.system.System;
 import flixel.util.FlxSort;
 import lime.system.Clipboard;
+import flixel.math.FlxRect;
 #if sys
 import sys.io.File;
 import haxe.io.Path;
@@ -161,7 +167,13 @@ class ChartingState extends MusicBeatState
 		interp.variables.set("add", add);
 		interp.variables.set("remove", remove);
 		interp.variables.set("insert", insert);
-        interp.variables.set("replace", replace);
+        interp.variables.set("FlxRect", FlxRect);
+		interp.variables.set("replace", replace);
+		interp.variables.set("generateWaveform", generateWaveform);
+		interp.variables.set("calculateSectionDuration", calculateSectionDuration);
+		interp.variables.set("calculateSectionTimings", calculateSectionTimings);
+		interp.variables.set("generateSectionWaveform", generateSectionWaveform);
+		interp.variables.set("generateAllSectionWaveforms", generateAllSectionWaveforms);
 		interp.variables.set("pi", Math.PI);
 		interp.variables.set("curMusicName", Main.curMusicName);
 		interp.variables.set("Highscore", Highscore);
@@ -392,6 +404,207 @@ catch (e) {
 		super.stepHit();
 		setAllHaxeVar('curStep', curStep);
 		callAllHScript("stepHit", [curStep]);
+	}
+
+	@:access(openfl.media.Sound)
+	public function generateWaveform(sound:Sound, width:Int, height:Int, color:Int):FlxSprite
+	{
+		if (sound == null || sound.__buffer == null)
+			return null;
+
+		var sprite = new FlxSprite();
+		sprite.makeGraphic(width, height, FlxColor.TRANSPARENT, true);
+
+		var buffer:AudioBuffer = sound.__buffer;
+		var data = buffer.data;
+
+		if (data == null)
+			return sprite;
+
+		var centerX:Int = Std.int(width * 0.5);
+
+		var totalSamples:Int = data.length;
+		var samplesPerRow:Int = Std.int(totalSamples / height);
+
+		if (samplesPerRow < 1)
+			samplesPerRow = 1;
+
+		var bmp = sprite.pixels;
+		bmp.lock();
+
+		for (y in 0...height)
+		{
+			var startSample = y * samplesPerRow;
+			var endSample = startSample + samplesPerRow;
+
+			if (endSample > totalSamples)
+				endSample = totalSamples;
+
+			var peak:Float = 0;
+
+			for (i in startSample...endSample)
+			{
+				var sample = data[i] / 32768.0;
+				var amp = Math.abs(sample);
+
+				if (amp > peak)
+					peak = amp;
+			}
+
+			var waveSize:Int = Std.int(peak * (width * 0.5));
+
+			if (waveSize < 1)
+				waveSize = 1;
+
+			bmp.fillRect(
+				new Rectangle(centerX - waveSize, y, waveSize * 2, 1),
+				color
+			);
+		}
+
+		bmp.unlock();
+		sprite.dirty = true;
+
+		return sprite;
+	}
+	public function calculateSectionDuration(sections:Array<SwagSection>, sectionIndex:Int, baseBPM:Float):Float
+	{
+		if (sectionIndex < 0 || sectionIndex >= sections.length)
+			return 0;
+
+		var section = sections[sectionIndex];
+		var sectionBPM = (section.changeBPM && section.bpm > 0) ? section.bpm : baseBPM;
+		var msPerStep = (60 / sectionBPM) * 1000 / 4;
+		var duration = msPerStep * section.lengthInSteps;
+
+		return duration;
+	}
+	public function calculateSectionTimings(sections:Array<SwagSection>,baseBPM:Float):Array<{sectionIndex:Int,startTime:Float,endTime:Float}>
+	{
+		var timings = [];
+		var currentTime:Float = 0;
+		var curBPM:Float = baseBPM;
+
+		for (i in 0...sections.length)
+		{
+			var sec = sections[i];
+
+			if (sec.changeBPM && sec.bpm > 0)
+				curBPM = sec.bpm;
+
+			var msPerStep = (60 / curBPM) * 1000 / 4;
+			var duration = msPerStep * sec.lengthInSteps;
+
+			timings.push({
+				sectionIndex: i,
+				startTime: currentTime,
+				endTime: currentTime + duration
+			});
+
+			currentTime += duration;
+		}
+
+		return timings;
+	}
+	@:access(openfl.media.Sound)
+	private function extractAudioRange(sound:Sound, startMs:Float, endMs:Float, sampleRate:Int = 44100):Array<Float>
+	{
+		var samples:Array<Float> = [];
+
+		if (sound == null || sound.__buffer == null)
+			return samples;
+
+		var buffer:AudioBuffer = sound.__buffer;
+		var data = buffer.data;
+
+		if (data == null)
+			return samples;
+
+		var startSample = Std.int((startMs / 1000) * sampleRate);
+		var endSample = Std.int((endMs / 1000) * sampleRate);
+		startSample = Std.int(Math.max(0, startSample));
+		endSample = Std.int(Math.min(data.length, endSample));
+
+		for (i in startSample...endSample)
+		{
+			if (i < data.length)
+				samples.push(data[i]);
+		}
+
+		return samples;
+	}
+	@:access(openfl.media.Sound)
+	public function generateSectionWaveform(sound:Sound, sections:Array<SwagSection>, sectionIndex:Int, baseBPM:Float, width:Int, height:Int, color:FlxColor):FlxSprite
+	{
+		var sprite = new FlxSprite();
+		sprite.makeGraphic(width, height, FlxColor.TRANSPARENT);
+
+		if (sectionIndex < 0 || sectionIndex >= sections.length || sound == null || sound.__buffer == null)
+			return sprite;
+
+		var timings = calculateSectionTimings(sections, baseBPM);
+		var timing = timings[sectionIndex];
+		var sectionSamples = extractAudioRange(sound, timing.startTime, timing.endTime);
+
+		if (sectionSamples.length == 0)
+			return sprite;
+
+		var bmp = sprite.pixels;
+		bmp.lock();
+
+		var midX = Std.int(width / 2);
+		var samplesPerPixel = sectionSamples.length / height;
+
+		for (y in 0...height)
+		{
+			var startSample = Std.int(y * samplesPerPixel);
+			var endSample = Std.int((y + 1) * samplesPerPixel);
+
+			var sum:Float = 0;
+			var count:Int = 0;
+
+			for (i in startSample...endSample)
+			{
+				if (i >= sectionSamples.length)
+					break;
+
+				var value = sectionSamples[i] / 32768.0;
+
+				sum += value * value;
+				count++;
+			}
+
+			var amp:Float = count > 0 ? Math.sqrt(sum / count) : 0;
+
+			var barWidth = Std.int(amp * midX);
+
+			for (x in (midX - barWidth)...(midX + barWidth))
+			{
+				if (x >= 0 && x < width)
+					bmp.setPixel32(x, y, color);
+			}
+		}
+
+		bmp.unlock();
+		sprite.dirty = true;
+
+		return sprite;
+	}
+	@:access(openfl.media.Sound)
+	public function generateAllSectionWaveforms(sound:Sound, sections:Array<SwagSection>, baseBPM:Float, width:Int, height:Int, color:FlxColor):Map<Int, FlxSprite>
+	{
+		var waveforms:Map<Int, FlxSprite> = new Map<Int, FlxSprite>();
+
+		if (sound == null || sound.__buffer == null || sections == null || sections.length == 0)
+			return waveforms;
+
+		for (i in 0...sections.length)
+		{
+			var waveform = generateSectionWaveform(sound, sections, i, baseBPM, width, height, color);
+			waveforms.set(i, waveform);
+		}
+
+		return waveforms;
 	}
 }
 

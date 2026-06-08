@@ -35,6 +35,7 @@ typedef SwagSong =
 	var forceJudgements:Null<Bool>;
 	var convertMineToNuke:Null<Bool>;
 	var mania:Null<Int>;
+	var ?opponentCount:Null<Int>;
 }
 
 class Song

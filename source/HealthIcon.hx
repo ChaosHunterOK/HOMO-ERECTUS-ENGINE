@@ -34,39 +34,49 @@ class HealthIcon extends FlxSprite
 	public var frameCount:Int = 1;
 	
 	function set_iconState(x:IconState):IconState {
-        if (!hasAnim)
-        {
-            var frameIndex:Int = switch(x) {
-                case Normal: 0;
-                case Dying: frameCount > 1 ? 1 : 0;
-                case Poisoned: frameCount > 2 ? 2 : 0;
-                case Winning: frameCount > 3 ? 3 : 0;
-            };
-            animation.curAnim.curFrame = frameIndex;
-        }
-        else
-        {
-            var animNames:Map<IconState, String> = [
-                Normal => 'normal',
-                Dying => 'losing',
-                Poisoned => 'poison',
-                Winning => 'winning'
-            ];
-            
-            var targetAnim = animNames.get(x);
-            var currentAnimName = animation.curAnim != null ? animation.curAnim.name : '';
-            
-            if (targetAnim != currentAnimName)
-            {
-                if (targetAnim == 'winning' && animation.getByName('winning') == null)
-                    animation.play('normal', true);
-                else if (animation.getByName(targetAnim) != null)
-                    animation.play(targetAnim, true);
-            }
-        }
+		if (!hasAnim)
+		{
+			if (animation.getByName('icon') == null)
+				return iconState = x;
+			if (animation.curAnim == null)
+				animation.play('icon');
 
-        return iconState = x;
-    }
+			if (animation.curAnim != null)
+			{
+				var frameIndex:Int = switch(x)
+				{
+					case Normal: 0;
+					case Dying: frameCount > 1 ? 1 : 0;
+					case Poisoned: frameCount > 2 ? 2 : 0;
+					case Winning: frameCount > 3 ? 3 : 0;
+				};
+
+				animation.curAnim.curFrame = frameIndex;
+			}
+		}
+		else
+		{
+			var animNames:Map<IconState, String> = [
+				Normal => 'normal',
+				Dying => 'losing',
+				Poisoned => 'poison',
+				Winning => 'winning'
+			];
+
+			var targetAnim = animNames.get(x);
+			var currentAnimName = animation.curAnim != null ? animation.curAnim.name : '';
+
+			if (targetAnim != currentAnimName)
+			{
+				if (targetAnim == 'winning' && animation.getByName('winning') == null)
+					animation.play('normal', true);
+				else if (animation.getByName(targetAnim) != null)
+					animation.play(targetAnim, true);
+			}
+		}
+
+		return iconState = x;
+	}
 	public function new(char:String = 'bf', isPlayer:Bool = false)
 	{
 		player = isPlayer;

@@ -106,36 +106,9 @@ if (!FlxG.sound.music.playing){
     var versionShit = new FlxText(5, FlxG.height - 18, 0, "v"+ Application.current.meta.get("version") + infoJson.version, 12);
     versionShit.text += "-" + FNFAssets.getText('VERSION');
     setVersion(versionShit.text);
-    var usingSave = new FlxText(5, FlxG.height - 36, 0, flixelSave.name, 12);
     versionShit.scrollFactor.set();
     versionShit.setFormat("VCR OSD Mono", 16, 0xFFffffff, "left", FlxTextBorderStyle.OUTLINE, 0xFF000000);
-    usingSave.scrollFactor.set();
-    usingSave.setFormat("VCR OSD Mono", 16, 0xFFffffff, "left", FlxTextBorderStyle.OUTLINE, 0xFF000000);
     add(versionShit);
-    if (OptionsHandler.options.useSaveDataMenu)
-        add(usingSave);
-    switch (flixelSave.name) {
-        case "save0":
-            usingSave.text = "bf";
-        case "save1":
-            usingSave.text = "classic";
-        case "save2":
-            usingSave.text = "bf-pixel";
-        case "save3":
-            usingSave.text = "spooky";
-        case "save4":
-            usingSave.text = "dad";
-        case "save5":
-            usingSave.text = "pico";
-        case "save6":
-            usingSave.text = "mom";
-        case "save7":
-            usingSave.text = "gf";
-        case "save8":
-            usingSave.text = "lemon";
-        case "save9":
-            usingSave.text = "senpai";
-    }
     changeItem(0);
     addHaxeLibrary('Highscore');
     if (mobile)
