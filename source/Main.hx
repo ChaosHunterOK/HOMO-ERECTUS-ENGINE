@@ -120,8 +120,20 @@ class Main extends Sprite
         setupOverlays(options);
         stage.align = "tl";
         stage.scaleMode = StageScaleMode.NO_SCALE;
+        stage.addEventListener(Event.RESIZE, onResize);
+        onResize(null); 
 
         #if mobile SUtil.doTheCheck(); #end
+    }
+
+    private function onResize(?E:Event):Void {
+        var stageWidth:Int = Lib.current.stage.stageWidth;
+        var stageHeight:Int = Lib.current.stage.stageHeight;
+        if (stageWidth > 0 && stageHeight > 0) {
+            if (FlxG.game != null) {
+                FlxG.scaleMode.onMeasure(stageWidth, stageHeight);
+            }
+        }
     }
 
     private function setupOverlays(options:Dynamic):Void {
