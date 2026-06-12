@@ -133,7 +133,16 @@ class SpriteSymbol extends Sprite {
 		for (i in 0..._numLayers) {
 			updateLayer(i);
 		}
-
+		for (l in 0..._numLayers) {
+			var layer:Sprite = getLayer(l);
+			var numElements:Int = layer.numChildren;
+			for (e in 0...numElements) {
+				var childSymbol = try cast(layer.getChildAt(e), SpriteSymbol) catch (err:Dynamic) null;
+				if (childSymbol != null) {
+					childSymbol.update();
+				}
+			}
+		}
 		_composedFrame = _currentFrame;
 	}
 
@@ -243,8 +252,11 @@ class SpriteSymbol extends Sprite {
 
 			if (_tempRect.x != spriteData.x || _tempRect.y != spriteData.y || _tempRect.width != spriteData.w || _tempRect.height != spriteData.h) {
 				var clippedTexture = new BitmapData(spriteData.w, spriteData.h);
-				_tempRect.setTo(spriteData.x, spriteData.y, spriteData.w, spriteData.h);
-				clippedTexture.copyPixels(_texture, _tempRect, _zeroPoint);
+				_tempRect.x = spriteData.x;
+				_tempRect.y = spriteData.y;
+				_tempRect.width = spriteData.w;
+				_tempRect.height = spriteData.h;
+				clippedTexture.copyPixels(_texture, _tempRect, new Point(0, 0));
 				_bitmap.bitmapData = clippedTexture;
 				_bitmap.smoothing = smoothing;
 				
@@ -303,7 +315,11 @@ class SpriteSymbol extends Sprite {
 	}
 
 	private function setTransformationMatrix(data:Matrix3DData):Void {
-		sMatrix.setTo(data.m00, data.m01, data.m10, data.m11, data.m30, data.m31);
+		sMatrix.setTo(
+			data.m00, data.m10,
+			data.m01, data.m11,
+			data.m30, data.m31
+		);
 		if (sMatrix.a != transform.matrix.a || sMatrix.b != transform.matrix.b || sMatrix.c != transform.matrix.c || sMatrix.d != transform.matrix.d
 			|| sMatrix.tx != transform.matrix.tx || sMatrix.ty != transform.matrix.ty)
 			transform.matrix = sMatrix.clone(); // todo stop the cloning :(

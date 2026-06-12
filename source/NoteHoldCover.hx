@@ -44,15 +44,28 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
     sparks = new FlxSprite();
     add(sparks);
+    if (Judgement.uiJson == null || PlayState.SONG == null) {
+        trace("smth judgement ui error");
+        return;
+    }
 
     var curUiType:TUI = Reflect.field(Judgement.uiJson, PlayState.SONG.uiType);
+    if (curUiType == null) {
+        trace("i guess");
+        curUiType = {uses: "default"}; 
+    }
+
     var colorIdx = getColorIdx();
     var color = Note.colArray[colorIdx];
     var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
 
-    //if (!strumNote.isPixelNote)
-    //{
-        var path = SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/holdCover" + colorTitle;
+    var path = SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/holdCover" + colorTitle;
+    try {
+        glow.frames = DynamicAtlasFrames.fromSparrow(path + ".png", path + ".xml");
+    } catch(e:Dynamic) {
+        trace("could not load textures at path: " + path + " Error: " + e);
+        return;
+    }
 
         glow.frames = DynamicAtlasFrames.fromSparrow(path + ".png", path + ".xml");
 

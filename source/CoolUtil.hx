@@ -16,6 +16,8 @@ class CoolUtil
 	// hxs, like kotlin's kts
 	public static final HSCRIPT_EXT:Array<String> = ['hscript', 'hxs'];
 	public static final JSON_EXT:Array<String> = ['json', 'jsonc'];
+	public static var directionArray:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
+	public static var holdAnimationFix:Bool = true;
 	public static function coolTextFile(path:String):Array<String>
 	{
 		var daList:Array<String> = FNFAssets.getText(path).trim().split('\n');

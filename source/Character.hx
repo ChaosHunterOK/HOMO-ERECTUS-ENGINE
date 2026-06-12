@@ -21,6 +21,7 @@ import lime.system.System;
 import lime.app.Application;
 import flixel.system.FlxSound;
 import openfl.utils.AssetType;
+import animateatlas.AtlasFrameMaker;
 #if sys
 import sys.io.File;
 import sys.FileSystem;
@@ -458,6 +459,7 @@ class Character extends FlxSprite
 		interp.variables.set("dadVar", 4.0);
 		interp.variables.set("isPixel", false);
 		interp.variables.set("colors", [FlxColor.CYAN]);
+		interp.variables.set("AtlasFrameMaker", AtlasFrameMaker);
 		interp.execute(program);
 		trace(interp);
 		return interp;

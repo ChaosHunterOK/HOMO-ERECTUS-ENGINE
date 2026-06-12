@@ -133,28 +133,93 @@ class TileAnimationLibrary {
 	// # end region
 	// # region helpers
 	private function parseAnimationData(data:AnimationData):Void {
-		var metaData = data.metadata;
-
-		if (metaData != null && metaData.framerate != null && metaData.framerate > 0) {
-			frameRate = (metaData.framerate);
+		if (data.MD != null && data.MD.FRT != null && data.MD.FRT > 0) {
+			frameRate = data.MD.FRT;
+		} else if (data.metadata != null && data.metadata.framerate != null && data.metadata.framerate > 0) {
+			frameRate = data.metadata.framerate;
 		} else {
 			frameRate = 24;
 		}
 
 		_symbolData = new Map();
+		if (data.AN != null) {
+			var convertedLayers:Array<LayerData> = [];
 
-		// the actual symbol dictionary
+			for (layer2022 in data.AN.TL.L) {
+				var convertedFrames:Array<LayerFrameData> = [];
+
+				for (frame2022 in layer2022.FR) {
+					var convertedElements:Array<ElementData> = [];
+
+					for (element2022 in frame2022.E) {
+						if (element2022.ASI != null) {
+							var m = element2022.M3D != null ? element2022.M3D : element2022.ASI.M3D;
+							convertedElements.push({
+								ATLAS_SPRITE_instance: {
+									name: element2022.ASI.N,
+									Position: { x: 0, y: 0 },
+									Matrix3D: {
+										m00: m[0], m01: m[1], m02: m[2], m03: m[3],
+										m10: m[4], m11: m[5], m12: m[6], m13: m[7],
+										m20: m[8], m21: m[9], m22: m[10], m23: m[11],
+										m30: m[12], m31: m[13], m32: m[14], m33: m[15]
+									}
+								}
+							});
+						} else if (element2022.SI != null) {
+							var m = element2022.M3D != null ? element2022.M3D : element2022.SI.M3D;
+							convertedElements.push({
+								SYMBOL_Instance: {
+									SYMBOL_name: element2022.SI.SN,
+									Instance_Name: element2022.SI.IN,
+									symbolType: element2022.SI.ST,
+									firstFrame: element2022.SI.FF,
+									loop: LoopMode.LOOP,
+									transformationPoint: { x: 0, y: 0 },
+									bitmap: null,
+									Matrix3D: {
+										m00: m[0], m01: m[1], m02: m[2], m03: m[3],
+										m10: m[4], m11: m[5], m12: m[6], m13: m[7],
+										m20: m[8], m21: m[9], m22: m[10], m23: m[11],
+										m30: m[12], m31: m[13], m32: m[14], m33: m[15]
+									}
+								}
+							});
+						}
+					}
+
+					convertedFrames.push({
+						index: frame2022.I,
+						duration: frame2022.DU,
+						elements: convertedElements
+					});
+				}
+
+				convertedLayers.push({
+					Layer_name: layer2022.LN,
+					Frames: convertedFrames,
+					FrameMap: null
+				});
+			}
+			data.ANIMATION = {
+				SYMBOL_name: data.AN.SN != null && data.AN.SN != "" ? data.AN.SN : data.AN.N,
+				TIMELINE: {
+					LAYERS: convertedLayers
+				}
+			};
+			if (data.SYMBOL_DICTIONARY == null) {
+				data.SYMBOL_DICTIONARY = { Symbols: [] };
+			}
+		}
 		var symbols = data.SYMBOL_DICTIONARY.Symbols;
 		for (symbolData in symbols) {
 			_symbolData[symbolData.SYMBOL_name] = preprocessSymbolData(symbolData);
 		}
 
-		// the main animation
 		var defaultSymbolData:SymbolData = preprocessSymbolData(data.ANIMATION);
 		_defaultSymbolName = defaultSymbolData.SYMBOL_name;
 		_symbolData.set(_defaultSymbolName, defaultSymbolData);
 
-		// a purely internal symbol for bitmaps - simplifies their handling
 		_symbolData.set(BITMAP_SYMBOL_NAME, {
 			SYMBOL_name: BITMAP_SYMBOL_NAME,
 			TIMELINE: {
@@ -167,16 +232,10 @@ class TileAnimationLibrary {
 		var timeLineData:SymbolTimelineData = symbolData.TIMELINE;
 		var layerDates:Array<LayerData> = timeLineData.LAYERS;
 
-		// In Animate CC, layers are sorted front to back.
-		// In Starling, it's the other way round - so we simply reverse the layer data.
-
 		if (!timeLineData.sortedForRender) {
 			timeLineData.sortedForRender = true;
 			layerDates.reverse();
 		}
-
-		// We replace all "ATLAS_SPRITE_instance" elements with symbols of the same contents.
-		// That way, we are always only dealing with symbols.
 
 		for (layerData in layerDates) {
 			var frames:Array<LayerFrameData> = layerData.Frames;
@@ -186,6 +245,8 @@ class TileAnimationLibrary {
 				for (e in 0...elements.length) {
 					var element:ElementData = elements[e];
 					if (element.ATLAS_SPRITE_instance != null) {
+						var matrix = element.ATLAS_SPRITE_instance.Matrix3D != null ? element.ATLAS_SPRITE_instance.Matrix3D : STD_MATRIX3D_DATA;
+						
 						element = elements[e] = {
 							SYMBOL_Instance: {
 								SYMBOL_name: BITMAP_SYMBOL_NAME,
@@ -194,11 +255,8 @@ class TileAnimationLibrary {
 								symbolType: SymbolType.GRAPHIC,
 								firstFrame: 0,
 								loop: LoopMode.LOOP,
-								transformationPoint: {
-									x: 0,
-									y: 0
-								},
-								Matrix3D: STD_MATRIX3D_DATA
+								transformationPoint: { x: 0, y: 0 },
+								Matrix3D: matrix
 							}
 						};
 					}

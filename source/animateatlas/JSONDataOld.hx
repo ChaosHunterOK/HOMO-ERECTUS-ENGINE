@@ -1,74 +1,26 @@
 package animateatlas;
 
+/**
+ * All data needed for the json importer + some extra for after parsing.
+ * Stolen mostly from https://github.com/TomByrne/Starling-Extension-Adobe-Animate-Hx/blob/master/hx/src/starling/extensions/animate/AnimationAtlasData.hx
+ */
 typedef AnimationData = {
-	// OLD FORMAT
 	?ANIMATION:SymbolData,
 	?SYMBOL_DICTIONARY:{
 		Symbols:Array<SymbolData>
 	},
-
-	// ADOBE ANIMATE 2022 FORMAT
-	?AN:Animate2022Data,
-	?SD:{
-		S:Array<Dynamic>
-	},
-	?MD:{
-		FRT:Float
-	},
-
 	?metadata:{
 		?framerate:Null<Int>
 	}
-}
-
-typedef Animate2022Data = {
-	N:String,
-	SN:String,
-	TL:Animate2022Timeline
-}
-
-typedef Animate2022Timeline = {
-	L:Array<Animate2022Layer>
-}
-
-typedef Animate2022Layer = {
-	LN:String,
-	FR:Array<Animate2022Frame>
-}
-
-typedef Animate2022Frame = {
-	I:Int,
-	DU:Int,
-	E:Array<Animate2022Element>
-}
-
-typedef Animate2022Element = {
-	?ASI:Animate2022SpriteInstance,
-	?SI:Animate2022SymbolInstance
-}
-
-typedef Animate2022SpriteInstance = {
-	N:String,
-	M3D:Array<Float>
-}
-
-typedef Animate2022SymbolInstance = {
-	SN:String,
-	IN:String,
-	ST:String,
-	FF:Int,
-	M3D:Array<Float>
 }
 
 typedef AtlasData = {
 	?ATLAS:{
 		SPRITES:Array<SpriteDummy>
 	},
-
 	?atlas:{
 		sprites:Array<SpriteDummy>
 	},
-
 	?meta:{
 		app:String,
 		version:String,
@@ -94,7 +46,7 @@ typedef SpriteData = {
 
 typedef SymbolData = {
 	?name:String,
-	?SYMBOL_name:String,
+	SYMBOL_name:String,
 	?TIMELINE:SymbolTimelineData
 }
 
@@ -155,8 +107,8 @@ typedef BitmapPosData = {
 }
 
 typedef PointData = {
-	x:Float,
-	y:Float
+	x:Int,
+	y:Int
 }
 
 typedef Matrix3DData = {
@@ -164,40 +116,39 @@ typedef Matrix3DData = {
 	m01:Float,
 	m02:Float,
 	m03:Float,
-
 	m10:Float,
 	m11:Float,
 	m12:Float,
 	m13:Float,
-
 	m20:Float,
 	m21:Float,
 	m22:Float,
 	m23:Float,
-
 	m30:Float,
 	m31:Float,
 	m32:Float,
 	m33:Float,
 }
-
+//tryna add more support gimme a sec
 typedef FilterData = {
-	?BlurFilter:{
+	?BlurFilter: {
 		blurX:Float,
 		blurY:Float,
 		quality:Int
-	},
-
-	?GlowFilter:{
-		blurX:Float,
-		blurY:Float,
-		color:Int,
-		alpha:Int,
-		quality:Int,
-		strength:Int,
-		knockout:Bool,
-		inner:Bool
+		},
+	
+	?GlowFilter: {
+		blurX: Float,
+		blurY: Float,
+		color: Int,
+		alpha: Int,
+		quality: Int,
+		strength: Int,
+		knockout: Bool,
+		inner: Bool
 	}
+
+
 }
 
 typedef Decomposed3DData = {

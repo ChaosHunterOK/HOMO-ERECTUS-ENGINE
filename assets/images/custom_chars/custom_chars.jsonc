@@ -143,5 +143,10 @@
     "like": "bf-holding-gf",
     "icons": [0,1,2,3],
     "colors": ["#149DFF","#EE19D9"]
+  },
+  "atlas": {
+    "like": "atlas",
+    "icons": [0,1,2,3],
+    "colors": ["#149DFF","#EE19D9"]
   }
 }

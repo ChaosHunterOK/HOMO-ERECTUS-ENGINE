@@ -15,6 +15,8 @@ class SpriteMovieClip extends Sprite {
 	public var numLayers(get, never):Int;
 	public var numFrames(get, never):Int;
 	public var layers(get, never):Array<Sprite>; // ! Dangerous AF.
+	public var _library:SpriteAnimationLibrary;
+	public var _layers:Array<Sprite>;
 
 	private var symbol:SpriteSymbol;
 	private var _framerate:Null<Float> = null;
@@ -97,7 +99,7 @@ class SpriteMovieClip extends Sprite {
 		return symbol.numLayers;
 	}
 
-	private function get_numFrames():Int {
+	public function get_numFrames():Int {
 		return symbol.numFrames;
 	}
 
@@ -111,6 +113,14 @@ class SpriteMovieClip extends Sprite {
 
 	private function get_framerate():Float {
 		return _framerate == null ? symbol._library.frameRate : _framerate;
+	}
+
+	public function nextFrame():Void {
+		currentFrame++;
+	}
+
+	public function prevFrame():Void {
+		currentFrame--;
 	}
 
 	// # end region

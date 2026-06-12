@@ -522,17 +522,31 @@ catch (e) {
 
 		var startSample = Std.int((startMs / 1000) * sampleRate);
 		var endSample = Std.int((endMs / 1000) * sampleRate);
+		
 		startSample = Std.int(Math.max(0, startSample));
-		endSample = Std.int(Math.min(data.length, endSample));
+		var maxSamples = Std.int(data.length / 2);
+		endSample = Std.int(Math.min(maxSamples, endSample));
 
 		for (i in startSample...endSample)
 		{
-			if (i < data.length)
-				samples.push(data[i]);
+			var byteIdx = i * 2;
+			if (byteIdx + 1 >= data.length)
+				break;
+
+			var byte1 = data[byteIdx];
+			var byte2 = data[byteIdx + 1];
+			var sample = (byte2 << 8) | byte1;
+			
+			if ((sample & 0x8000) != 0) {
+				sample -= 0x10000;
+			}
+
+			samples.push(sample);
 		}
 
 		return samples;
 	}
+
 	@:access(openfl.media.Sound)
 	public function generateSectionWaveform(sound:Sound, sections:Array<SwagSection>, sectionIndex:Int, baseBPM:Float, width:Int, height:Int, color:FlxColor):FlxSprite
 	{
@@ -554,6 +568,8 @@ catch (e) {
 
 		var midX = Std.int(width / 2);
 		var samplesPerPixel = sectionSamples.length / height;
+		
+		var waveMultiplier:Float = 10.0; 
 
 		for (y in 0...height)
 		{
@@ -573,11 +589,11 @@ catch (e) {
 				sum += value * value;
 				count++;
 			}
-
 			var amp:Float = count > 0 ? Math.sqrt(sum / count) : 0;
+			amp *= waveMultiplier;
+			if (amp > 1.0) amp = 1.0;
 
 			var barWidth = Std.int(amp * midX);
-
 			for (x in (midX - barWidth)...(midX + barWidth))
 			{
 				if (x >= 0 && x < width)
