@@ -39,20 +39,15 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
   }
   function setupHoldNoteCover(strumNote:StrumNote):Void
   {
+    var curUiType:TUI = Reflect.field(Judgement.uiJson, PlayState.SONG.uiType);
     glow = new FlxSprite();
     add(glow);
 
     sparks = new FlxSprite();
     add(sparks);
-    if (Judgement.uiJson == null || PlayState.SONG == null) {
+    if (PlayState.SONG == null) {
         trace("smth judgement ui error");
         return;
-    }
-
-    var curUiType:TUI = Reflect.field(Judgement.uiJson, PlayState.SONG.uiType);
-    if (curUiType == null) {
-        trace("i guess");
-        curUiType = {uses: "default"}; 
     }
 
     var colorIdx = getColorIdx();
