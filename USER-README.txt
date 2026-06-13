@@ -1,5 +1,4 @@
-THIS IS FOR YOU LITTLE CUNTS WHO KEEP SUGGESTING IT IN THE DISCORD
-FUCK YOU
+NOTE: THIS IS MORE OF A PERSONAL ENGINE, SO YOU ARE GONNA SEE MANY BUGS WITHIN IT
 
 outsiders who haven't seen the chaos in the discord server deserve this more then you, and i'm writing this for 3 reasons
 1. bulby literally won't

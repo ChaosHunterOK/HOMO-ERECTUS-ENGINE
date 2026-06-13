@@ -839,6 +839,8 @@ function setAllLabelsOffset(button, x, y)
 
 var instVolume;
 var voicesVolume;
+var stepperPlaybackRate;
+
 function addChartingUI()
 {
 	var tab_group_chart = new FlxUI(null, UI_box);
@@ -908,9 +910,14 @@ function addChartingUI()
 	voicesVolume.value = 0;
 	voicesVolume.name = 'voices_volume';
 	blockPressWhileTypingOnStepper.push(voicesVolume);
+	stepperPlaybackRate = new FlxUINumericStepper(15, 330, 0.05, 1, 0.25, 2.0, 2);
+	stepperPlaybackRate.value = 1.0;
+	stepperPlaybackRate.name = 'playback_rate';
+	blockPressWhileTypingOnStepper.push(stepperPlaybackRate);
 
 	tab_group_chart.add(new FlxText(instVolume.x, instVolume.y - 15, 0, 'Inst Volume'));
 	tab_group_chart.add(new FlxText(voicesVolume.x, voicesVolume.y - 15, 0, 'Voices Volume'));
+	tab_group_chart.add(new FlxText(stepperPlaybackRate.x, stepperPlaybackRate.y - 15, 0, 'Playback Rate'));
 	tab_group_chart.add(check_mute_inst);
 	tab_group_chart.add(check_mute_vocals);
 	tab_group_chart.add(check_warnings);
@@ -918,6 +925,7 @@ function addChartingUI()
 	tab_group_chart.add(playSoundDad);
 	tab_group_chart.add(instVolume);
 	tab_group_chart.add(voicesVolume);
+	tab_group_chart.add(stepperPlaybackRate);
 	UI_box.addGroup(tab_group_chart);
 }
 function changeKeyType(change) {
@@ -968,6 +976,11 @@ function loadSong(daSong)
 	FlxG.sound.playMusic(sysTarget ? FNFAssets.getSound(instPath) : instPath, 0.6);
 	if (instVolume != null)
 		FlxG.sound.music.volume = instVolume.value;
+
+	var pitchVal = (stepperPlaybackRate != null) ? stepperPlaybackRate.value : 1.0;
+	if (FlxG.sound.music != null) FlxG.sound.music.pitch = pitchVal;
+	if (vocals != null) vocals.pitch = pitchVal;
+	if (sfxtrack != null) sfxtrack.pitch = pitchVal;
 
 	FlxG.sound.music.pause();
 	if (_song.needsVoices) vocals.pause();
@@ -1128,6 +1141,15 @@ function getEvent(id, sender, data, params)
 		else if (wname == 'voices_volume')
 		{
 			vocals.volume = nums.value;
+		}
+		else if (wname == 'playback_rate')
+		{
+			if (FlxG.sound.music != null)
+				FlxG.sound.music.pitch = nums.value;
+			if (vocals != null)
+				vocals.pitch = nums.value;
+			if (sfxtrack != null)
+				sfxtrack.pitch = nums.value;
 		}
 		else if (wname == 'mania')
 		{
@@ -1841,30 +1863,19 @@ function updateNoteUI()
 
 function updateGrid()
 {
-	
-	//curRenderedNoteType.clear();
-	
-	while (curRenderedNotes.members.length > 0)
-		curRenderedNotes.remove(curRenderedNotes.members[0], true);
-
-	while (curRenderedSustains.members.length > 0)
-		curRenderedSustains.remove(curRenderedSustains.members[0], true);
-
-	while (curRenderedNoteType.members.length > 0)
-		curRenderedNoteType.remove(curRenderedNoteType.members[0], true);
+	while (curRenderedNotes.members.length > 0) curRenderedNotes.remove(curRenderedNotes.members[0], true);
+	while (curRenderedSustains.members.length > 0) curRenderedSustains.remove(curRenderedSustains.members[0], true); 
+	while (curRenderedNoteType.members.length > 0) curRenderedNoteType.remove(curRenderedNoteType.members[0], true);
 
 	//var sectionInfo:Array<Dynamic> = _song.notes[curSection].sectionNotes;
 
-	if (_song.notes[curSection].changeBPM && _song.notes[curSection].bpm > 0)
-		Conductor.changeBPM(_song.notes[curSection].bpm);
-	else
-	{
-		//get last bpm
+	if (_song.notes[curSection].changeBPM && _song.notes[curSection].bpm > 0) 
+		Conductor.changeBPM(_song.notes[curSection].bpm); 
+	else { 
 		var daBPM = _song.bpm;
-		for (i in 0...curSection)
-			if (_song.notes[i].changeBPM)
-				daBPM = _song.notes[i].bpm;
-		Conductor.changeBPM(daBPM);
+		for (i in 0...curSection) 
+			if (_song.notes[i].changeBPM) daBPM = _song.notes[i].bpm; 
+		Conductor.changeBPM(daBPM); 
 	}
 
 	//var yummyPng = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/normal/NOTE_assets.png');

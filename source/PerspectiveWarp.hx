@@ -15,23 +15,20 @@ class PerspectiveWarp extends Sprite
     public function new(segments:Int = 10)
     {
         super();
-
         this.segments = segments;
-
         vertices = new Vector<Float>();
         indices = new Vector<Int>();
         uvtData = new Vector<Float>();
     }
-
-    public function render(bmd:BitmapData, corners:Array<{x:Float, y:Float}>)
+    
+    public function render(bmd:BitmapData, corners:Array<{x:Float, y:Float}>, canvas:BitmapData = null)
     {
         if (bmd == null) return;
-
         var g = graphics;
+        
         if (bmd.width != lastWidth || bmd.height != lastHeight || dirtyIndices)
         {
             buildUVsAndIndices();
-
             lastWidth = bmd.width;
             lastHeight = bmd.height;
             dirtyIndices = false;
@@ -42,6 +39,10 @@ class PerspectiveWarp extends Sprite
         g.beginBitmapFill(bmd, null, false, true);
         g.drawTriangles(vertices, indices, uvtData);
         g.endFill();
+        if (canvas != null) {
+            canvas.fillRect(canvas.rect, 0x00000000);
+            canvas.draw(this);
+        }
     }
 
     function buildUVsAndIndices()
@@ -57,18 +58,15 @@ class PerspectiveWarp extends Sprite
                 var ux:Float = px / segments;
                 var uy:Float = py / segments;
 
-                // placeholder vertex
                 vertices.push(0);
                 vertices.push(0);
 
-                // UV
                 uvtData.push(ux);
                 uvtData.push(uy);
 
                 if (px < segments && py < segments)
                 {
                     var r = py * (segments + 1) + px;
-
                     indices.push(r);
                     indices.push(r + 1);
                     indices.push(r + segments + 1);
@@ -84,7 +82,6 @@ class PerspectiveWarp extends Sprite
     function updateVertices(corners:Array<{x:Float, y:Float}>)
     {
         var i = 0;
-
         for (py in 0...segments + 1)
         {
             for (px in 0...segments + 1)

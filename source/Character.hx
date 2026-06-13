@@ -154,7 +154,7 @@ class Character extends FlxSprite
 	public var isDie:Bool = false;
 	public var isPixel:Bool = false;
 	private var interp:Interp;
-	public var freezeSingOnLastFrame:Bool = false;
+	public var holdAnimationFix:Bool = true;
 	function get_stunned():Bool {
 		if (OptionsHandler.options.useMissStun){
 			return stunned;
@@ -295,19 +295,6 @@ class Character extends FlxSprite
 			if (animation.curAnim.name.startsWith('sing'))
 			{
 				holdTimer += elapsed;
-				if (freezeSingOnLastFrame)
-				{
-					if (animation.curAnim.finished && !isFreezing)
-					{
-						isFreezing = true;
-						animation.curAnim.curFrame = animation.curAnim.frames.length - 1;
-						animation.curAnim.paused = true;
-					}
-				}
-				else
-				{
-					isFreezing = false;
-				}
 
 				if (instantIdleOnSingEnd && animation.curAnim.finished && !isFreezing)
 				{

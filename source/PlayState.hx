@@ -263,7 +263,6 @@ class PlayState extends MusicBeatState
 	private var curSong:String = "";
 	private var strumming2:Array<Bool> = [false, false, false, false];
 	private var strumming1:Array<Bool> = [false,false,false,false];
-	public static var holdAnimationFix:Bool = true;
 
 	public var gfSpeed:Int = 1;
 	public var health:Float = 1;
@@ -677,10 +676,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("currentNoteScrollMult", currentNoteScrollMult);
 		interp.variables.set("scrollPatternActive", scrollPatternActive);
 		interp.variables.set("jukeboxMode", jukeboxMode);
-		interp.variables.set("holdAnimationFix", holdAnimationFix);
-		interp.variables.set("setHoldAnimationFix", function (active:Bool) {
-			holdAnimationFix = active;
-		});
 		interp.variables.set("PerspectiveWarp", PerspectiveWarp);
 		interp.variables.set("getHaxeActor", getHaxeActor);
 	}
@@ -3512,7 +3507,7 @@ class PlayState extends MusicBeatState
 					if (daNote.shouldBeSung) {
 						var isDadSingingDir:Bool = (dad.animation.curAnim != null && dad.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(daNote.noteData))]));
 
-						if (!PlayState.holdAnimationFix || !daNote.isSustainNote || !isDadSingingDir) {
+						if (!dad.holdAnimationFix || !daNote.isSustainNote || !isDadSingingDir) {
 							dad.sing(Std.int(Math.abs(daNote.noteData)), false, dad.altNum);
 						} else {
 							dad.holdTimer = 0;
@@ -3520,7 +3515,7 @@ class PlayState extends MusicBeatState
 
 						if (daNote.oppntSing != null) {
 							var isBfSingingDir:Bool = (boyfriend.animation.curAnim != null && boyfriend.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[daNote.oppntSing.direction]));
-							if (!PlayState.holdAnimationFix || !daNote.isSustainNote || !isBfSingingDir) {
+							if (!boyfriend.holdAnimationFix || !daNote.isSustainNote || !isBfSingingDir) {
 								boyfriend.sing(daNote.oppntSing.direction, daNote.oppntSing.miss, daNote.oppntSing.alt);
 							} else {
 								boyfriend.holdTimer = 0;
@@ -3590,7 +3585,7 @@ class PlayState extends MusicBeatState
 					if (daNote.shouldBeSung) {
 						var isBfSingingDir:Bool = (boyfriend.animation.curAnim != null && boyfriend.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(daNote.noteData % Main.ammo[mania]))]));
 						
-						if (!PlayState.holdAnimationFix || !daNote.isSustainNote || !isBfSingingDir) {
+						if (!boyfriend.holdAnimationFix || !daNote.isSustainNote || !isBfSingingDir) {
 							boyfriend.sing(Std.int(Math.abs(daNote.noteData % Main.ammo[mania])), false, boyfriend.altNum);
 						} else {
 							boyfriend.holdTimer = 0;
@@ -3598,7 +3593,7 @@ class PlayState extends MusicBeatState
 
 						if (daNote.oppntSing != null) {
 							var isDadSingingDir:Bool = (dad.animation.curAnim != null && dad.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(daNote.oppntSing.direction % Main.ammo[mania]))]));
-							if (!PlayState.holdAnimationFix || !daNote.isSustainNote || !isDadSingingDir) {
+							if (!dad.holdAnimationFix || !daNote.isSustainNote || !isDadSingingDir) {
 								dad.sing(Std.int(Math.abs(daNote.oppntSing.direction % Main.ammo[mania])), daNote.oppntSing.miss, daNote.oppntSing.alt);
 							} else {
 								dad.holdTimer = 0;
