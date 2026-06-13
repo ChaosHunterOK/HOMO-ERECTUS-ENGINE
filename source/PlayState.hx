@@ -56,6 +56,7 @@ import flixel.effects.particles.FlxParticle;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.ui.FlxBar;
+import PerspectiveWarp;
 import flixel.util.FlxCollision;
 import flixel.util.FlxColor;
 import flixel.util.FlxSort;
@@ -677,6 +678,7 @@ class PlayState extends MusicBeatState
 		interp.variables.set("scrollPatternActive", scrollPatternActive);
 		interp.variables.set("jukeboxMode", jukeboxMode);
 		interp.variables.set("holdAnimationFix", holdAnimationFix);
+		interp.variables.set("PerspectiveWarp", PerspectiveWarp);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
