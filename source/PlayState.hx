@@ -678,7 +678,11 @@ class PlayState extends MusicBeatState
 		interp.variables.set("scrollPatternActive", scrollPatternActive);
 		interp.variables.set("jukeboxMode", jukeboxMode);
 		interp.variables.set("holdAnimationFix", holdAnimationFix);
+		interp.variables.set("setHoldAnimationFix", function (active:Bool) {
+			holdAnimationFix = active;
+		});
 		interp.variables.set("PerspectiveWarp", PerspectiveWarp);
+		interp.variables.set("getHaxeActor", getHaxeActor);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
@@ -738,8 +742,6 @@ class PlayState extends MusicBeatState
 			defaultCamZoom = zoom;
 			FlxG.camera.zoom = zoom;
 		});
-
-		interp.variables.set("getHaxeActor", getHaxeActor);
 		interp.variables.set("scaleChar", function(char:String, amount:Float) {
 			var target = switch (char) {
 				case "boyfriend": boyfriend;
