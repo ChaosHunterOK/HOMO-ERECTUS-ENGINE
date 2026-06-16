@@ -8,7 +8,7 @@ import lime.system.System;
 import flixel.graphics.FlxGraphic;
 import tjson.TJSON;
 using StringTools;
-
+import openfl.filters.ColorMatrixFilter;
 
 class CoolUtil
 {
@@ -30,12 +30,9 @@ class CoolUtil
 		return daList;
 	}
 	public static function coolDynamicTextFile(path:String):Array<String>
-	{
 		return coolTextFile(path);
-	}
-	inline public static function boundTo(value:Float, min:Float, max:Float):Float {
+	inline public static function boundTo(value:Float, min:Float, max:Float):Float
 		return Math.max(min, Math.min(max, value));
-	}
 	public static function numberArray(max:Int, ?min = 0):Array<Int>
 	{
 		var dumbArray:Array<Int> = [];
@@ -45,45 +42,89 @@ class CoolUtil
 		}
 		return dumbArray;
 	}
-	public static function clamp(mini:Float, maxi:Float, value:Float):Float {
+	public static function clamp(mini:Float, maxi:Float, value:Float):Float
 		return Math.min(Math.max(mini,value), maxi);
-	}
 	// can either return an array or a dynamic
-	public static function parseJson(json:String):Dynamic {
-		// the reason we do this is to make it easy to swap out json parsers
+	public static function parseJson(json:String):Dynamic
 		return TJSON.parse(json);
-	}
 	public static function stringifyJson(json:Dynamic, ?fancy:Bool = true):String {
 		// use tjson to prettify it
 		var style:String = if (fancy) 'fancy' else null;
 		return TJSON.encode(json,style);
 	}
 	// include all helper functions to keep shit in the same place
-	public static function truncateFloat(number:Float, precision:Int):Float {
+	public static function truncateFloat(number:Float, precision:Int):Float
 		return HelperFunctions.truncateFloat(number, precision);
-	}
-	public static function erf(x:Float):Float {
+	public static function erf(x:Float):Float
 		return HelperFunctions.erf(x);
-	}
-	public static function getNotes():Int {
+	public static function getNotes():Int
 		return HelperFunctions.getNotes();
-	}
-	public static function getHolds():Int {
+	public static function getHolds():Int
 		return HelperFunctions.getHolds();
-	}
-	public static function getMapMaxScore():Int {
+	public static function getMapMaxScore():Int
 		return HelperFunctions.getMapMaxScore();
-	}
 	public static function wife3(maxms:Float, ts:Float)
-	{
 		return HelperFunctions.wife3(maxms, ts);
-	}
 	public static function browserLoad(site:String) {
 		#if linux
 		Sys.command('/usr/bin/xdg-open', [site]);
 		#else
 		FlxG.openURL(site);
 		#end
+	}
+	public static function getFilter(filterName:String, ?customArray:Array<Float>) {
+		var daFilter = switch(filterName.toLowerCase()) {
+			case 'grayscale' | 'monochrome' | 'blackandwhite':
+				new ColorMatrixFilter(
+					[0.5, 0.5, 0.5, 0, 0,
+					0.5, 0.5, 0.5, 0, 0,
+					0.5, 0.5, 0.5, 0, 0,
+					0, 0, 0, 1, 0]
+				);
+			case 'invert' | 'negative':
+				new ColorMatrixFilter(
+					[-1, 0, 0, 0, 255,
+					 0, -1, 0, 0, 255,
+					 0, 0, -1, 0, 255,
+					 0, 0, 0, 1, 0]
+				);
+			case 'deuteranopia' | 'deuter':
+				new ColorMatrixFilter(
+					[0.43, 0.72, -.15, 0, 0,
+					0.34, 0.57, 0.09, 0, 0,
+					-.02, 0.03, 1, 0, 0,
+					0, 0, 0, 1, 0]
+				);
+			case 'protanopia' | 'prot':
+				new ColorMatrixFilter(
+					[0.20, 0.99, -.19, 0, 0,
+					0.16, 0.79, 0.04, 0, 0,
+					0.01, -.01, 1, 0, 0,
+					0, 0, 0, 1, 0]
+				);
+			case 'tritanopia' | 'trit':
+				new ColorMatrixFilter(
+					[0.97, 0.11, -.08, 0, 0,
+					0.02, 0.82, 0.16, 0, 0,
+					0.06, 0.88, 0.18, 0, 0,
+					0, 0, 0, 1, 0]
+				);
+			case 'blank' | 'normal' | 'default':
+				new ColorMatrixFilter(
+					[1, 0, 0, 0, 0,
+					0, 1, 0, 0, 0,
+					0, 0, 1, 0, 0,
+					0, 0, 0, 1, 0]
+				);
+			case 'custom':
+				if (customArray != null)
+					new ColorMatrixFilter(customArray);
+				else
+					null;
+			default:
+				null;
+		}
+		return daFilter;
 	}
 }
 

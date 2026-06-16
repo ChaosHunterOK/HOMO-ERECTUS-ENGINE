@@ -459,6 +459,7 @@ class Character extends FlxSprite
 		interp.variables.set("isPixel", false);
 		interp.variables.set("colors", [FlxColor.CYAN]);
 		interp.variables.set("AtlasFrameMaker", AtlasFrameMaker);
+		interp.variables.set("PlayState", PlayState);
 		interp.execute(program);
 		trace(interp);
 		return interp;

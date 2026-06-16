@@ -606,6 +606,11 @@ class PlayState extends MusicBeatState
 		interp.variables.set("playerOneTurn", function() {});
 		interp.variables.set("playerOneMiss", function() {});
 		interp.variables.set("playerOneSing", function() {});
+		interp.variables.set("skipCountdown", function() {return skipCountdown;});
+		interp.variables.set("songStart", function(song) {});
+		interp.variables.set("onPause", function() {});
+		interp.variables.set("onResume", function() {});
+		interp.variables.set("noteLoaded", function (note) {});
 		interp.variables.set("showCombo", showCombo);
 		interp.variables.set("Fake3D", Fake3D);
 		interp.variables.set("camHUD", camHUD);
@@ -637,6 +642,7 @@ class PlayState extends MusicBeatState
 		interp.variables.set("hscriptPath", path);
 		interp.variables.set("holdCovers", holdCovers);
 		interp.variables.set("camFollowStyle", camStyle);
+		interp.variables.set("paused", paused);
 		interp.variables.set("setCamFollowStyle", function(style:FlxCameraFollowStyle) {
 			camStyle = style;
 		});
@@ -2262,8 +2268,7 @@ class PlayState extends MusicBeatState
 	var lastReportedPlayheadPosition:Int = 0;
 	var songTime:Float = 0;
 
-	function startSong():Void
-	{
+	function startSong():Void{
 		startingSong = false;
 		if (FlxG.sound.music != null) 
 			FlxG.sound.music.stop();
@@ -2288,6 +2293,9 @@ class PlayState extends MusicBeatState
 		vocals.play();
 		if (isUsingSounds)
 			vsounds.play();
+		callAllHScript('songStart', [SONG.song]);
+		callAllHScript("stepHit", [0]);
+		callAllHScript("beatHit", [0]);
 	}
 
 	var debugNum:Int = 0;
@@ -2772,6 +2780,8 @@ class PlayState extends MusicBeatState
 				songSpeedTween.active = true;
 
 			paused = false;
+			setAllHaxeVar("paused", paused);
+			callAllHScript('onResume', []);
 
 			var healthThreshold = opponentPlayer ? 80 : 20;
 			var currentIconState = (poisonTimes != 0)
@@ -2968,6 +2978,8 @@ class PlayState extends MusicBeatState
 			persistentUpdate = false;
 			persistentDraw = true;
 			paused = true;
+			setAllHaxeVar("paused", paused);
+			callAllHScript('onPause', []);
 
 			if (FlxG.sound.music != null)
 			{
@@ -3352,6 +3364,8 @@ class PlayState extends MusicBeatState
 			{
 				var dunceNote:Note = unspawnNotes[0];
 				notes.add(dunceNote);
+
+				callAllHScript("noteLoaded", [dunceNote]);
 
 				var index:Int = unspawnNotes.indexOf(dunceNote);
 				unspawnNotes.splice(index, 1);

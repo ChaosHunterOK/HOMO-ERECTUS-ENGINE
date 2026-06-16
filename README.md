@@ -67,8 +67,8 @@ The link to that is on the [HaxeFlixel website](https://haxeflixel.com/documenta
 Other installations you'd need is the additional libraries, a fully updated list will be in `Project.xml` in the project root, but here are the one's I'm using as of writing.
 
 ```
-haxelib install flixel 5.0.2
-haxelib install flixel-addons 2.11.0
+haxelib install flixel 5.2.2
+haxelib install flixel-addons 3.0.2
 
 haxelib install lime 8.0.0
 haxelib install openfl 9.1.0
