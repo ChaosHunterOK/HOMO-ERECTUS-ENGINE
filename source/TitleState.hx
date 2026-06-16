@@ -12,6 +12,7 @@ import flixel.addons.transition.FlxTransitionableState;
 import flixel.addons.transition.TransitionData;
 import flixel.graphics.FlxGraphic;
 import flixel.graphics.frames.FlxAtlasFrames;
+import openfl.filters.ShaderFilter;
 import flixel.group.FlxGroup;
 import flixel.input.gamepad.FlxGamepad;
 import flixel.math.FlxPoint;
@@ -150,6 +151,9 @@ class TitleState extends MusicBeatState
 		interp.variables.set("insert", insert);
 		interp.variables.set("pi", Math.PI);
 		interp.variables.set("curMusicName", Main.curMusicName);
+		interp.variables.set("ShaderCustom", ShaderCustom);
+		interp.variables.set("FlxShaderFix", FlxShaderFix);
+		interp.variables.set("ShaderFilter", ShaderFilter);
 		#if mobile
 		interp.variables.set("addVirtualPad", addVirtualPad);
 		interp.variables.set("removeVirtualPad", removeVirtualPad);

@@ -5,195 +5,131 @@ import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxSpriteGroup;
 import flixel.math.FlxMath;
-import lime.system.System;
-#if sys
-import sys.io.File;
-import haxe.io.Path;
-import openfl.utils.ByteArray;
-import flash.display.BitmapData;
-#end
-import haxe.Json;
-import haxe.format.JsonParser;
+
 class SaveFile extends FlxSpriteGroup
 {
-	public var targetY:Float = 0;
-	public var save:FlxSprite;
-	public var loadSprite:FlxSprite;
-	public var leftArrow:FlxSprite;
-	public var rightArrow:FlxSprite;
-	public var deleteConfirm:FlxSprite;
-	public var erasedSprite:FlxSprite;
-	public var beingSelected:Bool = false;
-	public var askingToConfirm:Bool = false;
-	public var selectingLoad:Bool = true;
-	public var playerIcon:HealthIcon;
-	public var iconColors:Array<FlxColor> = [
-		FlxColor.fromRGB(49, 176, 209),
-		FlxColor.fromRGB(233, 255, 72),
-		FlxColor.fromRGB(123, 214, 246),
-		FlxColor.fromRGB(213, 126, 0),
-		FlxColor.fromRGB(175, 102, 206),
-		FlxColor.fromRGB(183, 216, 85),
-		FlxColor.fromRGB(216, 85, 142),
-		FlxColor.fromRGB(165, 0, 77),
-		FlxColor.fromRGB(243, 255, 110),
-		FlxColor.fromRGB(255, 170, 111)
-	];
-	public function new(x:Float, y:Float, saveNum:Int = 0)
-	{
-		super(x, y);
-		var tex = FlxAtlasFrames.fromSparrow(SUtil.getPath() + 'assets/images/save-data.png', SUtil.getPath() + 'assets/images/save-data.xml');
-		selectingLoad = true;
-		targetY = saveNum;
-		save = new FlxSprite();
-		save.frames = tex;
-		save.setGraphicSize(Std.int(save.width * 3));
-		leftArrow = new FlxSprite(350, 280);
-		leftArrow.frames = tex;
-		leftArrow.setGraphicSize(Std.int(leftArrow.width * 2));
-		rightArrow = new FlxSprite(60, leftArrow.y);
-		rightArrow.frames = tex;
-		rightArrow.setGraphicSize(Std.int(rightArrow.width * 2));
-		deleteConfirm = new FlxSprite(350, 100);
-		loadSprite = new FlxSprite(leftArrow.x + leftArrow.width, leftArrow.y);
-		loadSprite.frames = tex;
+    private static inline var ASSET_PATH:String = 'assets/images/save-data';
+    private static var ICON_TYPES:Array<String> = [
+        'bf', 'bf-old', 'bf-pixel', 'spooky', 'dad', 'pico', 'mom', 'gf', 'monster', 'senpai'
+    ];
+    private static var ICON_COLORS:Array<FlxColor> = [
+        0xFF31B0D1, 0xFFE9FF48, 0xFF7BD6F6, 0xFFD57E00, 0xFFAF66CE,
+        0xFFB7D855, 0xFFD8558E, 0xFFA5004D, 0xFFF3FF6E, 0xFFFFAA6F
+    ];
 
-		loadSprite.setGraphicSize(Std.int(loadSprite.width * 2));
-		deleteConfirm.frames = tex;
-		deleteConfirm.setGraphicSize(Std.int(deleteConfirm.width * 1.5));
-		erasedSprite = new FlxSprite(200, 100);
-		erasedSprite.frames = tex;
-		save.animation.addByPrefix('default', 'save file', 24);
-		loadSprite.animation.addByPrefix('load', 'load', 24);
-		loadSprite.animation.addByPrefix('delete', 'deletea', 24);
-		leftArrow.animation.addByPrefix('default', 'left arrow', 24);
-		rightArrow.animation.addByPrefix('default', 'right arrow', 24);
-		deleteConfirm.animation.addByPrefix('default', 'delete confirm', 24);
-		erasedSprite.animation.addByPrefix('default', 'deleted', 24);
-		var iconType = '';
-		switch (saveNum) {
-			case 0:
-				iconType = 'bf';
-				save.color = iconColors[0];
-			case 1:
-				iconType = 'bf-old';
-				save.color = iconColors[1];
-			case 2:
-				iconType = 'bf-pixel';
-				save.color = iconColors[2];
-			case 3:
-				iconType = 'spooky';
-				save.color = iconColors[3];
-			case 4:
-				iconType = 'dad';
-				save.color = iconColors[4];
-			case 5:
-				iconType = 'pico';
-				save.color = iconColors[5];
-			case 6:
-				iconType = 'mom';
-				save.color = iconColors[6];
-			case 7:
-				iconType = 'gf';
-				save.color = iconColors[7];
-			case 8:
-				iconType = 'monster';
-				save.color = iconColors[8];
-			case 9:
-				iconType = 'senpai';
-				save.color = iconColors[9];
-		}
-		playerIcon = new HealthIcon(iconType, false);
-		playerIcon.setGraphicSize(Std.int(playerIcon.width * 2));
-		playerIcon.updateHitbox();
-		playerIcon.y += 70;
-		playerIcon.x += 20;
-		add(save);
-		save.antialiasing = true;
-		loadSprite.antialiasing = true;
-		leftArrow.antialiasing = true;
-		rightArrow.antialiasing = true;
-		deleteConfirm.antialiasing = true;
-		erasedSprite.antialiasing = true;
-		add(loadSprite);
-		add(leftArrow);
-		add(rightArrow);
-		add(deleteConfirm);
-		add(erasedSprite);
-		add(playerIcon);
-		save.animation.play('default');
-		save.animation.pause();
-		loadSprite.animation.play('load');
-		loadSprite.animation.pause();
-		save.updateHitbox();
-		loadSprite.updateHitbox();
-		leftArrow.animation.play('default');
-		leftArrow.animation.pause();
-		leftArrow.updateHitbox();
-		rightArrow.animation.play('default');
-		rightArrow.animation.pause();
-		rightArrow.updateHitbox();
-		deleteConfirm.animation.play('default');
-		deleteConfirm.animation.pause();
-		deleteConfirm.updateHitbox();
-		erasedSprite.animation.play('default');
-		erasedSprite.animation.pause();
-		erasedSprite.updateHitbox();
-		erasedSprite.visible = false;
-		deleteConfirm.visible = false;
-		loadSprite.x = leftArrow.x + leftArrow.width;
-		rightArrow.x = loadSprite.x + loadSprite.width;
-		loadSprite.alpha = 0.5;
-		rightArrow.alpha = 0.5;
-		leftArrow.alpha = 0.5;
-	}
+    public var targetY:Float = 0;
+    public var save:FlxSprite;
+    public var loadSprite:FlxSprite;
+    public var leftArrow:FlxSprite;
+    public var rightArrow:FlxSprite;
+    public var deleteConfirm:FlxSprite;
+    public var erasedSprite:FlxSprite;
+    
+    public var beingSelected:Bool = false;
+    public var askingToConfirm:Bool = false;
+    public var selectingLoad:Bool = true;
+    public var playerIcon:HealthIcon;
 
-	override function update(elapsed:Float)
-	{
-		super.update(elapsed);
+    public function new(x:Float, y:Float, saveNum:Int = 0)
+    {
+        super(x, y);
+        selectingLoad = true;
+        targetY = saveNum;
 
-		y = FlxMath.lerp(y, 150 + (targetY * 420), 0.17 / (CoolUtil.fps / 60));
-	}
-	public function askToConfirm(?turnOn:Bool = true) {
-		deleteConfirm.visible = turnOn;
-		askingToConfirm = turnOn;
-		erasedSprite.visible = false;
-		if (turnOn) {
-			playerIcon.animation.curAnim.curFrame = 1;
-		} else {
-			playerIcon.animation.curAnim.curFrame = 0;
-		}
-	}
-	public function beSelected(?selected:Bool = true) {
-		if (selected) {
-			beingSelected = true;
-			loadSprite.alpha = 1;
-			rightArrow.alpha = 1;
-			leftArrow.alpha = 1;
-		}	else {
-			beingSelected = false;
-			loadSprite.alpha = 0.5;
-			rightArrow.alpha = 0.5;
-			leftArrow.alpha = 0.5;
-		}
+        var pathPrefix:String = SUtil.getPath();
+        var tex:FlxAtlasFrames = FlxAtlasFrames.fromSparrow(pathPrefix + ASSET_PATH + '.png', pathPrefix + ASSET_PATH + '.xml');
+        save = new FlxSprite();
+        leftArrow = new FlxSprite(350, 280);
+        rightArrow = new FlxSprite(60, leftArrow.y);
+        deleteConfirm = new FlxSprite(350, 100);
+        loadSprite = new FlxSprite(leftArrow.x + leftArrow.width, leftArrow.y);
+        erasedSprite = new FlxSprite(200, 100);
+        var sprites:Array<FlxSprite> = [save, leftArrow, rightArrow, deleteConfirm, loadSprite, erasedSprite];
 
-	}
-	public function changeSelection() {
-		if (selectingLoad) {
-			loadSprite.animation.play('delete');
-			selectingLoad = false;
-			loadSprite.updateHitbox();
-			leftArrow.x = 350 + 400;
-			loadSprite.x = leftArrow.x + leftArrow.width;
-			rightArrow.x = loadSprite.x + loadSprite.width;
-		}	else {
-			loadSprite.animation.play('load');
-			selectingLoad = true;
-			loadSprite.updateHitbox();
-			leftArrow.x = 300+ 450;
-			loadSprite.x = leftArrow.x + leftArrow.width;
-			rightArrow.x = loadSprite.x + loadSprite.width;
-		}
+        for (sprite in sprites) {
+            sprite.frames = tex;
+            sprite.antialiasing = true;
+        }
+        save.setGraphicSize(Std.int(save.width * 3));
+        leftArrow.setGraphicSize(Std.int(leftArrow.width * 2));
+        rightArrow.setGraphicSize(Std.int(rightArrow.width * 2));
+        loadSprite.setGraphicSize(Std.int(loadSprite.width * 2));
+		rightArrow.antialiasing = false;
+		leftArrow.antialiasing = false;
+		erasedSprite.antialiasing = false;
+		loadSprite.antialiasing = false;
+		deleteConfirm.antialiasing = false;
+        deleteConfirm.setGraphicSize(Std.int(deleteConfirm.width * 1.5));
+        save.animation.addByPrefix('default', 'save file', 24);
+		save.antialiasing = false;
+        loadSprite.animation.addByPrefix('load', 'load', 24);
+        loadSprite.animation.addByPrefix('delete', 'deletea', 24);
+		loadSprite.antialiasing = false;
+        leftArrow.animation.addByPrefix('default', 'left arrow', 24);
+        rightArrow.animation.addByPrefix('default', 'right arrow', 24);
+        deleteConfirm.animation.addByPrefix('default', 'delete confirm', 24);
+        erasedSprite.animation.addByPrefix('default', 'deleted', 24);
+        var safeIndex:Int = FlxMath.wrap(saveNum, 0, ICON_TYPES.length - 1);
+        save.color = ICON_COLORS[safeIndex];
 
-	}
+        playerIcon = new HealthIcon(ICON_TYPES[safeIndex], false);
+        playerIcon.setGraphicSize(Std.int(playerIcon.width * 2));
+        playerIcon.updateHitbox();
+        playerIcon.setPosition(x + 20, y + 70);
+        for (sprite in sprites) {
+            add(sprite);
+            var animName:String = (sprite == loadSprite) ? 'load' : 'default';
+            sprite.animation.play(animName);
+            sprite.animation.pause();
+            sprite.updateHitbox();
+        }
+        add(playerIcon);
+        loadSprite.x = leftArrow.x + leftArrow.width;
+        rightArrow.x = loadSprite.x + loadSprite.width;
+
+        erasedSprite.visible = false;
+        deleteConfirm.visible = false;
+        
+        updateAlpha(0.5);
+    }
+
+    override function update(elapsed:Float)
+    {
+        super.update(elapsed);
+        var targetPos:Float = 150 + (targetY * 420);
+        y = FlxMath.lerp(y, targetPos, 1 - Math.pow(1 - 0.17, elapsed * 60));
+    }
+
+    public function askToConfirm(?turnOn:Bool = true) 
+    {
+        askingToConfirm = turnOn;
+        deleteConfirm.visible = turnOn;
+        erasedSprite.visible = false;
+        
+        if (playerIcon.animation.curAnim != null)
+            playerIcon.animation.curAnim.curFrame = turnOn ? 1 : 0;
+    }
+
+    public function beSelected(?selected:Bool = true) 
+    {
+        beingSelected = selected;
+        updateAlpha(selected ? 1.0 : 0.5);
+    }
+
+    public function changeSelection() 
+    {
+        selectingLoad = !selectingLoad;
+        loadSprite.animation.play(selectingLoad ? 'load' : 'delete');
+        loadSprite.updateHitbox();
+        leftArrow.x = selectingLoad ? 750 : 750;
+        loadSprite.x = leftArrow.x + leftArrow.width;
+        rightArrow.x = loadSprite.x + loadSprite.width;
+    }
+
+    private inline function updateAlpha(value:Float) 
+    {
+        loadSprite.alpha = value;
+        rightArrow.alpha = value;
+        leftArrow.alpha = value;
+    }
 }

@@ -88,16 +88,6 @@ var tempBpm = 0;
 var vocals = null;
 var sfxtrack = null;
 
-var showInstWaveform = false;
-var showVoicesWaveform = false;
-var instWaveform;
-var voicesWaveform;
-
-// Section-based waveforms
-var instWaveformsBySection = []; // Array of waveform sprites per section
-var voicesWaveformsBySection = []; // Array of waveform sprites per section
-var sectionTimings = []; // Cached section timing data
-
 var leftIcon;
 var rightIcon;
 var temlicon;
@@ -409,43 +399,65 @@ var check_warnings = null;
 var diffDropDown;
 function addSongUI()
 {
-	var UI_songTitle = new FlxUIInputText(10, 10, 70, _song.song, 8);
+	var tab_group_song = new FlxUI(null, UI_box);
+	tab_group_song.name = "Song";
+	var labelSongTitle = new FlxText(15, 10, 0, "Song Title:", 8);
+	var UI_songTitle = new FlxUIInputText(15, 23, 110, _song.song, 8);
 	blockPressWhileTypingOn.push(UI_songTitle);
 	typingShit = UI_songTitle;
 
-	var check_voices = new FlxUICheckBox(10, 25, null, null, "Has voice track", 100);
-	check_voices.checked = _song.needsVoices;
-	check_voices.callback = function()
-	{
-		_song.needsVoices = check_voices.checked;
-		trace('CHECKED!');
-	};
+	var labelBpmSong = new FlxText(15, 53, 0, "BPM:", 8);
+	var stepperBPM = new FlxUINumericStepper(15, 66, 1, Conductor.bpm, 1, 339, 0);
+	stepperBPM.value = Conductor.bpm;
+	stepperBPM.name = 'song_bpm';
+	blockPressWhileTypingOnStepper.push(stepperBPM);
 
-	var saveButton = new FlxButton(110, 8, "Save", function()
-	{
+	var labelSpeed = new FlxText(15, 96, 0, "Song Speed:", 8);
+	var stepperSpeed = new FlxUINumericStepper(15, 109, 0.1, 1, 0.1, 10, 1);
+	stepperSpeed.value = _song.speed;
+	stepperSpeed.name = 'song_speed';
+	blockPressWhileTypingOnStepper.push(stepperSpeed);
+
+	var labelDiff = new FlxText(15, 139, 0, "Song Target Difficulty:", 8);
+	diffDropDown = new FlxUIDropDownMenuCustom(15, 152, FlxUIDropDownMenuCustom.makeStrIdLabelArray(difficultyChoices, true), function(pressed) {
+		var selectedDiff = Std.parseInt(pressed);
+		curDifficulty = getDiffByArray(difficultyChoices[selectedDiff]);
+	});
+	diffDropDown.selectedLabel = allDiffs[PlayState.storyDifficulty];
+
+	var labelMania = new FlxText(15, 192, 0, "Key Mode (Mania):", 8);
+	var stepperMania = new FlxUINumericStepper(15, 205, 1, 0, 0, 3, 1);
+	stepperMania.value = _song.mania;
+	stepperMania.name = 'mania';
+	blockPressWhileTypingOnStepper.push(stepperMania);
+
+	var check_voices = new FlxUICheckBox(15, 245, null, null, "Has voice track", 100);
+	check_voices.checked = _song.needsVoices;
+	check_voices.callback = function() {
+		_song.needsVoices = check_voices.checked;
+	};
+	var saveButton = new FlxButton(190, 20, "Save JSON", function() {
 		saveLevel();
 	});
 
-	var reloadSong = new FlxButton(saveButton.x + saveButton.width + 10, saveButton.y, "Reload Audio", function()
-	{
+	var saveEventsBtn = new FlxButton(190, 45, "Save Events", function () {
+		saveEvents();
+	});
+
+	var reloadSong = new FlxButton(190, 75, "Reload Audio", function() {
 		loadSong(_song.song);
 	});
 
-	var reloadSongJson = new FlxButton(reloadSong.x, saveButton.y + 30, "Reload JSON", function()
-	{
+	var reloadSongJson = new FlxButton(190, 100, "Reload JSON", function() {
 		loadJson(_song.song.toLowerCase());
 	});
 
-	var isSpookyCheck = new FlxUICheckBox(10, 280,null,null,"Is Spooky", 100);
-	var loadAutosaveBtn = new FlxButton(reloadSongJson.x, reloadSongJson.y + 30, 'load autosave', loadAutosave);
-	
-	var loadEventJson = new FlxButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Load Events', function()
-	{
+	var loadAutosaveBtn = new FlxButton(190, 125, 'Load Autosave', loadAutosave);
+
+	var loadEventJson = new FlxButton(190, 150, 'Load Events', function() {
 		var songName = _song.song.toLowerCase();
 		var file = SUtil.getPath() + 'assets/data/' + songName + '/events.json';
-		if (FNFAssets.exists(file))
-		{
-			trace('ok this json exists! :D');
+		if (FNFAssets.exists(file)) {
 			clearEvents();
 			var events = Song.loadFromJson('events', songName);
 			_song.events = events.events;
@@ -453,20 +465,27 @@ function addSongUI()
 		}
 	});
 
-	var saveEvents = new FlxButton(110, reloadSongJson.y, 'Save Events', function ()
-	{
-		saveEvents();
-	});
+	var isMoodyCheck = new FlxUICheckBox(15, 280, null, null, "Is Moody", 100);
+	var isSpookyCheck = new FlxUICheckBox(110, 280, null, null, "Is Spooky", 100);
+	var isHeyCheck = new FlxUICheckBox(15, 305, null, null, "Is Hey", 100);
+	var isCheerCheck = new FlxUICheckBox(110, 305, null, null, "Is Cheer", 100);
 
-	var clear_events = new FlxButton(320, 310, 'Clear events', function()
-	{
-		openSubState(new Prompt('This action will clear current progress.\n\nProceed?', 0, clearEvents, null, ignoreWarnings));
+	isMoodyCheck.name = "isMoody";
+	isHeyCheck.name = "isHey";
+	isCheerCheck.name = "isCheer";
+	isSpookyCheck.name = 'isSpooky';
+
+	isMoodyCheck.checked = _song.isMoody;
+	isSpookyCheck.checked = _song.isSpooky;
+	isHeyCheck.checked = _song.isHey;
+	isCheerCheck.checked = _song.isCheer;
+	var clear_events = new FlxButton(190, 280, 'Clear Events', function() { 
+		openSubState(new Prompt('This action will clear current progress.\n\nProceed?', 0, clearEvents, null, ignoreWarnings)); 
 	});
-	clear_events.color = 0xFFff0000;
+	clear_events.color = 0xFFd9534f;
 	clear_events.label.color = 0xFFffffff;
 
-	var clear_notes = new FlxButton(320, clear_events.y + 30, 'Clear notes', function()
-	{
+	var clear_notes = new FlxButton(190, 310, 'Clear Notes', function() {
 		openSubState(new Prompt('This action will clear current progress.\n\nProceed?', 0, function(){
 			for (sec in 0..._song.notes.length) {
 				_song.notes[sec].sectionNotes = [];
@@ -474,94 +493,40 @@ function addSongUI()
 			updateGrid();
 		}, null, ignoreWarnings));
 	});
-	clear_notes.color = 0xFFff0000;
+	clear_notes.color = 0xFFd9534f;
 	clear_notes.label.color = 0xFFffffff;
-	
-	var stepperSpeed = new FlxUINumericStepper(10, 100, 0.1, 1, 0.1, 10, 1);
-	stepperSpeed.value = _song.speed;
-	stepperSpeed.name = 'song_speed';
-	blockPressWhileTypingOnStepper.push(stepperSpeed);
-
-	var stepperBPM = new FlxUINumericStepper(10, 65, 1, 1, 1, 339, 0);
-	stepperBPM.value = Conductor.bpm;
-	stepperBPM.name = 'song_bpm';
-	blockPressWhileTypingOnStepper.push(stepperBPM);
-
-	diffDropDown = new FlxUIDropDownMenuCustom(10, 135, FlxUIDropDownMenuCustom.makeStrIdLabelArray(difficultyChoices, true), function(pressed)
-	{
-		var selectedDiff = Std.parseInt(pressed);
-		curDifficulty = getDiffByArray(difficultyChoices[selectedDiff]);
-	});
-	diffDropDown.selectedLabel = allDiffs[PlayState.storyDifficulty];
-
-	var stepperMania = new FlxUINumericStepper(100, 70, 1, 0, 0, 3, 1);
-	stepperMania.value = _song.mania;
-	stepperMania.name = 'mania';
-	blockPressWhileTypingOnStepper.push(stepperMania);
 
 	if (check_mustHitSection != null)
-	updateHeads();
+		updateHeads();
 
-	var isMoodyCheck = new FlxUICheckBox(10, 220, null, null, "Is Moody", 100);
-	var isHeyCheck = new FlxUICheckBox(10, 250, null, null, "Is Hey", 100);
-	var isCheerCheck = new FlxUICheckBox(100, 250, null, null, "Is Cheer", 100);
-	isMoodyCheck.name = "isMoody";
-	isHeyCheck.name = "isHey";
-	isCheerCheck.name = "isCheer";
-	isSpookyCheck.name = 'isSpooky';
-	isMoodyCheck.checked = _song.isMoody;
-	isSpookyCheck.checked = _song.isSpooky;
-	isHeyCheck.checked = _song.isHey;
-	isCheerCheck.checked = _song.isCheer;
-
-	var showInstWaveformCheck = new FlxUICheckBox(10, 310, null, null, "Show Inst Waveform", 150);
-	showInstWaveformCheck.name = "showInstWaveform";
-	showInstWaveformCheck.checked = showInstWaveform;
-	showInstWaveformCheck.callback = function()
-	{
-		showInstWaveform = showInstWaveformCheck.checked;
-		reloadGridLayer();
-	};
-
-	var showVoicesWaveformCheck = new FlxUICheckBox(10, 330, null, null, "Show Voices Waveform", 150);
-	showVoicesWaveformCheck.name = "showVoicesWaveform";
-	showVoicesWaveformCheck.checked = showVoicesWaveform;
-	showVoicesWaveformCheck.callback = function()
-	{
-		showVoicesWaveform = showVoicesWaveformCheck.checked;
-		reloadGridLayer();
-	};
-	var curStage = _song.stage;
-	var tab_group_song = new FlxUI(null, UI_box);
-	tab_group_song.name = "Song";
+	tab_group_song.add(labelSongTitle);
 	tab_group_song.add(UI_songTitle);
-
+	tab_group_song.add(labelBpmSong);
+	tab_group_song.add(stepperBPM);
+	tab_group_song.add(labelSpeed);
+	tab_group_song.add(stepperSpeed);
+	tab_group_song.add(labelDiff);
+	tab_group_song.add(diffDropDown);
+	tab_group_song.add(labelMania);
+	tab_group_song.add(stepperMania);
 	tab_group_song.add(check_voices);
-	tab_group_song.add(clear_events);
-	tab_group_song.add(clear_notes);
-	tab_group_song.add(isMoodyCheck);
-	tab_group_song.add(isSpookyCheck);
-	tab_group_song.add(isHeyCheck);
-	tab_group_song.add(isCheerCheck);
-	tab_group_song.add(showInstWaveformCheck);
-	tab_group_song.add(showVoicesWaveformCheck);
+	
 	tab_group_song.add(saveButton);
-	tab_group_song.add(saveEvents);
+	tab_group_song.add(saveEventsBtn);
 	tab_group_song.add(reloadSong);
 	tab_group_song.add(reloadSongJson);
 	tab_group_song.add(loadAutosaveBtn);
 	tab_group_song.add(loadEventJson);
-	tab_group_song.add(stepperBPM);
-	tab_group_song.add(stepperMania);
-	tab_group_song.add(stepperSpeed);
-	tab_group_song.add(diffDropDown);
-	tab_group_song.add(new FlxText(stepperMania.x, stepperMania.y - 15, 0, 'Mania:'));
-	tab_group_song.add(new FlxText(stepperSpeed.x, stepperSpeed.y - 15, 0, 'Song Speed:'));
-	tab_group_song.add(new FlxText(diffDropDown.x, diffDropDown.y - 15, 0, 'Song Difficulty:'));
+	
+	tab_group_song.add(isMoodyCheck);
+	tab_group_song.add(isSpookyCheck);
+	tab_group_song.add(isHeyCheck);
+	tab_group_song.add(isCheerCheck);
+	tab_group_song.add(clear_events);
+	tab_group_song.add(clear_notes);
 
 	UI_box.addGroup(tab_group_song);
 	UI_box.scrollFactor.set();
-
 	FlxG.camera.follow(camPos);
 }
 
@@ -578,43 +543,44 @@ function getDiffByArray(daDiffName)
 
 function addCharsUI()
 {
-	player1TextField = new FlxUIInputText(10, 100, 70, _song.player1, 8);
-	blockPressWhileTypingOn.push(player1TextField);
-	player2TextField = new FlxUIInputText(120, 100, 70, _song.player2, 8);
-	blockPressWhileTypingOn.push(player2TextField);
-	gfTextField = new FlxUIInputText(10, 120, 70, _song.gf, 8);
-	blockPressWhileTypingOn.push(gfTextField);
-	stageTextField = new FlxUIInputText(120, 120, 70, _song.stage, 8);
-	blockPressWhileTypingOn.push(stageTextField);
-	cutsceneTextField = new FlxUIInputText(120, 140, 70, _song.cutsceneType, 8);
-	blockPressWhileTypingOn.push(cutsceneTextField);
-	uiTextField = new FlxUIInputText(10, 140, 70, _song.uiType, 8);
-	blockPressWhileTypingOn.push(uiTextField);
-
-	playerText = new FlxText(player1TextField.x + 70, player1TextField.y, 0, "Player", 8, false);
-	enemyText = new FlxText(player2TextField.x + 70, player2TextField.y, 0, "Enemy", 8, false);
-	gfText = new FlxText(gfTextField.x + 70, gfTextField.y, 0, "GF", 8, false);
-	stageText = new FlxText(stageTextField.x + 70, stageTextField.y, 0, "Stage", 8, false);
-	cutsceneText = new FlxText(cutsceneTextField.x + 70, uiTextField.y, 0, "Cutscene", 8, false);
-	uiText = new FlxText(uiTextField.x + 70, uiTextField.y, 0, "UI", 8, false);
-
-	var curStage = _song.stage;
-
 	var tab_group_char = new FlxUI(null, UI_box);
 	tab_group_char.name = "Char";
+	playerText = new FlxText(15, 10, 110, "Player 1 (BF):", 8);
+	player1TextField = new FlxUIInputText(15, 25, 110, _song.player1, 8);
+	blockPressWhileTypingOn.push(player1TextField);
+
+	enemyText = new FlxText(15, 60, 110, "Player 2 (Opponent):", 8);
+	player2TextField = new FlxUIInputText(15, 75, 110, _song.player2, 8);
+	blockPressWhileTypingOn.push(player2TextField);
+
+	gfText = new FlxText(15, 110, 110, "GF:", 8);
+	gfTextField = new FlxUIInputText(15, 125, 110, _song.gf, 8);
+	blockPressWhileTypingOn.push(gfTextField);
+	stageText = new FlxText(150, 10, 110, "Stage:", 8);
+	stageTextField = new FlxUIInputText(150, 25, 110, _song.stage, 8);
+	blockPressWhileTypingOn.push(stageTextField);
+
+	cutsceneText = new FlxText(150, 60, 110, "Cutscene:", 8);
+	cutsceneTextField = new FlxUIInputText(150, 75, 110, _song.cutsceneType, 8);
+	blockPressWhileTypingOn.push(cutsceneTextField);
+
+	uiText = new FlxText(150, 110, 110, "UI Type:", 8);
+	uiTextField = new FlxUIInputText(150, 125, 110, _song.uiType, 8);
+	blockPressWhileTypingOn.push(uiTextField);
 
 	tab_group_char.add(playerText);
+	tab_group_char.add(player1TextField);
 	tab_group_char.add(enemyText);
+	tab_group_char.add(player2TextField);
 	tab_group_char.add(gfText);
+	tab_group_char.add(gfTextField);
+	
 	tab_group_char.add(stageText);
+	tab_group_char.add(stageTextField);
 	tab_group_char.add(cutsceneText);
+	tab_group_char.add(cutsceneTextField);
 	tab_group_char.add(uiText);
 	tab_group_char.add(uiTextField);
-	tab_group_char.add(cutsceneTextField);
-	tab_group_char.add(stageTextField);
-	tab_group_char.add(gfTextField);
-	tab_group_char.add(player1TextField);
-	tab_group_char.add(player2TextField);
 
 	UI_box.addGroup(tab_group_char);
 	UI_box.scrollFactor.set();
@@ -625,33 +591,39 @@ var stepperAltNote;
 
 function addNoteUI()
 {
-	var tab_group_note = new FlxUI(null, UI_box);
-	tab_group_note.name = 'Note';
-
-	stepperSusLength = new FlxUINumericStepper(10, 10, Conductor.stepCrochet / 2, 0, 0, Conductor.stepCrochet * 16);
+	var tab_group_note = new FlxUI(null, UI_box); 
+	tab_group_note.name = 'Note'; 
+	var labelSus = new FlxText(15, 10, 0, "Sustain Duration Value:", 8);
+	stepperSusLength = new FlxUINumericStepper(15, 25, Conductor.stepCrochet / 2, 0, 0, Conductor.stepCrochet * 16);
 	stepperSusLength.value = 0;
 	stepperSusLength.name = 'note_susLength';
 	blockPressWhileTypingOnStepper.push(stepperSusLength);
 
-	var applyLength = new FlxButton(100, 10, 'Apply');
-	isAltNoteCheck = new FlxUICheckBox(10, 100, null, null, "Alt Anim Note", 100);
+	var applyLength = new FlxButton(150, 23, 'Apply Length', function() {
+	});
+
+	isAltNoteCheck = new FlxUICheckBox(15, 70, null, null, "Alt Anim Note Trigger", 120);
 	isAltNoteCheck.name = "isAltNote";
-	stepperAltNote = new FlxUINumericStepper(10, 200, 1, 0, 0, 999, 0);
+
+	var labelAltNote = new FlxText(15, 105, 0, "Alt Animation Suffix Value Index:", 8);
+	stepperAltNote = new FlxUINumericStepper(15, 120, 1, 0, 0, 999, 0);
 	stepperAltNote.value = 0;
 	stepperAltNote.name = 'alt_anim_note';
 	blockPressWhileTypingOnStepper.push(stepperAltNote);
 
-	isCrossfade = new FlxUICheckBox(10, 120, null, null, "Cross Fade", 100);
+	isCrossfade = new FlxUICheckBox(15, 160, null, null, "Cross Fade Effect", 120);
 	isCrossfade.name = "isCrossfade";
 
+	tab_group_note.add(labelSus);
 	tab_group_note.add(stepperSusLength);
 	tab_group_note.add(applyLength);
 	tab_group_note.add(isAltNoteCheck);
+	tab_group_note.add(labelAltNote);
 	tab_group_note.add(stepperAltNote);
 	tab_group_note.add(isCrossfade);
+	
 	UI_box.addGroup(tab_group_note);
 }
-
 function hasSelectedNote()
 {
 	return !arrayIsEmpty(curSelectedNote) && curSelectedNote[1] > -1;
@@ -671,7 +643,7 @@ function addEventsUI()
 		var directories = [SUtil.getPath() + 'assets/images/custom_events/'];
 		for (i in 0...directories.length) {
 			var directory =  directories[i];
-			if(FNFAssets.exists(directory)) 
+			if(FNFAssets.exists(directory))
 			{	
 				for (file in FileSystem.readDirectory(directory)) {
 					var path = IoPath.join([directory, file]);
@@ -688,19 +660,18 @@ function addEventsUI()
 		eventPushedMap.clear();
 		eventPushedMap = null;
 	}
-	descText = new FlxText(20, 250, 0, eventStuff[0][0]);
+	var textEventLabel = new FlxText(15, 10, 0, "Active Target Event:");
+	tab_group_event.add(textEventLabel);
 
-	var leEvents = [];
-	for (i in 0...eventStuff.length) {
-		leEvents.push(eventStuff[i][0]);
+	var leEvents = []; 
+	for (i in 0...eventStuff.length) { 
+		leEvents.push(eventStuff[i][0]); 
 	}
 
-	var text = new FlxText(20, 30, 0, "Event:");
-	tab_group_event.add(text);
-	eventDropDown = new FlxUIDropDownMenuCustom(20, 50, FlxUIDropDownMenuCustom.makeStrIdLabelArray(leEvents, true), function(pressed) {
+	eventDropDown = new FlxUIDropDownMenuCustom(15, 25, FlxUIDropDownMenuCustom.makeStrIdLabelArray(leEvents, true), function(pressed) {
 		var selectedEvent = Std.parseInt(pressed);
 		descText.text = eventStuff[selectedEvent][1];
-		if (!arrayIsEmpty(curSelectedNote) && eventStuff != null) 
+		if (!arrayIsEmpty(curSelectedNote) && eventStuff != null)
 		{
 			if (!arrayIsEmpty(curSelectedNote) && curSelectedNote[2] == null)
 			{
@@ -711,103 +682,74 @@ function addEventsUI()
 	});
 	blockPressWhileScrolling.push(eventDropDown);
 
-	var text = new FlxText(20, 90, 0, "Value 1:");
-	tab_group_event.add(text);
-	value1InputText = new FlxUIInputText(20, 110, 100, "");
+	var labelVal1 = new FlxText(15, 65, 0, "Parameter/Value 1:");
+	value1InputText = new FlxUIInputText(15, 80, 110, "");
 	blockPressWhileTypingOn.push(value1InputText);
 
-	var text = new FlxText(20, 130, 0, "Value 2:");
-	tab_group_event.add(text);
-	value2InputText = new FlxUIInputText(20, 150, 100, "");
+	var labelVal2 = new FlxText(15, 115, 0, "Parameter/Value 2:");
+	value2InputText = new FlxUIInputText(15, 130, 110, "");
 	blockPressWhileTypingOn.push(value2InputText);
 
-	var text = new FlxText(20, 170, 0, "Value 3:");
-	tab_group_event.add(text);
-	value3InputText = new FlxUIInputText(20, 190, 100, "");
+	var labelVal3 = new FlxText(15, 165, 0, "Parameter/Value 3:");
+	value3InputText = new FlxUIInputText(15, 180, 110, "");
 	blockPressWhileTypingOn.push(value3InputText);
-
-	// New event buttons
-	var removeButton = new FlxButton(eventDropDown.x + eventDropDown.width + 10, eventDropDown.y, '-', function()
-	{
-		if(!arrayIsEmpty(curSelectedNote) && curSelectedNote[2] == null) //Is event note
-		{
-			if(curSelectedNote[1].length < 2)
-			{
+	var removeButton = new FlxButton(150, 25, 'Delete Node (-)', function() {
+		if(!arrayIsEmpty(curSelectedNote) && curSelectedNote[2] == null) {
+			if(curSelectedNote[1].length < 2) {
 				_song.events.remove(curSelectedNote);
 				curSelectedNote = null;
-			}
-			else
-			{
+			} else {
 				curSelectedNote[1].remove(curSelectedNote[1][curEventSelected]);
 			}
-
 			var eventsGroup;
 			--curEventSelected;
 			if(curEventSelected < 0) curEventSelected = 0;
 			else if(!arrayIsEmpty(curSelectedNote) && curEventSelected >= (eventsGroup = curSelectedNote[1]).length) curEventSelected = eventsGroup.length - 1;
-			
 			changeEventSelected(0);
 			updateGrid();
 		}
 	});
-
-	removeButton.setGraphicSize(Std.int(removeButton.height), Std.int(removeButton.height));
-	removeButton.updateHitbox();
-	removeButton.color = 0xFFff0000;
+	removeButton.color = 0xFFd9534f;
 	removeButton.label.color = 0xFFffffff;
-	removeButton.label.size = 12;
-	setAllLabelsOffset(removeButton, -30, 0);
-	tab_group_event.add(removeButton);
-		
-	var addButton = new FlxButton(removeButton.x + removeButton.width + 10, removeButton.y, '+', function()
-	{
-		if(!arrayIsEmpty(curSelectedNote) && curSelectedNote[2] == null) //Is event note
-		{
+
+	var addButton = new FlxButton(150, 50, 'Insert Node (+)', function() {
+		if(!arrayIsEmpty(curSelectedNote) && curSelectedNote[2] == null) {
 			var eventsGroup = curSelectedNote[1];
 			eventsGroup.push(['', '', '']);
-
 			changeEventSelected(1);
 			updateGrid();
 		}
 	});
-
-	addButton.setGraphicSize(Std.int(removeButton.width), Std.int(removeButton.height));
-	addButton.updateHitbox();
-	addButton.color = 0xFF00ff00;
+	addButton.color = 0xFF5cb85c;
 	addButton.label.color = 0xFFffffff;
-	addButton.label.size = 12;
-	setAllLabelsOffset(addButton, -30, 0);
-	tab_group_event.add(addButton);
-		
-	var moveLeftButton = new FlxButton(addButton.x + addButton.width + 20, addButton.y, '<', function()
-	{
+
+	var moveLeftButton = new FlxButton(150, 80, 'Prev Group (<)', function() {
 		changeEventSelected(-1);
 	});
-	moveLeftButton.setGraphicSize(Std.int(addButton.width), Std.int(addButton.height));
-	moveLeftButton.updateHitbox();
-	moveLeftButton.label.size = 12;
-	setAllLabelsOffset(moveLeftButton, -30, 0);
-	tab_group_event.add(moveLeftButton);
 		
-	var moveRightButton = new FlxButton(moveLeftButton.x + moveLeftButton.width + 10, moveLeftButton.y, '>', function()
-	{
+	var moveRightButton = new FlxButton(150, 105, 'Next Group (>)', function() {
 		changeEventSelected(1);
 	});
-	moveRightButton.setGraphicSize(Std.int(moveLeftButton.width), Std.int(moveLeftButton.height));
-	moveRightButton.updateHitbox();
-	moveRightButton.label.size = 12;
-	setAllLabelsOffset(moveRightButton, -30, 0);
+
+	selectedEventText = new FlxText(150, 135, 120, 'Selected Event: None');
+	selectedEventText.alignment = 'left';
+	descText = new FlxText(15, 230, 260, eventStuff[0][0]); 
+	descText.setFormat(null, 8, 0xFFe6e6e6, "left");
+
+	tab_group_event.add(removeButton); 
+	tab_group_event.add(addButton);
+	tab_group_event.add(moveLeftButton);
 	tab_group_event.add(moveRightButton);
-
-	selectedEventText = new FlxText(addButton.x - 100, addButton.y + addButton.height + 6, (moveRightButton.x - addButton.x) + 186, 'Selected Event: None');
-	selectedEventText.alignment = 'center';
 	tab_group_event.add(selectedEventText);
-
-	tab_group_event.add(descText);
+	
+	tab_group_event.add(labelVal1);
 	tab_group_event.add(value1InputText);
+	tab_group_event.add(labelVal2);
 	tab_group_event.add(value2InputText);
+	tab_group_event.add(labelVal3);
 	tab_group_event.add(value3InputText);
 	tab_group_event.add(eventDropDown);
+	tab_group_event.add(descText);
 	
 	UI_box.addGroup(tab_group_event);
 }
@@ -1003,29 +945,6 @@ function loadSong(daSong)
 		changeSection(0, true);
 	};
 
-	if(instWaveform != null)
-		remove(instWaveform);
-
-	if(voicesWaveform != null)
-		remove(voicesWaveform);
-
-	for (wf in instWaveformsBySection)
-		if (wf != null) remove(wf);
-	for (wf in voicesWaveformsBySection)
-		if (wf != null) remove(wf);
-
-	instWaveformsBySection = [];
-	voicesWaveformsBySection = [];
-
-	instWaveform = makeWaveform(FlxG.sound.music, 0x55FF0000);
-	instWaveformsBySection = makeWaveformsBySection(FlxG.sound.music, 0x55FF0000);
-
-	if(vocals != null)
-	{
-		voicesWaveform = makeWaveform(vocals, 0x5500FFFF);
-		voicesWaveformsBySection = makeWaveformsBySection(vocals, 0x5500FFFF);
-	}
-
 	reloadGridLayer();
 }
 
@@ -1099,7 +1018,6 @@ function getEvent(id, sender, data, params)
 		{
 			_song.notes[curSection].lengthInSteps = Std.int(nums.value);
 			updateGrid();
-			regenerateSectionWaveforms();
 		}
 		else if (wname == 'song_speed')
 		{
@@ -1110,7 +1028,6 @@ function getEvent(id, sender, data, params)
 			tempBpm = nums.value;
 			Conductor.mapBPMChanges(_song);
 			Conductor.changeBPM(nums.value);
-			regenerateSectionWaveforms();
 		}
 		else if (wname == 'note_susLength')
 		{
@@ -1125,7 +1042,6 @@ function getEvent(id, sender, data, params)
 		{
 			_song.notes[curSection].bpm = nums.value;
 			updateGrid();
-			regenerateSectionWaveforms();
 		} else if (wname == 'alt_anim_number')
 		{
 			_song.notes[curSection].altAnimNum = Std.int(nums.value);
@@ -1574,11 +1490,6 @@ function updateZoom() {
 	zoomTxt.text = 'Zoom: ' + zoomThing;
 	reloadGridLayer();
 }
-
-function getWaveformXOffset()
-{
-	return (Main.ammo[_song.mania] * GRID_SIZE);
-}
 function reloadGridLayer() {
 	gridLayer.clear();
 
@@ -1601,46 +1512,6 @@ function reloadGridLayer() {
 	var line2 = new FlxSprite(gridOriginX + GRID_SIZE).makeGraphic(2, gridH, 0xFF000000);
 	gridLayer.add(line1);
 	gridLayer.add(line2);
-	if (instWaveformsBySection != null && instWaveformsBySection.length > 0)
-	{
-		for (i in 0...instWaveformsBySection.length)
-		{
-			var waveform = instWaveformsBySection[i];
-			if (waveform != null && showInstWaveform)
-			{
-				waveform.x = centerX - (waveform.width * 0.5);
-				waveform.y = gridOriginY + (i * GRID_SIZE * 16);
-				gridLayer.add(waveform);
-			}
-		}
-	}
-	if (voicesWaveformsBySection != null && voicesWaveformsBySection.length > 0)
-	{
-		for (i in 0...voicesWaveformsBySection.length)
-		{
-			var waveform = voicesWaveformsBySection[i];
-			if (waveform != null && showVoicesWaveform)
-			{
-				waveform.x = centerX - (waveform.width * 0.5);
-				waveform.y = gridOriginY + (i * GRID_SIZE * 16);
-				gridLayer.add(waveform);
-			}
-		}
-	}
-	if (instWaveform != null && instWaveformsBySection.length == 0)
-	{
-		instWaveform.x = centerX - (instWaveform.width * 0.5);
-		instWaveform.y = gridOriginY;
-		if (showInstWaveform) gridLayer.add(instWaveform);
-	}
-
-	if (voicesWaveform != null && voicesWaveformsBySection.length == 0)
-	{
-		voicesWaveform.x = centerX - (voicesWaveform.width * 0.5);
-		voicesWaveform.y = gridOriginY;
-		if (showVoicesWaveform) gridLayer.add(voicesWaveform);
-	}
-
 	if (strumLine != null)
 		remove(strumLine);
 
@@ -2216,55 +2087,6 @@ function loadJson(song)
 	{
 		FlxG.sound.play(FNFAssets.getSound(SUtil.getPath() + 'assets/sounds/ANGRY.ogg'));
 	}
-}
-
-function makeWaveform(sound, color)
-{
-	if(sound == null || sound._sound == null)
-		return null;
-
-	var width = GRID_SIZE * Main.ammo[_song.mania];
-	var height = Std.int(GRID_SIZE * 16 * zoomList[curZoom]);
-
-	return generateWaveform(sound._sound, width, height, color);
-}
-
-function makeWaveformsBySection(sound, color)
-{
-	var waveforms = [];
-
-	if(sound == null || sound._sound == null)
-		return waveforms;
-
-	for (i in 0..._song.notes.length)
-	{
-		var waveform = generateWaveform(
-			sound._sound,
-			GRID_SIZE * Main.ammo[_song.mania],
-			GRID_SIZE * 16,
-			color
-		);
-		waveforms.push(waveform);
-	}
-
-	return waveforms;
-}
-
-function regenerateSectionWaveforms()
-{
-    for (wf in instWaveformsBySection)
-        if (wf != null) remove(wf);
-    for (wf in voicesWaveformsBySection)
-        if (wf != null) remove(wf);
-
-    instWaveformsBySection = [];
-    voicesWaveformsBySection = [];
-    if (FlxG.sound.music != null)
-        instWaveformsBySection = makeWaveformsBySection(FlxG.sound.music, 0x55FF0000);
-
-    if (vocals != null)
-        voicesWaveformsBySection = makeWaveformsBySection(vocals, 0x5500FFFF);
-    reloadGridLayer();
 }
 
 function loadAutosave()

@@ -590,13 +590,18 @@ class Note extends DynamicSprite
 					wasGoodHit = true;
 				}
 			}
-			
 		}
 
 		if (tooLate)
 		{
 			alpha = Math.min(alpha, 0.3 * alphaMultiplier);
 		}
+		onNoteUpdate(elapsed);
+	}
+	public function onNoteUpdate(elapsed:Float):Void
+	{
+		PlayState.instance.setAllHaxeVar('thisNote', this); 
+		PlayState.instance.callAllHScript('onNoteUpdate', [this, elapsed]);
 	}
 	public inline function daStrumTime():Float {
 		return strumTime + OptionsHandler.options.offset;
