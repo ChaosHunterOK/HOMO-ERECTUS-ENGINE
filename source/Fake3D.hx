@@ -4,91 +4,239 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
 import flixel.util.FlxColor;
-import flixel.text.FlxText;
+import openfl.Vector;
+import openfl.utils.Assets;
+import openfl.display.TriangleCulling;
+import openfl.display.BitmapData;
 
-class Fake3D extends FlxSpriteGroup {
-    public var yaw:Float = 0;
-    public var pitch:Float = 0;
+class Fake3D extends FlxSpriteGroup
+{
+    public static inline var CUBE_DATA:String =
+        "v -1 -1 -1\n" +
+        "v 1 -1 -1\n" +
+        "v 1 1 -1\n" +
+        "v -1 1 -1\n" +
+        "v -1 -1 1\n" +
+        "v 1 -1 1\n" +
+        "v 1 1 1\n" +
+        "v -1 1 1\n" +
+        "f 1 2 3 4\n" +
+        "f 5 6 7 8\n" +
+        "f 1 5 8 4\n" +
+        "f 2 6 7 3\n" +
+        "f 1 2 6 5\n" +
+        "f 4 3 7 8";
+
+    public var posX:Float = 0;
+    public var posY:Float = 0;
+    public var posZ:Float = 0;
+
+    public var rotX:Float = 0;
+    public var rotY:Float = 0;
+    public var rotZ:Float = 0;
+
+    public var modelScale:Float = 100;
+    public var camX:Float = 0;
+    public var camY:Float = 0;
+    public var camZ:Float = -500;
+
+    public var camPitch:Float = 0;
+    public var camYaw:Float = 0;
+    public var camRoll:Float = 0;
+
     public var fov:Float = 90;
-    public var aspect:Float = FlxG.width / FlxG.height;
-    
-    public var pos3D:Array<Float> = [0, 0, 0];
-    public var sunDir:Array<Float> = [0.5, 0.7, 0.5];
-    
-    public var layers:Array<FlxSprite> = [];
-    public var depth:Int;
-    public var spacing:Float = 2.0;
-    public var baseColor:FlxColor = FlxColor.WHITE;
+    public var texture:BitmapData;
 
-    public function new(x:Float, y:Float, asset:String, depth:Int = 10, isText:Bool = false, textStr:String = "", ?font:String = null, textColor:FlxColor = FlxColor.WHITE, fontSize:Int = 32) {
+    var vertices = new Vector<Float>();
+    var projected = new Vector<Float>();
+    var indices = new Vector<Int>(); 
+    var uvtData = new Vector<Float>();
+
+    var canvas:FlxSprite;
+
+    public function new(x:Float, y:Float, ?objPath:String, ?texturePath:String)
+    {
         super(x, y);
-        this.depth = depth;
-        this.pos3D = [x, y, 500]; 
-        this.baseColor = textColor;
 
-        for (i in 0...depth) {
-            var layer:FlxSprite;
-            
-            if (isText) {
-                var t = new FlxText(0, 0, 0, textStr, fontSize);
-                var borderStyle = (i == 0) ? FlxTextBorderStyle.OUTLINE : FlxTextBorderStyle.NONE;
-                var borderSize = (i == 0) ? 2 : 0; 
-
-                t.setFormat(font, fontSize, baseColor, "center", borderStyle, FlxColor.BLACK);
-                if(borderStyle != NONE) t.borderSize = borderSize;
-                
-                layer = t;
-            } else {
-                layer = new FlxSprite(0, 0).loadGraphic(asset);
-                layer.color = baseColor;
+        canvas = new FlxSprite();
+        canvas.makeGraphic(FlxG.width, FlxG.height, FlxColor.TRANSPARENT, true);
+        add(canvas);
+        
+        if (texturePath != null && Assets.exists(texturePath))
+            texture = Assets.getBitmapData(texturePath);
+        else {
+            texture = new BitmapData(64, 64, false, 0xFFFFFFFF);
+            for (ty in 0...64) {
+                for (tx in 0...64) {
+                    if (((tx >> 3) + (ty >> 3)) % 2 == 0)
+                        texture.setPixel(tx, ty, 0xFF888888);
+                }
             }
-            
-            add(layer);
-            layers.push(layer);
+        }
+
+        if (objPath == null)
+            parseOBJ(CUBE_DATA);
+        else
+            loadOBJ(objPath);
+    }
+
+    public function parseOBJ(data:String)
+    {
+        var rawVertices:Array<Float> = [];
+        var rawFaces:Array<Array<Int>> = [];
+
+        for (line in data.split("\n"))
+        {
+            line = StringTools.trim(line);
+
+            if (StringTools.startsWith(line, "v "))
+            {
+                var p = line.split(" ");
+                rawVertices.push(Std.parseFloat(p[1]));
+                rawVertices.push(Std.parseFloat(p[2]));
+                rawVertices.push(Std.parseFloat(p[3]));
+            }
+            else if (StringTools.startsWith(line, "f "))
+            {
+                var face:Array<Int> = [];
+                var p = line.split(" ");
+
+                for (i in 1...p.length)
+                {
+                    if (p[i] == "") continue;
+                    face.push(Std.parseInt(p[i].split("/")[0]) - 1);
+                }
+
+                if (face.length >= 3)
+                    rawFaces.push(face);
+            }
+        }
+        vertices = new Vector<Float>();
+        indices = new Vector<Int>();
+        uvtData = new Vector<Float>();
+
+        var vIdx = 0;
+        for (face in rawFaces)
+        {
+            var localUVs = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
+
+            for (i in 1...face.length - 1)
+            {
+                var fIdx = [0, i, i + 1];
+                for (j in 0...3) {
+                    var currentVert = face[fIdx[j]];
+                    vertices.push(rawVertices[currentVert * 3]);
+                    vertices.push(rawVertices[currentVert * 3 + 1]);
+                    vertices.push(rawVertices[currentVert * 3 + 2]);
+
+                    var uv = localUVs[fIdx[j] % 4];
+                    uvtData.push(uv[0]);
+                    uvtData.push(uv[1]);
+
+                    indices.push(vIdx);
+                    vIdx++;
+                }
+            }
+        }
+
+        projected = new Vector<Float>(Std.int(vertices.length / 3) * 2, true);
+    }
+
+    public function loadOBJ(path:String)
+    {
+        if (Assets.exists(path))
+        {
+            var data = Assets.getText(path);
+            parseOBJ(data);
+        }
+        else
+        {
+            trace('OBJ not found: $path');
         }
     }
-    public function changeColor(newColor:FlxColor):Void {
-        baseColor = newColor;
+
+    override function draw()
+    {
+        projectVertices();
+        super.draw();
+
+        for (camera in cameras)
+        {
+            if (!camera.visible || !camera.exists) continue;
+            
+            var gfx = camera.canvas.graphics;
+            gfx.beginBitmapFill(texture, null, true, true);
+            gfx.drawTriangles(projected, indices, uvtData, TriangleCulling.NEGATIVE);
+            gfx.endFill();
+        }
     }
 
-    override public function update(elapsed:Float) {
-        super.update(elapsed);
-        apply3DTransform();
-    }
+    function projectVertices()
+    {
+        var cx = FlxG.width * 0.5;
+        var cy = FlxG.height * 0.5;
 
-    public function apply3DTransform() {
-        var radYaw = yaw * (Math.PI / 180);
-        var radPitch = pitch * (Math.PI / 180);
-        var cp = Math.cos(radPitch);
-        var sp = Math.sin(radPitch);
-        var cy = Math.cos(radYaw);
-        var sy = Math.sin(radYaw);
+        var focal = (FlxG.height * 0.5) / Math.tan(fov * Math.PI / 360);
         
-        var dot = (sy * cp * sunDir[0]) + (-sp * sunDir[1]) + (cy * cp * sunDir[2]);
-        var brightness = Math.max(0.4, dot);
+        var sx = Math.sin(rotX * Math.PI / 180);
+        var sy = Math.sin(rotY * Math.PI / 180);
+        var sz = Math.sin(rotZ * Math.PI / 180);
+        var cxr = Math.cos(rotX * Math.PI / 180);
+        var cyr = Math.cos(rotY * Math.PI / 180);
+        var czr = Math.cos(rotZ * Math.PI / 180);
 
-        for (i in 0...layers.length) {
-            var layer = layers[i];
+        var csx = Math.sin(camPitch * Math.PI / 180);
+        var csy = Math.sin(camYaw * Math.PI / 180);
+        var csz = Math.sin(camRoll * Math.PI / 180);
+        var ccx = Math.cos(camPitch * Math.PI / 180);
+        var ccy = Math.cos(camYaw * Math.PI / 180);
+        var ccz = Math.cos(camRoll * Math.PI / 180);
+
+        var vi = 0;
+        var pi = 0;
+
+        while (vi < vertices.length)
+        {
+            var x = vertices[vi] * modelScale;
+            var y = vertices[vi + 1] * modelScale;
+            var z = vertices[vi + 2] * modelScale;
             
-            var zOffset = i * spacing;
-            var localZ = pos3D[2] + zOffset;
-            
-            var rx = pos3D[0] * cy - localZ * sy;
-            var rz = pos3D[0] * sy + localZ * cy;
-            var ry = pos3D[1] * cp - rz * sp;
-            var finalZ = pos3D[1] * sp + rz * cp;
-            var f = 1 / Math.tan(fov * 0.5 * (Math.PI / 180));
-            var scale = f / (finalZ * 0.001);
-            
-            layer.x = (rx * scale) + (FlxG.width / 2);
-            layer.y = (ry * scale) + (FlxG.height / 2);
-            layer.scale.set(scale * 0.1, scale * 0.1);
-            
-            var r = Std.int(baseColor.red * brightness);
-            var g = Std.int(baseColor.green * brightness);
-            var b = Std.int(baseColor.blue * brightness);
-            
-            layer.color = FlxColor.fromRGB(r, g, b);
+            var ty = y * cxr - z * sx;
+            var tz = y * sx + z * cxr;
+            y = ty; z = tz;
+
+            var tx = x * cyr + z * sy;
+            tz = -x * sy + z * cyr;
+            x = tx; z = tz;
+
+            tx = x * czr - y * sz;
+            ty = x * sz + y * czr;
+            x = tx; y = ty;
+
+            x += posX - camX;
+            y += posY - camY;
+            z += posZ - camZ;
+
+            tx = x * ccy - z * csy;
+            tz = x * csy + z * ccy;
+            x = tx; z = tz;
+
+            ty = y * ccx - z * csx;
+            tz = y * csx + z * ccx;
+            y = ty; z = tz;
+
+            tx = x * ccz - y * csz;
+            ty = x * csz + y * ccz;
+            x = tx; y = ty;
+
+            if (z < 1) z = 1;
+
+            var s = focal / z;
+            projected[pi] = cx + x * s;
+            projected[pi + 1] = cy + y * s;
+
+            vi += 3;
+            pi += 2;
         }
     }
 }

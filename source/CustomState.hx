@@ -314,7 +314,8 @@ class CustomState extends MusicBeatState
 		interp.variables.set("ParserEx", ParserEx);
 		//interp.variables.set("ClassDeclEx", ClassDeclEx);
 
-		interp.variables.set(SUtil.getPath() + "assets/", Assets);
+		//interp.variables.set(SUtil.getPath() + "assets/", Assets);
+		interp.variables.set("Assets", lime.utils.Assets);
 		interp.variables.set("FlxBasic", FlxBasic);
 		interp.variables.set("FlxGame", FlxGame);
 		interp.variables.set("IOErrorEvent", IOErrorEvent);

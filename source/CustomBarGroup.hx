@@ -10,9 +10,8 @@ class CustomBarGroup extends FlxSpriteGroup {
 
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
-		if (updateBar != null) {
+		if (updateBar != null)
 			updateBar();
-		}
 	}
 
 	override public function destroy():Void {

@@ -1,22 +1,18 @@
 package;
-#if desktop
 #if cpp
 import Sys.sleep;
 import discord_rpc.DiscordRpc;
 #end
 using StringTools;
 
-class DiscordClient
-{
-	public function new()
-	{
+class DiscordClient {
+	public function new() {
         #if cpp
-		
-		var client:String = "1139367275732926574";
+		trace("Discord Client starting...");
+
+		var client:String = "1499840284547350568";
 		if (FNFAssets.exists(SUtil.getPath() + "assets/discord/clientID.txt"))
 			client = FNFAssets.getText(SUtil.getPath() + "assets/discord/clientID.txt");
-		
-		trace("Discord Client starting...");
 		DiscordRpc.start({
 			clientID: client,
 			onReady: onReady,
@@ -25,8 +21,7 @@ class DiscordClient
 		});
 		trace("Discord Client started.");
 
-		while (true)
-		{
+		while (true) {
 			DiscordRpc.process();
 			sleep(2);
 			// trace("Discord Client Update");
@@ -36,40 +31,34 @@ class DiscordClient
         #end
 	}
 
-	public static function shutdown()
-	{
+	public static function shutdown() {
         #if cpp
 		DiscordRpc.shutdown();
         #end
 	}
 
-	static function onReady()
-	{
+	static function onReady() {
         #if cpp
 		DiscordRpc.presence({
 			details: "In the Menus",
 			state: null,
 			largeImageKey: 'icon',
-			largeImageText: "Friday Night Funkin' Vixtin Engine"
+			largeImageText: "Friday Night Funkin': HOMO ERECTUS ENGINE"
 		});
         #end
 	}
 
-	static function onError(_code:Int, _message:String)
-	{
+	static function onError(_code:Int, _message:String) {
 		trace('Error! $_code : $_message');
 	}
 
-	static function onDisconnected(_code:Int, _message:String)
-	{
+	static function onDisconnected(_code:Int, _message:String) {
 		trace('Disconnected! $_code : $_message');
 	}
 
-	public static function initialize()
-	{
+	public static function initialize() {
         #if cpp
-		var DiscordDaemon = sys.thread.Thread.create(() ->
-		{
+		var DiscordDaemon = sys.thread.Thread.create(() -> {
 			new DiscordClient();
 		});
         #end
@@ -77,27 +66,24 @@ class DiscordClient
 	}
 
 	public static function changePresence(details:String, state:Null<String>, ?smallImageKey:String, ?hasStartTimestamp:Bool, ?endTimestamp:Float,
-			?smallImageString:String)
-	{
+			?smallImageString:String) {
         #if cpp
 		var startTimestamp:Float = if (hasStartTimestamp) Date.now().getTime() else 0;
 
 		if (endTimestamp > 0)
-		{
 			endTimestamp = startTimestamp + endTimestamp;
-		}
-		if (smallImageKey == null) {
-			smallImageKey = "";
-		}
-		if (smallImageString == null) {
-			smallImageString = "Friday Night Funkin' Vixtin Engine";
-		}
+
+		if (smallImageKey == null)
+			smallImageKey = "icon";
+
+		if (smallImageString == null)
+			smallImageString = "Friday Night Funkin' HOMO ERECTUS ENGINE";
+
 		DiscordRpc.presence({
 			details: details,
 			state: state,
-			largeImageKey: 'icon',
+			largeImageKey: smallImageKey,
 			largeImageText: smallImageString,
-			smallImageKey : smallImageKey,
 			// Obtained times are in milliseconds so they are divided so Discord can use it
 			startTimestamp: Std.int(startTimestamp / 1000),
 			endTimestamp: Std.int(endTimestamp / 1000)
@@ -106,4 +92,3 @@ class DiscordClient
 		// trace('Discord RPC Updated. Arguments: $details, $state, $smallImageKey, $hasStartTimestamp, $endTimestamp');
 	}
 }
-#end
