@@ -2461,25 +2461,15 @@ class PlayState extends MusicBeatState
 		return arrSpr;
 	}
 	public var skipArrowStartTween:Bool = false; 
-	private function generateStaticArrows(strumLineID:Int, totalStrumLines:Int = 2):Void
+	private function generateStaticArrows(player:Int):Void
 	{
 		var shouldTween:Bool = !isStoryMode && !skipArrowStartTween;
-		var strumGroup = new FlxTypedGroup<StrumNote>();
-		strumLines[strumLineID] = strumGroup;
-		
-		var comboGroup = new FlxTypedGroup<FlxSprite>();
-		comboBreaks[strumLineID] = comboGroup;
-		comboGroup.cameras = [camHUD];
-		add(comboGroup);
-		var targetWidth = FlxG.width / totalStrumLines;
-		var fieldXOffset = targetWidth * strumLineID;
+		var strumGroup = player == 1 ? playerStrums : enemyStrums;
+		var comboGroup = player == 1 ? playerComboBreak : enemyComboBreak;
 
 		for (i in 0...Main.ammo[mania])
 		{
-			var noteWidth = 160 * 0.7;
-			var startX = fieldXOffset + ((targetWidth - (Main.ammo[mania] * noteWidth)) / 2) + (i * noteWidth);
-
-			var babyArrow:StrumNote = new StrumNote(startX, strumLine.y, i, strumLineID);
+			var babyArrow:StrumNote = new StrumNote(42, strumLine.y, i, player);
 			babyArrow.downScroll = downscroll;
 			babyArrow.ID = i;
 
@@ -2494,14 +2484,11 @@ class PlayState extends MusicBeatState
 			strumLineNotes.add(babyArrow);
 			holdCovers.add(babyArrow.holdCover);
 			babyArrow.postAddedToGroup();
-
 			var comboBreakThing = new FlxSprite(babyArrow.x, 0).makeGraphic(Std.int(babyArrow.width), FlxG.height, FlxColor.WHITE);
 			comboBreakThing.visible = false;
 			comboBreakThing.alpha = 0.6;
 			comboGroup.add(comboBreakThing);
 		}
-		if (strumLineID == 0) enemyStrums = strumGroup;
-		if (strumLineID == 1) playerStrums = strumGroup;
 	}
 	function comboBreak(dir:Int, playerOne:Bool = true, rating:String = 'miss') {
 		if (!OptionsHandler.options.showComboBreaks || !OptionsHandler.options.ratingColorRecs) return;
