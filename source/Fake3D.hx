@@ -51,16 +51,11 @@ class Fake3D extends FlxSpriteGroup
     var projected = new Vector<Float>();
     var indices = new Vector<Int>(); 
     var uvtData = new Vector<Float>();
-
-    var canvas:FlxSprite;
+    var zDepths:Array<Float> = [];
 
     public function new(x:Float, y:Float, ?objPath:String, ?texturePath:String)
     {
         super(x, y);
-
-        canvas = new FlxSprite();
-        canvas.makeGraphic(FlxG.width, FlxG.height, FlxColor.TRANSPARENT, true);
-        add(canvas);
         
         if (texturePath != null && Assets.exists(texturePath))
             texture = Assets.getBitmapData(texturePath);
@@ -77,7 +72,7 @@ class Fake3D extends FlxSpriteGroup
         if (objPath == null)
             parseOBJ(CUBE_DATA);
         else
-            loadOBJ(objPath);
+            loadOBJ(path);
     }
 
     public function parseOBJ(data:String)
@@ -111,6 +106,7 @@ class Fake3D extends FlxSpriteGroup
                     rawFaces.push(face);
             }
         }
+        
         vertices = new Vector<Float>();
         indices = new Vector<Int>();
         uvtData = new Vector<Float>();
@@ -132,6 +128,7 @@ class Fake3D extends FlxSpriteGroup
                     var uv = localUVs[fIdx[j] % 4];
                     uvtData.push(uv[0]);
                     uvtData.push(uv[1]);
+                    uvtData.push(1.0);
 
                     indices.push(vIdx);
                     vIdx++;
@@ -140,6 +137,7 @@ class Fake3D extends FlxSpriteGroup
         }
 
         projected = new Vector<Float>(Std.int(vertices.length / 3) * 2, true);
+        zDepths = [for (i in 0...Std.int(vertices.length / 3)) 1.0];
     }
 
     public function loadOBJ(path:String)
@@ -194,6 +192,7 @@ class Fake3D extends FlxSpriteGroup
 
         var vi = 0;
         var pi = 0;
+        var uvi = 0;
 
         while (vi < vertices.length)
         {
@@ -234,9 +233,11 @@ class Fake3D extends FlxSpriteGroup
             var s = focal / z;
             projected[pi] = cx + x * s;
             projected[pi + 1] = cy + y * s;
+            uvtData[uvi + 2] = 1.0 / z;
 
             vi += 3;
             pi += 2;
+            uvi += 3;
         }
     }
 }

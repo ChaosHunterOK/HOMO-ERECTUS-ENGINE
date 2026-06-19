@@ -15,7 +15,9 @@ var eventStuff =
 	['Screen Shake', "Value 1: Camera shake\nValue 2: HUD shake\n\nEvery value works as the following example: \"1, 0.05\".\nThe first number (1) is the duration.\nThe second number (0.05) is the intensity."],
 	['Change Character', "Value 1: Character to change (Dad, BF, GF)\nValue 2: New character's name\nValue 3: Destroy the previous character for higher performance.\n(If a previously destroyed character is reloaded, it will cause some lag)."],
 	['Change Scroll Speed', "Value 1: Scroll Speed Multiplier (1 is default)\nValue 2: Time it takes to change fully in seconds."],
-	['Setting Crossfades', "Value 1: Crossfade Duration\nValue 2: Crossfade Intensity\nValue 3: Crossfade Blend\nLeave the values blank if you want to use Default."]
+	['Setting Crossfades', "Value 1: Crossfade Duration\nValue 2: Crossfade Intensity\nValue 3: Crossfade Blend\nLeave the values blank if you want to use Default."],
+	['Flash Screen', "Value 1: Flash Color\nValue 2: Flash Duration\nValue 3: Flash Alpha\nLeave the values blank if you want to use Default."],
+	['Add Filter', "Value 1: Filter Name (eg. grayscale, invert, deuteranopia, protanopia, trit, normal)\nValue 2: Target Camera\nLeave the values blank if you want to use Default."]
 ];
 
 var difficultyChoices = [];
@@ -1134,7 +1136,7 @@ function update(elapsed)
 			LoadingState.loadAndSwitchState(new PlayState());
 		}
 
-	curStep = recalculateSteps();
+	curStep = Conductor.get_curStep();
 
 	var ctrlPressed = FlxG.keys.pressed.CONTROL;
 
@@ -1549,26 +1551,6 @@ function toggleNoteAnim() {
 		}
 	}
 	updateNoteUI();
-}
-
-function recalculateSteps()
-{
-	var lastChange = {
-		stepTime: 0,
-		songTime: 0,
-		bpm: 0
-	}
-	
-	for (i in 0...Conductor.bpmChangeMap.length)
-	{
-		if (FlixG.sound.music.time > Conductor.bpmChangeMap[i].songTime)
-			lastChange = Conductor.bpmChangeMap[i];
-	}
-
-	instance.curStep = lastChange.stepTime + Math.floor((FlixG.sound.music.time - lastChange.songTime) / Conductor.stepCrochet);
-	instance.updateBeat();
-
-	return instance.curStep;
 }
 
 function resetSection(songBeginning)

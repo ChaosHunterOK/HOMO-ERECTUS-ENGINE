@@ -3829,6 +3829,23 @@ class PlayState extends MusicBeatState
 				FlxG.camera.flash(flashColor, duration, null, true);
 				camHUD.flash(flashColor, duration * 0.75, null, true);
 				camHUD.alpha = alpha;
+			case 'Add Filter':
+                var filterName:String = value1.trim().toLowerCase();
+                var targetCam:String = value2.trim().toLowerCase();
+                var filter = CoolUtil.getFilter(filterName);
+                var filterArray:Array<openfl.filters.BitmapFilter> = (filter != null) ? [filter] : null;
+                switch (targetCam)
+                {
+                    case 'hud' | 'camhud' | '1':
+                        camHUD.setFilters(filterArray);
+                    case 'game' | 'camgame' | '0':
+                        camGame.setFilters(filterArray);
+                    case 'all' | 'both' | '2':
+                        camGame.setFilters(filterArray);
+                        camHUD.setFilters(filterArray);
+                    default:
+                        camGame.setFilters(filterArray);
+                }
 		}
 		callAllHScript("onEvent", [eventName, value1, value2, value3]);
 	}

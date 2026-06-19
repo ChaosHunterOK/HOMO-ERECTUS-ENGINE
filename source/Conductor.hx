@@ -25,6 +25,23 @@ class Conductor
 	public static var timeScale:Float = safeZoneOffset / 166;
 
 	public static var bpmChangeMap:Array<BPMChangeEvent> = [];
+	public static var curStep(get, default):Int;
+
+	private static function get_curStep():Int
+	{
+		var lastChange:BPMChangeEvent = {
+			stepTime: 0,
+			songTime: 0,
+			bpm: bpm
+		}
+		for (i in 0...bpmChangeMap.length)
+		{
+			if (songPosition >= bpmChangeMap[i].songTime)
+			lastChange = bpmChangeMap[i];
+		}
+		var dynamicStepCrochet:Float = ((60 / lastChange.bpm) * 1000) / 4;
+		return lastChange.stepTime + Math.floor((songPosition - lastChange.songTime) / dynamicStepCrochet);
+	}
 
 	public function new() {}
 
@@ -50,15 +67,15 @@ class Conductor
 
 			if (note.changeBPM && note.bpm > 0 && note.bpm != curBPM)
 			{
-				curBPM = note.bpm;
+			curBPM = note.bpm;
 
-				var event:BPMChangeEvent = {
+			var event:BPMChangeEvent = {
 					stepTime: totalSteps,
 					songTime: totalPos,
 					bpm: curBPM
-				};
+			};
 
-				bpmChangeMap.push(event);
+			bpmChangeMap.push(event);
 			}
 
 			var deltaSteps:Int = (note.lengthInSteps > 0) ? note.lengthInSteps : 0;
