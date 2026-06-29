@@ -53,8 +53,11 @@ function startIntro()
     {
         makeTransition();
 
+        //FlxG.sound.playMusic(FNFAssets.getSound(SUtil.getPath() + 'assets/music/custom_menu_music/'
+            //+ CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/music/custom_menu_music/custom_menu_music.json")).Menu+'/title' + TitleState.soundExt), 0);
+
         FlxG.sound.playMusic(FNFAssets.getSound(SUtil.getPath() + 'assets/music/custom_menu_music/'
-            + CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/music/custom_menu_music/custom_menu_music.json")).Menu+'/title' + TitleState.soundExt), 0);
+        + CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/music/custom_menu_music/custom_menu_music.json")).Menu+'/freakyMenu' + TitleState.soundExt));
 
         //FlxG.sound.play(SUtil.getPath() + 'assets/music/custom_menu_music/'
         //+ CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/music/custom_menu_music/custom_menu_music.json")).Menu+'/title' + TitleState.soundExt, 0);
@@ -216,7 +219,7 @@ function createCoolText(textArray)
     for (i in 0...textArray.length)
     {
         var money = new Alphabet(0, 0, textArray[i], true, false);
-        money.screenCenter(88);
+        money.screenCenter();
         money.y += (i * 60) + 200;
         money.y -= 350;
         credGroup.add(money);
@@ -227,7 +230,7 @@ function createCoolText(textArray)
 function addMoreText(text)
 {
     var coolText = new Alphabet(0, 0, text, true, false);
-    coolText.screenCenter(88);
+    coolText.screenCenter();
     coolText.y += (textGroup.length * 60) + 200;
     coolText.y -= 350;
     credGroup.add(coolText);
@@ -243,14 +246,16 @@ function deleteCoolText()
     }
 }
 
-function beatHit(beat) {
+function beatHit(beat)
+{
     logoBl.animation.play('bump');
     danceLeft = !danceLeft;
 
     if (gfTitle.animationType == "gfIdle"){
         if (danceLeft){
             gfDance.animation.play('danceRight');
-        } else{
+        }
+        else{
             gfDance.animation.play('danceLeft');
         }
     }
@@ -260,8 +265,10 @@ function beatHit(beat) {
     if (gfTitle.animationType == "loopIdle"){
         gfDance.animation.play('loopyFunny');
     }
-    if (beat < 9) {
-        switch (beat) {
+
+    if (curBeat < 9) {
+        switch (curBeat)
+        {
             case 1:
                 createCoolText(coolDudes);
             case 3:
@@ -290,6 +297,30 @@ function beatHit(beat) {
                 addMoreText('Funkin');
             case 16:
                 skipIntro();
+        }
+    } else {
+        if (curBeat == 9) {
+            createCoolText([curWacky[0]]);
+            shownWacky = 0;
+            wackyEndBeat = curBeat;
+        } else if (curBeat % 2 == 1 && shownWacky + 1 < curWacky.length) {
+            shownWacky += 1;
+            addMoreText(curWacky[shownWacky]);
+            wackyEndBeat = curBeat;
+        } else if (shownWacky == curWacky.length - 1){
+            trace(wackyEndBeat + " " + curBeat);
+            switch (curBeat - wackyEndBeat) {
+                case 1:
+                    deleteCoolText();
+                case 2:
+                    addMoreText(CoolUtil.parseJson(FNFAssets.getText("assets/data/gameInfo.json")).name_1);
+                case 3:
+                    addMoreText(CoolUtil.parseJson(FNFAssets.getText("assets/data/gameInfo.json")).name_2);
+                case 4:
+                    addMoreText(CoolUtil.parseJson(FNFAssets.getText("assets/data/gameInfo.json")).name_3);
+                case 5:
+                    skipIntro();
+            }
         }
     }
 }

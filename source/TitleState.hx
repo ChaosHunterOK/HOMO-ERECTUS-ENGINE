@@ -299,6 +299,9 @@ class TitleState extends MusicBeatState
 
 	override function update(elapsed:Float)
 	{
+		if (FlxG.sound.music != null && FlxG.sound.music.playing)
+			Conductor.songPosition = FlxG.sound.music.time;
+
 		callAllHScript("update", [elapsed]);
 		super.update(elapsed);
 	}
