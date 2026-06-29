@@ -296,6 +296,7 @@ class Shader extends FlxShaderFix {
                         parameter.__isUniform = isUniform;
                         @:privateAccess
                         parameter.__length = length;
+                        parameter.value = [false, false, false, false];
                         __paramBool.push(parameter);
 
                         if (name == "openfl_HasColorTransform")
@@ -320,6 +321,7 @@ class Shader extends FlxShaderFix {
                         parameter.__isUniform = isUniform;
                         @:privateAccess
                         parameter.__length = length;
+                        parameter.value = [0, 0, 0, 0];
                         __paramInt.push(parameter);
                         Reflect.setField(__data, name, parameter);
                         try {Reflect.setField(this, name, parameter);} catch(e) {}
@@ -342,6 +344,7 @@ class Shader extends FlxShaderFix {
                         parameter.__isUniform = isUniform;
                         @:privateAccess
                         parameter.__length = length;
+                        parameter.value = [0.0, 0.0, 0.0, 0.0];
                         __paramFloat.push(parameter);
 
                         if (StringTools.startsWith(name, "openfl_"))
