@@ -106,8 +106,8 @@ class Fake3D extends FlxSpriteGroup
     {
         super(x, y);
 
-        if (texturePath != null && Assets.exists(texturePath))
-            texture = Assets.getBitmapData(texturePath);
+        if (texturePath != null && FNFAssets.exists(texturePath))
+            texture = FNFAssets.getBitmapData(texturePath);
         else {
             texture = new BitmapData(64, 64, false, 0xFFFFFFFF);
             for (ty in 0...64) {
@@ -261,9 +261,9 @@ class Fake3D extends FlxSpriteGroup
 
     public function loadOBJ(path:String)
     {
-        if (Assets.exists(path))
+        if (FNFAssets.exists(path))
         {
-            var data = Assets.getText(path);
+            var data = FNFAssets.getText(path);
             parseOBJ(data);
             var dir = path.substring(0, path.lastIndexOf("/") + 1);
             for (line in data.split("\n"))
@@ -284,13 +284,13 @@ class Fake3D extends FlxSpriteGroup
     }
     public function loadMTL(path:String):Void
     {
-        if (!Assets.exists(path))
+        if (!FNFAssets.exists(path))
         {
             trace('MTL not found: $path');
             return;
         }
 
-        var data = Assets.getText(path);
+        var data = FNFAssets.getText(path);
         var dir = path.substring(0, path.lastIndexOf("/") + 1);
         var currentName:String = null;
 
@@ -309,8 +309,8 @@ class Fake3D extends FlxSpriteGroup
     }
     public function setMaterialTexture(materialName:String, path:String):Void
     {
-        if (Assets.exists(path))
-            materialBitmaps.set(materialName, Assets.getBitmapData(path));
+        if (FNFAssets.exists(path))
+            materialBitmaps.set(materialName, FNFAssets.getBitmapData(path));
         else
             trace('Texture not found for material "$materialName": $path');
     }
