@@ -527,7 +527,9 @@ class CustomState extends MusicBeatState
 		try {
 			PlayState.SONG = Song.loadFromJson(songName.toLowerCase() + diffSuffix, songName.toLowerCase());
 			PlayState.storyDifficulty = diff;
-			LoadingState.loadAndSwitchState(new PlayState());
+			FlxTransitionableState.skipNextTransIn = false;
+			FlxTransitionableState.skipNextTransOut = false;
+			LoadingState.loadAndSwitchState(new PlayState(), true);
 		} catch(e) {
 			PlayState.customStateName = "";
 			openfl.Lib.application.window.alert("Could not find song JSON: " + songName, "Error");
