@@ -582,7 +582,7 @@ class Note extends DynamicSprite
 		}
 		else
 		{
-			if (!dontStrum) {
+			if (!dontCountNote) {
 				canBeHit = false;
 
 				if (strumTime <= Conductor.songPosition)
