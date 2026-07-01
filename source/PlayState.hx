@@ -27,7 +27,7 @@ import Discord.DiscordClient;
 #end
 #end
 import DifficultyIcons;
-import Fake3D;
+import backend.assets.Fake3D;
 import animateatlas.AtlasFrameMaker;
 import flixel.FlxSprite;
 import flixel.FlxBasic;
@@ -56,7 +56,7 @@ import flixel.effects.particles.FlxParticle;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.ui.FlxBar;
-import PerspectiveWarp;
+import backend.assets.PerspectiveWarp;
 import flixel.util.FlxCollision;
 import flixel.util.FlxColor;
 import flixel.util.FlxSort;

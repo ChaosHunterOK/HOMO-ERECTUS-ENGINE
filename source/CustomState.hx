@@ -7,7 +7,7 @@ import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import flixel.text.FlxText;
-import PerspectiveWarp;
+import backend.assets.PerspectiveWarp;
 import flixel.addons.display.FlxBackdrop;
 import lime.system.System;
 import flixel.FlxSprite;
@@ -53,7 +53,7 @@ import flixel.animation.FlxAnimation;
 import lime.utils.UInt8Array;
 import flixel.addons.transition.FlxTransitionableState;
 import flixel.addons.transition.TransitionData;
-import Fake3D;
+import backend.assets.Fake3D;
 
 #if desktop
 import Sys;

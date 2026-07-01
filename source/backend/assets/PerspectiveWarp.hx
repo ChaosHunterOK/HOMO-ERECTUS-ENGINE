@@ -1,3 +1,4 @@
+package backend.assets;
 import openfl.display.Sprite;
 import openfl.display.BitmapData;
 import openfl.Vector;
