@@ -8,6 +8,8 @@ import lime.system.System;
 import flixel.graphics.FlxGraphic;
 import tjson.TJSON;
 using StringTools;
+import flash.display.BlendMode;
+import flixel.tweens.FlxEase;
 import openfl.filters.ColorMatrixFilter;
 
 class CoolUtil
@@ -125,6 +127,70 @@ class CoolUtil
 				null;
 		}
 		return daFilter;
+	}
+
+	//i think its easier??
+	public static function getMoveEase(name:String):Float->Float
+	{
+		return switch(name.trim().toLowerCase())
+		{
+			case 'linear': FlxEase.linear;
+			case 'quadin': FlxEase.quadIn;
+			case 'quadout': FlxEase.quadOut;
+			case 'quadinout': FlxEase.quadInOut;
+			case 'cubein': FlxEase.cubeIn;
+			case 'cubeout': FlxEase.cubeOut;
+			case 'cubeinout': FlxEase.cubeInOut;
+			case 'quartin': FlxEase.quartIn;
+			case 'quartout': FlxEase.quartOut;
+			case 'quartinout': FlxEase.quartInOut;
+			case 'quintin': FlxEase.quintIn;
+			case 'quintout': FlxEase.quintOut;
+			case 'quintinout': FlxEase.quintInOut;
+			case 'sinein': FlxEase.sineIn;
+			case 'sineout': FlxEase.sineOut;
+			case 'sineinout': FlxEase.sineInOut;
+			case 'expoin': FlxEase.expoIn;
+			case 'expoout': FlxEase.expoOut;
+			case 'expoinout': FlxEase.expoInOut;
+			case 'circin': FlxEase.circIn;
+			case 'circout': FlxEase.circOut;
+			case 'circinout': FlxEase.circInOut;
+			case 'elasticin': FlxEase.elasticIn;
+			case 'elasticout': FlxEase.elasticOut;
+			case 'elasticinout': FlxEase.elasticInOut;
+			case 'backin': FlxEase.backIn;
+			case 'backout': FlxEase.backOut;
+			case 'backinout': FlxEase.backInOut;
+			case 'bouncein': FlxEase.bounceIn;
+			case 'bounceout': FlxEase.bounceOut;
+			case 'bounceinout': FlxEase.bounceInOut;
+			case 'smoothstepin': FlxEase.smoothStepIn;
+			case 'smoothstepout': FlxEase.smoothStepOut;
+			case 'smoothstepinout': FlxEase.smoothStepInOut;
+			default: FlxEase.linear;
+		}
+	}
+
+	public static function blendModeFromString(blend:String):BlendMode {
+		switch(blend.toLowerCase().trim()) {
+			case 'add': return ADD;
+			case 'alpha': return ALPHA;
+			case 'darken': return DARKEN;
+			case 'difference': return DIFFERENCE;
+			case 'erase': return ERASE;
+			case 'hardlight': return HARDLIGHT;
+			case 'invert': return INVERT;
+			case 'layer': return LAYER;
+			case 'lighten': return LIGHTEN;
+			case 'multiply': return MULTIPLY;
+			case 'overlay': return OVERLAY;
+			case 'screen': return SCREEN;
+			case 'shader': return SHADER;
+			case 'subtract': return SUBTRACT;
+			case 'normal': return NORMAL;
+		}
+		return NORMAL;
 	}
 }
 

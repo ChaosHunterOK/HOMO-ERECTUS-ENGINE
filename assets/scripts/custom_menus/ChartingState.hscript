@@ -10,7 +10,7 @@ var eventStuff =
 	['Set GF Speed', "Sets GF head bopping speed,\nValue 1: 1 = Normal speed,\n2 = 1/2 speed, 4 = 1/4 speed etc.\nUsed on Fresh during the beatbox parts.\n\nWarning: Value must be integer!"],
 	['Add Camera Zoom', "Used on MILF on that one \"hard\" part\nValue 1: Camera zoom add (Default: 0.015)\nValue 2: UI zoom add (Default: 0.03)\nLeave the values blank if you want to use Default."],
 	['Play Animation', "Plays an animation on a Character,\nonce the animation is completed,\nthe animation changes to Idle\n\nValue 1: Animation to play.\nValue 2: Character (Dad, BF, GF)"],
-	['Camera Follow Pos', "Value 1: X\nValue 2: Y\n\nThe camera won't change the follow point\nafter using this, for getting it back\nto normal, leave both values blank."],
+	['Camera Follow Pos', "Value 1: X\nValue 2: Y\n\nThe camera won't change the follow point\nafter using this, for getting it back\nto normal, leave both values blank.\n\nValue 3 (optional): \"type, duration, ease, target\"\ntype: snap (default) or tween\nduration: seconds, tween only (default 0.5)\nease: linear, quadInOut, cubeInOut, sineInOut,\nexpoInOut, circInOut, elasticInOut, backInOut,\nbounceInOut, smoothStepInOut, etc. (default linear)\ntarget: game (default), hud, or both\n\nExample: \"tween, 0.8, quadInOut, both\""],
 	['Alt Idle Animation', "Sets a specified suffix after the idle animation name.\nYou can use this to trigger 'idle-alt' if you set\nValue 2 to -alt\n\nValue 1: Character to set (Dad, BF or GF)\nValue 2: New suffix (Leave it blank to disable)"],
 	['Screen Shake', "Value 1: Camera shake\nValue 2: HUD shake\n\nEvery value works as the following example: \"1, 0.05\".\nThe first number (1) is the duration.\nThe second number (0.05) is the intensity."],
 	['Change Character', "Value 1: Character to change (Dad, BF, GF)\nValue 2: New character's name\nValue 3: Destroy the previous character for higher performance.\n(If a previously destroyed character is reloaded, it will cause some lag)."],
@@ -97,6 +97,12 @@ var temricon;
 
 var useLiftNote = false;
 var gridLayer;
+
+var waveformSprite = null;
+var waveformSamples = null;
+var showWaveform = true;
+var check_waveform = null;
+var WAVEFORM_STEP_MS = 5;
 
 var text = "";
 
@@ -842,6 +848,17 @@ function addChartingUI()
 	if (FlixG.save.data.chart_playSoundDad == null) FlixG.save.data.chart_playSoundDad = false;
 	playSoundDad.checked = FlixG.save.data.chart_playSoundDad;
 
+	check_waveform = new FlxUICheckBox(check_mute_inst.x, playSoundBf.y + 30, null, null, 'Show Waveform', 100);
+	if (FlixG.save.data.chart_showWaveform == null) FlixG.save.data.chart_showWaveform = true;
+	showWaveform = FlixG.save.data.chart_showWaveform;
+	check_waveform.checked = showWaveform;
+	check_waveform.callback = function()
+	{
+		showWaveform = check_waveform.checked;
+		FlixG.save.data.chart_showWaveform = showWaveform;
+		//updateWaveform();
+	};
+
 	instVolume = new FlxUINumericStepper(15, 270, 0.1, 1, 0, 1, 1);
 	instVolume.value = FlxG.sound.music.volume;
 	instVolume.name = 'inst_volume';
@@ -867,6 +884,7 @@ function addChartingUI()
 	tab_group_chart.add(check_warnings);
 	tab_group_chart.add(playSoundBf);
 	tab_group_chart.add(playSoundDad);
+	tab_group_chart.add(check_waveform);
 	tab_group_chart.add(instVolume);
 	tab_group_chart.add(voicesVolume);
 	tab_group_chart.add(stepperPlaybackRate);
@@ -929,6 +947,8 @@ function loadSong(daSong)
 	FlxG.sound.music.pause();
 	if (_song.needsVoices) vocals.pause();
 	if (sfxtrack != null) sfxtrack.pause();
+
+	//generateWaveformData();
 
 	FlxG.sound.music.onComplete = function()
 	{
@@ -1492,6 +1512,120 @@ function updateZoom() {
 	zoomTxt.text = 'Zoom: ' + zoomThing;
 	reloadGridLayer();
 }
+function generateWaveformData()
+{
+	waveformSamples = [];
+
+	var sound = FlxG.sound.music;
+	if (sound == null) return;
+
+	var oflSound = Reflect.field(sound, "_sound");
+	if (oflSound == null) return;
+
+	var buffer = Reflect.field(oflSound, "__buffer");
+	if (buffer == null) return;
+
+	var data = Reflect.field(buffer, "data");
+	if (data == null) return;
+
+	var channels = Reflect.field(buffer, "channels");
+	if (channels == null || channels <= 0) channels = 2;
+
+	var bitsPerSample = Reflect.field(buffer, "bitsPerSample");
+	if (bitsPerSample == null || bitsPerSample <= 0) bitsPerSample = 16;
+
+	var bytesPerSample = Std.int(bitsPerSample / 8);
+	if (bytesPerSample <= 0) bytesPerSample = 2;
+
+	var frameSize = bytesPerSample * channels;
+	if (frameSize <= 0) return;
+
+	var totalFrames = Std.int(data.length / frameSize);
+	if (totalFrames <= 0) return;
+
+	var sampleRate = Reflect.field(buffer, "sampleRate");
+	if (sampleRate == null || sampleRate <= 0) sampleRate = 44100;
+
+	var msPerFrame = 1000 / sampleRate;
+	var framesPerBucket = Std.int(WAVEFORM_STEP_MS / msPerFrame);
+	if (framesPerBucket < 1) framesPerBucket = 1;
+
+	var i = 0;
+	while (i < totalFrames)
+	{
+		var peak = 0.0;
+		var bucketEnd = Std.int(Math.min(i + framesPerBucket, totalFrames));
+
+		var f = i;
+		while (f < bucketEnd)
+		{
+			var byteOffset = f * frameSize;
+			if (byteOffset + 1 < data.length) {
+				var lo = data.get(byteOffset);
+				var hi = data.get(byteOffset + 1);
+				var sampleVal = lo | (hi << 8);
+				if (sampleVal >= 32768) sampleVal -= 65536;
+
+				var norm = Math.abs(sampleVal) / 32768;
+				if (norm > peak) peak = norm;
+			}
+			f += channels; 
+		}
+
+		waveformSamples.push(peak);
+		i += framesPerBucket;
+	}
+}
+
+function updateWaveform()
+{
+	if (waveformSprite != null)
+	{
+		gridLayer.remove(waveformSprite, true);
+		waveformSprite.destroy();
+		waveformSprite = null;
+	}
+	if (!showWaveform || gridBG == null || waveformSamples == null || waveformSamples.length == 0)
+		return;
+
+	var gridW = Std.int(gridBG.width);
+	var gridH = Std.int(gridBG.height);
+	if (gridW <= 0 || gridH <= 0) return;
+
+	var waveW = Std.int(GRID_SIZE * 1.5);
+	if (waveW > gridW) waveW = gridW;
+	var halfW = waveW / 2;
+	var centerX = Std.int((gridW - waveW) / 2);
+
+	var bmp = new BitmapData(waveW, gridH, true, 0x00000000);
+
+	var sectionStart = sectionStartTime(0);
+
+	var row = 0;
+	while (row < gridH)
+	{
+		var localStrum = FlxMath.remapToRange(row, 0, gridH, 0, 16 * Conductor.stepCrochet);
+		var absTime = sectionStart + localStrum;
+		var idx = Std.int(absTime / WAVEFORM_STEP_MS);
+		if (waveformSamples != null && idx >= 0 && idx < waveformSamples.length)
+		{
+			var amp = waveformSamples[idx];
+			var w = Std.int(amp * halfW);
+			if (w < 1) w = 1;
+			if (w > halfW) w = Std.int(halfW);
+
+			bmp.fillRect(new Rectangle(halfW - w, row, w * 2, 1), 0xFFFFFFFF);
+		}
+
+		row++;
+	}
+
+	waveformSprite = new FlxSprite(gridBG.x + centerX, gridBG.y).makeGraphic(waveW, gridH, 0x00000000, true);
+	waveformSprite.pixels = bmp;
+	waveformSprite.alpha = 0.5;
+	gridLayer.add(waveformSprite);
+}
+
 function reloadGridLayer() {
 	gridLayer.clear();
 
@@ -1767,7 +1901,7 @@ function updateGrid()
 				
 				if(note.y < -150) note.y = -150;
 
-				var text = 'Event: ' + note.eventName + ' (' + Math.floor(note.strumTime) + ' ms)' + '\nValue 1: ' + note.eventVal1 + '\nValue 2: ' + note.eventVal2;
+				var text = 'Event: ' + note.eventName + ' (' + Math.floor(note.strumTime) + ' ms)' + '\nValue 1: ' + note.eventVal1 + '\nValue 2: ' + note.eventVal2 + '\nValue 3: ' + note.eventVal3;
 				if(note.eventLength > 1) text = note.eventLength + ' Events:\n' + note.eventName;
 
 				var daText = new AttachedFlxText(0, 0, 400, text, 12);
@@ -1781,6 +1915,8 @@ function updateGrid()
 			}
 		}
 	}
+
+	updateWaveform();
 }
 
 function setupSusNote(note) {

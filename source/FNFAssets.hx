@@ -37,6 +37,7 @@ class FNFAssets {
 	private static var MAX_SOUND_CACHE_SIZE:Int = 30;
 	private static var assetAccessOrder:Array<String> = [];
 	private static var soundAccessOrder:Array<String> = [];
+	private static var extractedVideoPaths:Map<String, String> = new Map();
 	private static function resolvePath(id:String):String {
 		#if sys
 		return Assets.exists(id) ? Assets.getPath(id) : id;
@@ -44,17 +45,74 @@ class FNFAssets {
 		return id;
 		#end
 	}
-	#if MODS_ALLOWED
-	public static var ignoreModFolders:Array<String> = [
-		'music',
-		'sounds',
-		'shaders',
-		'videos',
-		'images',
-		'fonts',
-		'scripts'
-	];
-	#end
+	public static function getVideo(id:String):String
+	{
+		#if sys
+		if (!isInScope(id))
+			throw "Tried to access a video that is out of scope.";
+
+		var path = resolvePath(id);
+		if (path != null && path != "" && FileSystem.exists(path))
+			return path;
+
+		if (Assets.exists(id))
+		{
+			var cachedPath = extractedVideoPaths.get(id);
+			if (cachedPath != null && cachedPath != "" && FileSystem.exists(cachedPath))
+				return cachedPath;
+
+			var extractedPath = extractEmbeddedAsset(id);
+			if (extractedPath != "")
+			{
+				extractedVideoPaths.set(id, extractedPath);
+				return extractedPath;
+			}
+		}
+
+		if (!FileSystem.exists(path))
+			throw 'Video $path doesn\'t exist.';
+
+		return path;
+		#else
+		return id;
+		#end
+	}
+
+	private static function extractEmbeddedAsset(id:String):String
+	{
+		#if sys
+		if (!Assets.exists(id))
+			return "";
+
+		var bytes = Assets.getBytes(id);
+		if (bytes == null)
+			return "";
+
+		var fileName = Path.withoutDirectory(id);
+		if (fileName == "" || fileName == ".")
+			fileName = "asset";
+
+		var extension = Path.extension(id);
+		if (extension != "")
+			fileName = fileName + "." + extension;
+
+		var tempDir = Path.join([Main.cwd, "TempFiles", "embedded_assets"]);
+		if (!FileSystem.exists(tempDir))
+			FileSystem.createDirectory(tempDir);
+
+		var outputPath = Path.join([tempDir, fileName]);
+		try {
+			File.saveBytes(outputPath, bytes);
+			return outputPath;
+		} catch (e:Any) {
+			trace("Failed to extract embedded asset " + id + " to " + outputPath + ": " + e);
+			return "";
+		}
+		#else
+		return "";
+		#end
+	}
+
     public static function getText(id:String):String {
         #if sys
             if (!isInScope(id))

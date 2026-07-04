@@ -21,7 +21,6 @@ import sys.FileSystem;
 import sys.io.File;
 #end
 
-
 class EdtNote extends FlxSprite
 {
 	public var mustBeUpdated:Bool = false;
@@ -60,11 +59,8 @@ class EdtNote extends FlxSprite
 	public var mineNote:Bool = false;
 	public var healMultiplier:Float = 1;
 	public var damageMultiplier:Float = 1;
-	// Whether to always do the same amount of healing for hitting and the same amount of damage for missing notes
 	public var consistentHealth:Bool = false;
-	// How relatively hard it is to hit the note. Lower numbers are harder, with 0 being literally impossible
 	public var timingMultiplier:Float = 1;
-	// whether to play the sing animation for hitting this note
 	public var shouldBeSung:Bool = true;
 	public var ignoreHealthMods:Bool = false;
 	public var nukeNote = false;
@@ -87,9 +83,11 @@ class EdtNote extends FlxSprite
 	public function new(strumTime:Float, noteData:Int, ?LiftNote:Bool = false)
 	{
 		super();
+		var basePath:String = SUtil.getPath() + 'assets/images/custom_ui/ui_packs/normal/NOTE_assets.';
+		var pngPath:String = basePath + 'png';
+		var xmlPath:String = basePath + 'xml';
 
-		var mania = PlayState.SONG.mania;
-		NOTE_AMOUNT = Main.ammo[mania];
+		NOTE_AMOUNT = Main.ammo[PlayState.SONG.mania];
 
 		isLiftNote = LiftNote;
 		if (isLiftNote) shouldBeSung = false;
@@ -100,70 +98,62 @@ class EdtNote extends FlxSprite
 		this.strumTime = strumTime;
 		this.noteData = noteData % 8;
 
-		var sussy:Bool = false;
-
 		if (noteData > -1)
 		{
-			var band = Std.int(noteData / NOTE_AMOUNT);
+			var band:Int = Std.int(noteData / NOTE_AMOUNT);
 
-			mineNote  = band == 2 || band == 3;
+			mineNote  = (band == 2 || band == 3);
 			if (!isLiftNote && (band == 4 || band == 5))
 				isLiftNote = true;
-			nukeNote = band == 6 || band == 7;
-			drainNote = band == 8 || band == 9;
-			sussy = band >= 10;
-			frames = DynamicAtlasFrames.fromSparrow(
-				SUtil.getPath() + 'assets/images/custom_ui/ui_packs/normal/NOTE_assets.png',
-				SUtil.getPath() + 'assets/images/custom_ui/ui_packs/normal/NOTE_assets.xml'
-			);
+			
+			nukeNote = (band == 6 || band == 7);
+			drainNote = (band == 8 || band == 9);
+			var sussy:Bool = band >= 10;
 
 			if (sussy)
 			{
-				var sussyInfo = Math.floor(noteData / (NOTE_AMOUNT * 2)) - 5;
+				var sussyInfo:Int = Math.floor(noteData / (NOTE_AMOUNT * 2)) - 5;
 				if (coolCustomGraphics[sussyInfo] == null)
-					coolCustomGraphics[sussyInfo] =
-						FlxGraphic.fromAssetKey(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/normal/NOTE_assets.png', true);
+					coolCustomGraphics[sussyInfo] = FlxGraphic.fromAssetKey(pngPath, true);
 
-				frames = FlxAtlasFrames.fromSparrow(
-					coolCustomGraphics[sussyInfo],
-					SUtil.getPath() + 'assets/images/custom_ui/ui_packs/normal/NOTE_assets.xml'
-				);
+				frames = FlxAtlasFrames.fromSparrow(coolCustomGraphics[sussyInfo], xmlPath);
 			}
-			addAnimations("0");
-
+			else
+				frames = DynamicAtlasFrames.fromSparrow(pngPath, xmlPath);
 			if (isLiftNote) addAnimations(" lift");
 			else if (nukeNote) addAnimations(" nuke");
 			else if (mineNote) addAnimations(" mine");
+			else addAnimations("0");
 
 			setGraphicSize(Std.int(width * 0.7));
 			updateHitbox();
 			antialiasing = true;
-			var idx = noteData % NOTE_AMOUNT;
-			var animList = NOTE_MAP.get(NOTE_AMOUNT);
+		
+			var idx:Int = noteData % NOTE_AMOUNT;
+			var animList:Array<String> = NOTE_MAP.get(NOTE_AMOUNT);
 
 			if (animList != null && idx < animList.length)
 			{
 				x += swagWidth * idx;
 				animation.play(animList[idx]);
 			}
+		
 			if (noteData >= NOTE_AMOUNT * 10)
 			{
-				var sussyInfo = Math.floor(noteData / (NOTE_AMOUNT * 2)) - 4;
-				var text = new FlxText(0, 0, 0, cast sussyInfo, 64);
+				var sussyInfo:Int = Math.floor(noteData / (NOTE_AMOUNT * 2)) - 4;
+				var text:FlxText = new FlxText(0, 0, 0, Std.string(sussyInfo), 64);
 				stamp(text, Std.int(width / 2), 20);
 			}
 		}
 	}
 
-	inline function addAnimations(suffix:String)
+	inline function addAnimations(suffix:String):Void
 	{
 		for (c in COLORS)
 		{
-			var name = c + "Scroll";
-			var prefix = c + suffix;
-
+			var name:String = c + "Scroll";
 			if (animation.getByName(name) == null)
-				animation.addByPrefix(name, prefix);
+				animation.addByPrefix(name, c + suffix);
 		}
 	}
 }

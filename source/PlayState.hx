@@ -28,6 +28,7 @@ import Discord.DiscordClient;
 #end
 import DifficultyIcons;
 import backend.assets.Fake3D;
+import backend.Events;
 import animateatlas.AtlasFrameMaker;
 import flixel.FlxSprite;
 import flixel.FlxBasic;
@@ -102,7 +103,8 @@ using StringTools;
 using CoolUtil.FlxTools;
 import NoteHoldCover;
 #if VIDEOS_ALLOWED
-import hxcodec.flixel.FlxVideo as FlxVideo;
+//import hxcodec.flixel.FlxVideo as FlxVideo;
+import FlxVideo;
 #end
 #if mobile
 import flixel.input.actions.FlxActionInput;
@@ -312,10 +314,10 @@ class PlayState extends MusicBeatState
 	 * Substate Camera (pause menu, game over screen)
 	 */
 	public var camSUBSTATE:FlxCamera;
-	private var camGame:FlxCamera;
+	public var camGame:FlxCamera;
 
 	public var doof:DialogueBox;
-	private var forceCamera:Bool = false;
+	public var forceCamera:Bool = false;
 	private var instantFollowCamera:Bool = false;
 
 	var talking:Bool = true;
@@ -681,6 +683,7 @@ class PlayState extends MusicBeatState
 		interp.variables.set("forceCamera", forceCamera);
 		interp.variables.set("PerspectiveWarp", PerspectiveWarp);
 		interp.variables.set("getHaxeActor", getHaxeActor);
+		interp.variables.set("FlxVideo", FlxVideo);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
@@ -731,7 +734,7 @@ class PlayState extends MusicBeatState
 		//interp.variables.set("noteHit", function(player1:Bool, note:Note, wasGoodHit:Bool) {});
 		interp.variables.set("goodNoteHit", function(id:Note, direction:Int, noteType:String, isSustainNote:Bool, isPlayer:Bool) {});
 		interp.variables.set("noteMiss", function(id, direction, noteType, isSustainNote, isPlayer) {});
-		interp.variables.set("blendModeFromString", blendModeFromString);
+		interp.variables.set("blendModeFromString", CoolUtil.blendModeFromString);
 		interp.variables.set("add", add);
 		interp.variables.set("remove", remove);
 		interp.variables.set("insert", insert);
@@ -943,27 +946,6 @@ class PlayState extends MusicBeatState
 		catch (e) {
 			openfl.Lib.application.window.alert(e.message, "YOUR SCRIPT CRASHED!");
 		}
-	}
-	
-	function blendModeFromString(blend:String):BlendMode {
-		switch(blend.toLowerCase().trim()) {
-			case 'add': return ADD;
-			case 'alpha': return ALPHA;
-			case 'darken': return DARKEN;
-			case 'difference': return DIFFERENCE;
-			case 'erase': return ERASE;
-			case 'hardlight': return HARDLIGHT;
-			case 'invert': return INVERT;
-			case 'layer': return LAYER;
-			case 'lighten': return LIGHTEN;
-			case 'multiply': return MULTIPLY;
-			case 'overlay': return OVERLAY;
-			case 'screen': return SCREEN;
-			case 'shader': return SHADER;
-			case 'subtract': return SUBTRACT;
-			case 'normal': return NORMAL;
-		}
-		return NORMAL;
 	}
 
 	inline function isHud(cam:String):Bool
@@ -1902,48 +1884,6 @@ class PlayState extends MusicBeatState
 			}
 		});
 	}
-	function videoIntro(filename:String, ?finishfunk:Void->Void = null)
-	{
-		#if VIDEOS_ALLOWED
-		if (!FNFAssets.exists(filename))
-		{
-			FlxG.log.warn('Couldnt find video file: ' + filename);
-
-			if (finishfunk != null)
-				finishfunk();
-			else
-				startCountdown();
-
-			return;
-		}
-
-		inCutscene = true;
-		var bg = new FlxSprite(-FlxG.width, -FlxG.height).makeGraphic(FlxG.width * 3, FlxG.height * 3, FlxColor.BLACK);
-		bg.scrollFactor.set();
-		bg.cameras = [camHUD];
-		add(bg);
-
-		var daVideo = new FlxVideo();
-		daVideo.play(filename);
-
-		daVideo.onEndReached.add(function()
-		{
-			daVideo.dispose();
-			remove(bg);
-
-			if (finishfunk != null)
-				finishfunk();
-			else
-				startCountdown();
-		}, true);
-
-		#else
-
-		FlxG.log.warn('Platform not supported!');
-		startCountdown();
-
-		#end
-	}
 	
 	function startAndEnd()
 		{
@@ -2174,7 +2114,7 @@ class PlayState extends MusicBeatState
 	}
 
 	var debugNum:Int = 0;
-	private var eventPushedMap:Map<String, Bool> = new Map<String, Bool>();
+	public var eventPushedMap:Map<String, Bool> = new Map<String, Bool>();
 
 	private inline function loadSound(path:String):FlxSound {
 		#if sys
@@ -2222,29 +2162,7 @@ class PlayState extends MusicBeatState
 		var halfWidth = FlxG.width / 2;
 
 		var lowerSong = songName.toLowerCase();
-		var file = SUtil.getPath() + 'assets/data/' + lowerSong + '/events.json';
-
-		if (FNFAssets.exists(file)) {
-			var eventsData:Array<Dynamic> = Song.loadFromJson('events', lowerSong).events;
-			for (event in eventsData)
-			{
-				var baseTime = event[0];
-				for (i in 0...event[1].length)
-				{
-					var ev = event[1][i];
-					var subEvent:EventNote = {
-						strumTime: baseTime + offset,
-						event: ev[0],
-						value1: ev[1],
-						value2: ev[2],
-						value3: ev[3]
-					};
-					subEvent.strumTime -= eventNoteEarlyTrigger(subEvent);
-					eventNotes.push(subEvent);
-					eventPushed(subEvent);
-				}
-			}
-		}
+		Events.loadEvents(this, lowerSong, offset, songData);
 
 		for (section in noteData)
 		{
@@ -2355,25 +2273,6 @@ class PlayState extends MusicBeatState
 				if (swagNote.mustPress) swagNote.x += halfWidth;
 			}
 		}
-		for (event in songData.events)
-		{
-			var baseTime = event[0];
-			for (i in 0...event[1].length)
-			{
-				var ev = event[1][i];
-				var subEvent:EventNote = {
-					strumTime: baseTime + offset,
-					event: ev[0],
-					value1: ev[1],
-					value2: ev[2],
-					value3: ev[3]
-				};
-				subEvent.strumTime -= eventNoteEarlyTrigger(subEvent);
-				eventNotes.push(subEvent);
-				eventPushed(subEvent);
-			}
-		}
-
 		if (flippedNotes)
 		{
 			var holdSwap:Map<String, String> = [
@@ -2407,39 +2306,25 @@ class PlayState extends MusicBeatState
 		}
 
 		unspawnNotes.sort(sortByShit);
-		if (eventNotes.length > 1) eventNotes.sort(sortByTime);
+		Events.sortEventNotes(this);
 
 		defaultNoteWidth = unspawnNotes[0].width;
 		generatedMusic = true;
 	}
 	function eventPushed(event:EventNote) 
 	{
-		if (event.event == 'Change Character') {
-			var charType:Int = 0;
-			switch(event.value1.toLowerCase()) {
-				case 'gf' | 'girlfriend' | '1': charType = 2;
-				case 'dad' | 'opponent' | '0': charType = 1;
-				default:
-					charType = Std.parseInt(event.value1);
-					if(Math.isNaN(charType)) charType = 0;
-			}
-			addCharacterToList(event.value2, charType);
-		}
-
-		if(!eventPushedMap.exists(event.event)) {
-			eventPushedMap.set(event.event, true);
-		}
+		Events.eventPushed(this, event);
 	}
 
 	function eventNoteEarlyTrigger(event:EventNote):Float
-		return 0;
+		return Events.eventNoteEarlyTrigger(event);
 
 	var defaultNoteWidth:Float;
 	function sortByShit(Obj1:Note, Obj2:Note):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, Obj1.strumTime, Obj2.strumTime);
 
 	function sortByTime(Obj1:EventNote, Obj2:EventNote):Int
-		return FlxSort.byValues(FlxSort.ASCENDING, Obj1.strumTime, Obj2.strumTime);
+		return Events.sortByTime(Obj1, Obj2);
 
 	public function setArrowsAnim(arrSpr:FlxSprite, ident:Int):FlxSprite
 	{
@@ -2554,6 +2439,13 @@ class PlayState extends MusicBeatState
 			twn.cancel();
 	}
 
+	public function cancelTweensOn(Object:Dynamic):Void
+	{
+		for (twn in modTweens.copy())
+			if (Reflect.hasField(twn, "object") && Reflect.field(twn, "object") == Object)
+				stopTrackedTween(twn);
+	}
+
 	public function cleanupDeadTweens():Void
 		modTweens = modTweens.filter(function(tween:FlxTween):Bool {return tween != null && !tween.finished;});
 
@@ -2567,6 +2459,9 @@ class PlayState extends MusicBeatState
 				vocals.pause();
 				if (isUsingSounds) vsounds.pause();
 			}
+			#if VIDEOS_ALLOWED
+			FlxVideo.pauseAll();
+			#end
 			controls.setKeyboardScheme(Solo(false));
 
 			if (songSpeedTween != null) songSpeedTween.active = false;
@@ -2605,6 +2500,10 @@ class PlayState extends MusicBeatState
 
 			if (startTimer != null && !startTimer.finished) startTimer.active = true;
 			if (songSpeedTween != null) songSpeedTween.active = true;
+
+			#if VIDEOS_ALLOWED
+			FlxVideo.resumeAll();
+			#end
 
 			paused = false;
 			setAllHaxeVar("paused", paused);
@@ -3100,6 +2999,9 @@ class PlayState extends MusicBeatState
 		{
 			health = opponentPlayer ? 2 : 0;
 			trace("RESET = True");
+			#if VIDEOS_ALLOWED
+			FlxVideo.hideAll();
+			#end
 		}
 
 		// CHEAT = brandon's a pussy
@@ -3116,6 +3018,10 @@ class PlayState extends MusicBeatState
 			persistentUpdate = false;
 			persistentDraw = false;
 			paused = true;
+
+			#if VIDEOS_ALLOWED
+			FlxVideo.hideAll();
+			#end
 
 			vocals.stop();
 			FlxG.sound.music.stop();
@@ -3523,379 +3429,29 @@ class PlayState extends MusicBeatState
 	}
 
 	public function checkEventNote() {
-        while(eventIndex < eventNotes.length) {
-            var event = eventNotes[eventIndex];
-            if(Conductor.songPosition < event.strumTime)
-                break;
-            var value1:String = (event.value1 != null) ? event.value1 : '';
-            var value2:String = (event.value2 != null) ? event.value2 : '';
-            var value3:String = (event.value3 != null) ? event.value3 : '';
-            triggerEventNote(event.event, value1, value2, value3);
-            eventIndex++;
-        }
-    }
+		Events.checkEventNote(this);
+	}
 
 	public function changeCharacterCore(charName:String, charType:Int, ?deleteBefore:Bool = false):Void
 	{
-		if (charType < 0) charType = 0;
-		if (charType > 2) charType = 2;
-
-		var oldChar:Character = null;
-
-		switch (charType)
-		{
-			//BF
-			case 0:
-				oldChar = boyfriend;
-				if (boyfriend.curCharacter != charName)
-				{
-					if (!boyfriendMap.exists(charName))
-						addCharacterToList(charName, charType);
-
-					var lastAlpha = boyfriend.alpha;
-					boyfriend.alpha = 0.00001;
-					boyfriend.active = false;
-
-					boyfriend = boyfriendMap.get(charName);
-
-					if (charSwapUpdateX || charSwapUpdateY)
-					{
-						var newX = charSwapUpdateX ? (BF_X + boyfriend.playerOffsetX) : boyfriend.x;
-						var newY = charSwapUpdateY ? (BF_Y + boyfriend.playerOffsetY) : boyfriend.y;
-						boyfriend.setPosition(newX, newY);
-					}
-
-					boyfriend.alpha = lastAlpha;
-					boyfriend.active = true;
-					iconP1.switchAnim(boyfriend.curCharacter);
-
-					if (deleteBefore && oldChar != boyfriend && boyfriendMap.exists(oldChar.curCharacter))
-						removeCharacterFromList(oldChar.curCharacter, charType);
-				}
-				setAllHaxeVar('boyfriend', boyfriend);
-
-			//DAD
-			case 1:
-				oldChar = dad;
-				if (dad.curCharacter != charName)
-				{
-					if (!dadMap.exists(charName))
-						addCharacterToList(charName, charType);
-
-					var wasGf = dad.curCharacter.startsWith('gf');
-					var lastAlpha = dad.alpha;
-					dad.alpha = 0.00001;
-					dad.active = false;
-
-					dad = dadMap.get(charName);
-
-					if (charSwapUpdateX || charSwapUpdateY)
-					{
-						var newX = charSwapUpdateX ? (DAD_X + dad.enemyOffsetX) : dad.x;
-						var newY = charSwapUpdateY ? (DAD_Y + dad.enemyOffsetY) : dad.y;
-						dad.setPosition(newX, newY);
-					}
-
-					if (dad.curCharacter.startsWith('gf'))
-						if (gf != null) gf.visible = false;
-					else if (wasGf && gf != null)
-						gf.visible = true;
-
-					dad.alpha = lastAlpha;
-					dad.active = true;
-					iconP2.switchAnim(dad.curCharacter);
-
-					if (deleteBefore && oldChar != dad && dadMap.exists(oldChar.curCharacter))
-						removeCharacterFromList(oldChar.curCharacter, charType);
-				}
-				setAllHaxeVar('dad', dad);
-			//GF
-			case 2:
-				if (gf == null) return;
-				oldChar = gf;
-
-				if (gf.curCharacter != charName)
-				{
-					if (!gfMap.exists(charName))
-						addCharacterToList(charName, charType);
-
-					var lastAlpha = gf.alpha;
-					gf.alpha = 0.00001;
-					gf.active = false;
-
-					gf = gfMap.get(charName);
-
-					if (charSwapUpdateX || charSwapUpdateY)
-					{
-						var newX = charSwapUpdateX ? (GF_X + gf.camOffsetX) : gf.x;
-						var newY = charSwapUpdateY ? (GF_Y + gf.camOffsetY) : gf.y;
-						gf.setPosition(newX, newY);
-					}
-
-					gf.alpha = lastAlpha;
-					gf.active = true;
-
-					if (deleteBefore && oldChar != gf && gfMap.exists(oldChar.curCharacter))
-						removeCharacterFromList(oldChar.curCharacter, charType);
-				}
-				setAllHaxeVar('gf', gf);
-		}
-
-		reloadHealthBarColors();
+		Events.changeCharacterCore(this, charName, charType, deleteBefore);
 	}
 
 	function changeCharacter(value1:String, value2:String, value3:String):Void
 	{
-		var charType:Int = 0;
-
-		switch (value1.toLowerCase())
-		{
-			case 'bf', 'boyfriend', '0':
-				charType = 0;
-			case 'dad', 'opponent', '1':
-				charType = 1;
-			case 'gf', 'girlfriend', '2':
-				charType = 2;
-			default:
-				charType = Std.parseInt(value1);
-				if (Math.isNaN(charType)) charType = 0;
-		}
-
-		var deleteBefore = (value3 == 'true' || value3 == '1');
-		changeCharacterCore(value2, charType, deleteBefore);
+		Events.changeCharacter(this, value1, value2, value3);
 	}
 
 	public function triggerEventNote(eventName:String, value1:String, value2:String, value3:String) {
-		switch(eventName) {
-			case 'Hey!':
-				var value:Int = 2;
-				switch(value1.toLowerCase().trim()) {
-					case 'bf' | 'boyfriend' | '0':
-						value = 0;
-					case 'gf' | 'girlfriend' | '1':
-						value = 1;
-				}
-
-				var time:Float = Std.parseFloat(value2);
-				if(Math.isNaN(time) || time <= 0) time = 0.6;
-
-				if(value != 0) {
-					if(dad.curCharacter.startsWith('gf')) { //Tutorial GF is actually Dad! The GF is an imposter!! ding ding ding ding ding ding ding, dindinding, end my suffering
-						dad.playAnim('cheer', true);
-						dad.specialAnim = true;
-						dad.heyTimer = time;
-					} else if (gf != null) {
-						gf.playAnim('cheer', true);
-						gf.specialAnim = true;
-						gf.heyTimer = time;
-					}
-				}
-				if(value != 1) {
-					boyfriend.playAnim('hey', true);
-					boyfriend.specialAnim = true;
-					boyfriend.heyTimer = time;
-				}
-
-			case 'Set GF Speed':
-				var value:Int = Std.parseInt(value1);
-				if(Math.isNaN(value) || value < 1) value = 1;
-				gfSpeed = value;
-
-			case 'Add Camera Zoom':
-				if(FlxG.camera.zoom < maxCamZoom) {
-					var camZoom:Float = Std.parseFloat(value1);
-					var hudZoom:Float = Std.parseFloat(value2);
-					if(Math.isNaN(camZoom)) camZoom = 0.015;
-					if(Math.isNaN(hudZoom)) hudZoom = 0.03;
-
-					FlxG.camera.zoom += camZoom;
-					camHUD.zoom += hudZoom;
-				}
-
-			case 'Play Animation':
-				//trace('Anim to play: ' + value1);
-				var char:Character = dad;
-				switch(value2.toLowerCase().trim()) {
-					case 'bf' | 'boyfriend':
-						char = boyfriend;
-					case 'gf' | 'girlfriend':
-						char = gf;
-					default:
-						var val2:Int = Std.parseInt(value2);
-						if(Math.isNaN(val2)) val2 = 0;
-		
-						switch(val2) {
-							case 1: char = boyfriend;
-							case 2: char = gf;
-						}
-				}
-
-				if (char != null)
-				{
-					char.playAnim(value1, true);
-					char.specialAnim = true;
-				}
-			case 'Camera Follow Pos':
-				var val1:Float = Std.parseFloat(value1);
-				var val2:Float = Std.parseFloat(value2);
-				if(Math.isNaN(val1)) val1 = 0;
-				if(Math.isNaN(val2)) val2 = 0;
-
-				forceCamera = false;
-				if(!Math.isNaN(Std.parseFloat(value1)) || !Math.isNaN(Std.parseFloat(value2))) {
-					camFollow.x = val1;
-					camFollow.y = val2;
-					forceCamera = true;
-				}
-			case 'Alt Idle Animation':
-				var char:Character = dad;
-				switch(value1.toLowerCase()) {
-					case 'gf' | 'girlfriend':
-						char = gf;
-					case 'boyfriend' | 'bf':
-						char = boyfriend;
-					default:
-						var val:Int = Std.parseInt(value1);
-						if(Math.isNaN(val)) val = 0;
-
-						switch(val) {
-							case 1: char = boyfriend;
-							case 2: char = gf;
-						}
-				}
-
-				if (char != null)
-				{
-					char.idleSuffix = value2;
-					//char.recalculateDanceIdle();
-				}
-			case 'Screen Shake':
-				var valuesArray:Array<String> = [value1, value2];
-				var targetsArray:Array<FlxCamera> = [camGame, camHUD];
-				for (i in 0...targetsArray.length) {
-					var split:Array<String> = valuesArray[i].split(',');
-					var duration:Float = 0;
-					var intensity:Float = 0;
-					if(split[0] != null) duration = Std.parseFloat(split[0].trim());
-					if(split[1] != null) intensity = Std.parseFloat(split[1].trim());
-					if(Math.isNaN(duration)) duration = 0;
-					if(Math.isNaN(intensity)) intensity = 0;
-
-					if(duration > 0 && intensity != 0)
-						targetsArray[i].shake(intensity, duration);
-				}
-			case 'Change Character':
-				changeCharacter(value1, value2, value3);
-			case 'Change Scroll Speed':
-				//if (songSpeedType == "constant")
-				//	return;
-
-				var val1:Float = Std.parseFloat(value1);
-				var val2:Float = Std.parseFloat(value2);
-
-				if(Math.isNaN(val1)) val1 = 1;
-				if(Math.isNaN(val2)) val2 = 0;
-
-				var newValue:Float = daScrollSpeed * val1;
-
-				if(val2 <= 0)
-				{
-					daScrollSpeed = newValue;
-					for (note in notes)
-					{
-						if (note != null && note.isSustainNote && !note.isHoldEnd)
-						{
-							note.scale.y = note.getSustainScale();
-							note.updateHitbox();
-						}
-					}
-				}
-				else
-				{
-					songSpeedTween = FlxTween.tween(this, {daScrollSpeed: newValue}, val2,
-					{
-						ease: FlxEase.linear,
-
-						onUpdate: function(twn:FlxTween)
-						{
-							for (note in notes)
-							{
-								if (note != null && note.isSustainNote && !note.isHoldEnd)
-								{
-									note.scale.y = note.getSustainScale();
-									note.updateHitbox();
-								}
-							}
-						},
-
-						onComplete: function(twn:FlxTween)
-						{
-							songSpeedTween = null;
-
-							for (note in notes)
-							{
-								if (note != null && note.isSustainNote)
-								{
-									note.scale.y = note.getSustainScale();
-									note.updateHitbox();
-								}
-							}
-						}
-					});
-
-					modTweens.push(songSpeedTween);
-				}
-			case 'Setting Crossfades':
-				var val1:Float = Std.parseFloat(value1);
-				var val2:Float = Std.parseFloat(value2);
-				var val3:String = value3;
-				if(Math.isNaN(val1)) val1 = 0.75;
-				if(Math.isNaN(val2)) val2 = 1.0;
-				if(val3 == '') val3 = 'normal';
-
-				cfDuration = val1;
-				cfIntensity = val2;
-				cfBlend = val3;
-			case 'Flash Screen':
-				//they forgot
-				var flashColor:FlxColor = FlxColor.fromString(value1);
-				var duration:Float = Std.parseFloat(value2);
-				var alpha:Float = Std.parseFloat(value3);
-
-				if (Math.isNaN(duration) || duration <= 0)
-					duration = 0.4;
-				if (Math.isNaN(alpha) || alpha <= 0)
-					alpha = 1.0;
-				if (flashColor == 0)
-					flashColor = FlxColor.WHITE;
-
-				FlxG.camera.flash(flashColor, duration, null, true);
-				camHUD.flash(flashColor, duration * 0.75, null, true);
-				camHUD.alpha = alpha;
-			case 'Add Filter':
-                var filterName:String = value1.trim().toLowerCase();
-                var targetCam:String = value2.trim().toLowerCase();
-                var filter = CoolUtil.getFilter(filterName);
-                var filterArray:Array<openfl.filters.BitmapFilter> = (filter != null) ? [filter] : null;
-                switch (targetCam)
-                {
-                    case 'hud' | 'camhud' | '1':
-                        camHUD.setFilters(filterArray);
-                    case 'game' | 'camgame' | '0':
-                        camGame.setFilters(filterArray);
-                    case 'all' | 'both' | '2':
-                        camGame.setFilters(filterArray);
-                        camHUD.setFilters(filterArray);
-                    default:
-                        camGame.setFilters(filterArray);
-                }
-		}
-		callAllHScript("onEvent", [eventName, value1, value2, value3]);
+		Events.triggerEventNote(this, eventName, value1, value2, value3);
 	}
 	function endSong():Void
 	{
 		endingSong = true;
 		canPause = false;
+		#if VIDEOS_ALLOWED
+		FlxVideo.hideAll();
+		#end
 		FlxG.sound.music.volume = 0;
 		
 		if (!OptionsHandler.options.dontMuteMiss)
@@ -4857,7 +4413,7 @@ class PlayState extends MusicBeatState
 		cFd.velocity.x = -200 * direction * velMult;
 		cFd.color = char.crossFadeColor;
 		cFd.alpha = cfIntensity;
-		cFd.blend = blendModeFromString(cfBlend);
+		cFd.blend = CoolUtil.blendModeFromString(cfBlend);
 		cFd.updateHitbox();
 
 		FlxTween.tween(cFd, { alpha: 0 }, cfDuration, {

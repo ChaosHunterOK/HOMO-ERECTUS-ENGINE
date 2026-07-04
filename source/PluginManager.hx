@@ -32,7 +32,7 @@ import hscript.Parser;
 import hscript.ParserEx;
 import hscript.ClassDeclEx;
 #if VIDEOS_ALLOWED
-import hxcodec.flixel.FlxVideo as FlxVideo;
+import FlxVideo;
 #end
 import flixel.group.FlxGroup;
 #if mobile

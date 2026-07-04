@@ -3,6 +3,7 @@ package;
 import openfl.media.Sound;
 import flixel.util.FlxColor;
 import openfl.geom.Rectangle;
+import openfl.display.BitmapData;
 import flixel.FlxSprite;
 import lime.media.AudioBuffer;
 import Section.SwagSection;
@@ -240,6 +241,7 @@ class ChartingState extends MusicBeatState
 		interp.variables.set("numericStepperEvent", FlxUINumericStepper.CHANGE_EVENT);
 		interp.variables.set("inputTextEvent", FlxUIInputText.CHANGE_EVENT);
 		interp.variables.set("Rectangle", Rectangle);
+		interp.variables.set("BitmapData", BitmapData);
 		interp.variables.set("Bytes", Bytes);
 		interp.variables.set("AudioBuffer", AudioBuffer);
 		interp.variables.set("FileReference", FileReference);

@@ -101,7 +101,7 @@ import android.AndroidControls.AndroidControls;
 import android.FlxVirtualPad;
 #end
 #if VIDEOS_ALLOWED
-import hxcodec.flixel.FlxVideo as FlxVideo;
+import FlxVideo;
 #end
 class CustomState extends MusicBeatState
 {

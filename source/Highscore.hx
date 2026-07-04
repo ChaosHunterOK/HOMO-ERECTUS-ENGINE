@@ -49,9 +49,8 @@ class Highscore {
         }
         if (rating >= getRawFC(bestFCKey)) {
             updateSongData(bestFCKey, score, accuracy, rating, judge, curOptions, modifierDynamic);
-            if (rating >= getRawFC(bestOfAllKey)) {
+            if (rating >= getRawFC(bestOfAllKey))
                 songFCLevels.set(bestOfAllKey, rating);
-            }
         }
         
         saveToFlxG();
