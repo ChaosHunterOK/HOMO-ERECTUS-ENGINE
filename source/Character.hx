@@ -282,8 +282,8 @@ class Character extends FlxSprite
                 {
                     if(specialAnim && (animation.curAnim.name == 'hey' || animation.curAnim.name == 'cheer'))
                     {
-                        specialAnim = false;
-                        dance();
+						specialAnim = false;
+						dance();
                     }
                     heyTimer = 0;
                 }
@@ -296,19 +296,31 @@ class Character extends FlxSprite
 			if (animation.curAnim.name.startsWith('sing'))
 			{
 				holdTimer += elapsed;
+
+				var targetFrame:Int = holdAnimationFreezeFrame;
+				if (targetFrame < 0)
+					targetFrame = animation.curAnim.numFrames - 1;
+				else
+					targetFrame = Std.int(FlxMath.bound(targetFrame, 0, animation.curAnim.numFrames - 1));
+
+				var holdingSustain:Bool = sustainLock && beingControlled;
+
 				if (holdAnimationFix)
 				{
-					var targetFrame:Int = holdAnimationFreezeFrame;
-					if (targetFrame < 0) {
-						targetFrame = animation.curAnim.numFrames - 1;
+					if (holdingSustain)
+					{
+						if (animation.curAnim.curFrame >= targetFrame)
+						{
+							animation.curAnim.curFrame = targetFrame;
+							animation.curAnim.paused = true;
+						}
 					}
-					if (animation.curAnim.curFrame >= targetFrame) {
-						animation.curAnim.curFrame = targetFrame;
-						animation.curAnim.paused = true;
+					else if (animation.curAnim.paused)
+					{
+						animation.curAnim.paused = false;
 					}
 				}
-
-				if (instantIdleOnSingEnd && animation.curAnim.finished && !isFreezing)
+				if (instantIdleOnSingEnd && !holdingSustain && animation.curAnim.finished && !isFreezing)
 				{
 					dance();
 					holdTimer = 0;

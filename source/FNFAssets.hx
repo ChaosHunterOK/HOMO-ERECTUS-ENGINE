@@ -228,11 +228,11 @@ class FNFAssets {
 
 	public static function getImage(id:String):Null<FlxGraphic>
 		{
-			if (!FileSystem.exists(id)) return null;
 			if (currentTrackedAssets.exists(id)) {
 				updateLRU(id, assetAccessOrder);
 				return currentTrackedAssets.get(id);
 			}
+			if (!FileSystem.exists(id)) return null;
 			if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE) {
 				evictOldestAsset();
 			}
@@ -251,11 +251,11 @@ class FNFAssets {
 		}
 	public static function getGraphicData(id:String):Null<FlxGraphic>
 	{
-		if (!FileSystem.exists(id)) return null;
 		if (currentTrackedAssets.exists(id)) {
 			updateLRU(id, assetAccessOrder);
 			return currentTrackedAssets.get(id);
 		}
+		if (!FileSystem.exists(id)) return null;
 		if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE) {
 			evictOldestAsset();
 		}

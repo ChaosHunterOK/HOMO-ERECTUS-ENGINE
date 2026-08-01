@@ -128,6 +128,74 @@ class SpriteAnimationLibrary {
 		}
 		return pool;
 	}
+	private static function convertSymbol2022(symbol2022:animateatlas.JSONData.Animate2022Data):SymbolData {
+		var convertedLayers:Array<LayerData> = [];
+
+		for (layer2022 in symbol2022.TL.L) {
+			var convertedFrames:Array<LayerFrameData> = [];
+
+			for (frame2022 in layer2022.FR) {
+				var convertedElements:Array<ElementData> = [];
+
+				for (element2022 in frame2022.E) {
+					if (element2022.ASI != null) {
+						var m = element2022.ASI.M3D;
+						convertedElements.push({
+							ATLAS_SPRITE_instance: {
+								name: element2022.ASI.N,
+								Position: { x: 0, y: 0 },
+								Matrix3D: {
+									m00: m[0], m01: m[1], m02: m[2], m03: m[3],
+									m10: m[4], m11: m[5], m12: m[6], m13: m[7],
+									m20: m[8], m21: m[9], m22: m[10], m23: m[11],
+									m30: m[12], m31: m[13], m32: m[14], m33: m[15]
+								}
+							}
+						});
+					} else if (element2022.SI != null) {
+						var m = element2022.SI.M3D;
+						convertedElements.push({
+							SYMBOL_Instance: {
+								SYMBOL_name: element2022.SI.SN,
+								Instance_Name: element2022.SI.IN,
+								symbolType: element2022.SI.ST,
+								firstFrame: element2022.SI.FF,
+								loop: LoopMode.LOOP,
+								transformationPoint: { x: 0, y: 0 },
+								bitmap: null,
+								Matrix3D: {
+									m00: m[0], m01: m[1], m02: m[2], m03: m[3],
+									m10: m[4], m11: m[5], m12: m[6], m13: m[7],
+									m20: m[8], m21: m[9], m22: m[10], m23: m[11],
+									m30: m[12], m31: m[13], m32: m[14], m33: m[15]
+								}
+							}
+						});
+					}
+				}
+
+				convertedFrames.push({
+					index: frame2022.I,
+					duration: frame2022.DU,
+					elements: convertedElements
+				});
+			}
+
+			convertedLayers.push({
+				Layer_name: layer2022.LN,
+				Frames: convertedFrames,
+				FrameMap: null
+			});
+		}
+
+		return {
+			SYMBOL_name: symbol2022.SN != null && symbol2022.SN != "" ? symbol2022.SN : symbol2022.N,
+			TIMELINE: {
+				LAYERS: convertedLayers
+			}
+		};
+	}
+
 	private function parseAnimationData(data:AnimationData):Void {
 		if (data.MD != null && Reflect.field(data.MD, "FRT") != null && data.MD.FRT > 0) {
 			frameRate = data.MD.FRT;
@@ -139,72 +207,15 @@ class SpriteAnimationLibrary {
 
 		_symbolData = new Map();
 		if (data.AN != null) {
-			var convertedLayers:Array<LayerData> = [];
+			data.ANIMATION = convertSymbol2022(data.AN);
 
-			for (layer2022 in data.AN.TL.L) {
-		var convertedFrames:Array<LayerFrameData> = [];
-
-		for (frame2022 in layer2022.FR) {
-			var convertedElements:Array<ElementData> = [];
-
-			for (element2022 in frame2022.E) {
-		if (element2022.ASI != null) {
-			var m = element2022.ASI.M3D;
-			convertedElements.push({
-		ATLAS_SPRITE_instance: {
-			name: element2022.ASI.N,
-			Position: { x: 0, y: 0 },
-			Matrix3D: {
-		m00: m[0], m01: m[1], m02: m[2], m03: m[3],
-		m10: m[4], m11: m[5], m12: m[6], m13: m[7],
-		m20: m[8], m21: m[9], m22: m[10], m23: m[11],
-		m30: m[12], m31: m[13], m32: m[14], m33: m[15]
-			}
-		}
-			});
-		} else if (element2022.SI != null) {
-			var m = element2022.SI.M3D;
-			convertedElements.push({
-		SYMBOL_Instance: {
-			SYMBOL_name: element2022.SI.SN,
-			Instance_Name: element2022.SI.IN,
-			symbolType: element2022.SI.ST,
-			firstFrame: element2022.SI.FF,
-			loop: LoopMode.LOOP,
-			transformationPoint: { x: 0, y: 0 },
-			bitmap: null,
-			Matrix3D: {
-		m00: m[0], m01: m[1], m02: m[2], m03: m[3],
-		m10: m[4], m11: m[5], m12: m[6], m13: m[7],
-		m20: m[8], m21: m[9], m22: m[10], m23: m[11],
-		m30: m[12], m31: m[13], m32: m[14], m33: m[15]
-			}
-		}
-			});
-		}
-			}
-
-			convertedFrames.push({
-		index: frame2022.I,
-		duration: frame2022.DU,
-		elements: convertedElements
-			});
-		}
-
-		convertedLayers.push({
-			Layer_name: layer2022.LN,
-			Frames: convertedFrames,
-			FrameMap: null
-		});
-			}
-			data.ANIMATION = {
-		SYMBOL_name: data.AN.SN != null && data.AN.SN != "" ? data.AN.SN : data.AN.N,
-		TIMELINE: {
-			LAYERS: convertedLayers
-		}
-			};
 			if (data.SYMBOL_DICTIONARY == null) {
-		data.SYMBOL_DICTIONARY = { Symbols: [] };
+				data.SYMBOL_DICTIONARY = { Symbols: [] };
+			}
+			if (data.SD != null && data.SD.S != null) {
+				for (subSymbol2022 in data.SD.S) {
+					data.SYMBOL_DICTIONARY.Symbols.push(convertSymbol2022(cast subSymbol2022));
+				}
 			}
 		}
 		var symbols = data.SYMBOL_DICTIONARY.Symbols;

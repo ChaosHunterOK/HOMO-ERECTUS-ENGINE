@@ -315,8 +315,8 @@ class Grain extends FlxShader
 		const float permTexUnit = 1.0/256.0;        // Perm texture texel-size
 		const float permTexUnitHalf = 0.5/256.0;    // Half perm texture texel-size
 
-		float width = openfl_TextureSize.x;
-		float height = openfl_TextureSize.y;
+		float width = max(openfl_TextureSize.x, 1.0);
+		float height = max(openfl_TextureSize.y, 1.0);
 
 		const float grainamount = 0.05; //grain amount
 		bool colored = false; //colored noise?
@@ -854,8 +854,9 @@ class FuckingTriangle extends FlxShader{
 
 void main()
 {
-    vec2 ndc = ((gl_FragCoord.xy * 2.) / openfl_TextureSize.xy) - vec2(1.);
-    float aspect = openfl_TextureSize.x / openfl_TextureSize.y;
+    vec2 safeTexSize = max(openfl_TextureSize.xy, vec2(1.0));
+    vec2 ndc = ((gl_FragCoord.xy * 2.) / safeTexSize) - vec2(1.);
+    float aspect = safeTexSize.x / safeTexSize.y;
     vec3 outColor = vec3(.4,.6,.9);
     
     float depth = 1.0;
@@ -947,42 +948,7 @@ void main()
 	public function new(){
 		super();
 	}
-	
-	
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*STOLE FROM DAVE AND BAMBI
-
-I LOVE BANUUU I LOVE BANUUU
-   ________
-  /        \
-_/__________\_
- ||  o||  o||
- |//--  --//|
-  \____O___/
-   |      |
-   |______|
-   |   |  |
-   |___|__|
-    
-
-*/
-
-
-
-
 
 
 class GlitchEffect extends Effect

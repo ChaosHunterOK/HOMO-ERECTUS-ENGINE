@@ -10,6 +10,7 @@ class NoteSplash extends FlxSprite {
 
     public static var getFrames:Bool = true;
 	static var gotFrames:FlxAtlasFrames = null;
+    public static var oneType:Bool = false;
 
     public function new(xPos:Float,yPos:Float,?c:Int) {
         if (c == null) c = 0;
@@ -44,6 +45,14 @@ class NoteSplash extends FlxSprite {
             SUtil.getPath() + 'assets/images/custom_ui/ui_packs/${curUiType.uses}/noteSplashes.xml');
         }
         frames = gotFrames;
+
+        if (oneType) {
+            if (c != null) {
+                animation.addByPrefix("note" + c + "-0", "note impact 1", 24, false);
+                animation.addByPrefix("note" + c + "-1", "note impact 2", 24, false);
+            }
+            return;
+        }
         
         if (PlayState.SONG.mania == 0)
         {

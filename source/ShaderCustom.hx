@@ -92,22 +92,24 @@ class Shader extends FlxShaderFix {
     }
     uniform vec4 _camSize; // x, y, w, h
 
-    vec2 getCamPos(vec2 uv) {
-        vec2 texSize = openfl_TextureSize;
+    vec2 getCamPos(vec2 uv)
+    {
+        vec2 texSize = max(openfl_TextureSize, vec2(1.0));
 
         vec2 camMin = _camSize.xy / texSize;
         vec2 camMax = (_camSize.xy + _camSize.zw) / texSize;
 
-        return (uv - camMin) / (camMax - camMin);
+        return clamp((uv - camMin) / max(camMax - camMin, vec2(0.0001)), vec2(0.0), vec2(1.0));
     }
 
-    vec2 camToOg(vec2 uv) {
-        vec2 texSize = openfl_TextureSize;
+    vec2 camToOg(vec2 uv)
+    {
+        vec2 texSize = max(openfl_TextureSize, vec2(1.0));
 
         vec2 camMin = _camSize.xy / texSize;
         vec2 camMax = (_camSize.xy + _camSize.zw) / texSize;
 
-        return mix(camMin, camMax, uv);
+        return mix(camMin, camMax, clamp(uv, vec2(0.0), vec2(1.0)));
     }
     vec4 textureCam(sampler2D bitmap, vec2 pos) {
         return texture2D(bitmap, camToOg(pos));

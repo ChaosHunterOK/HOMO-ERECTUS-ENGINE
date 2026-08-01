@@ -1,6 +1,7 @@
 package backend.assets;
 
 import flixel.FlxG;
+import flixel.FlxCamera;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
 import flixel.util.FlxColor;
@@ -11,6 +12,7 @@ import openfl.display.BitmapData;
 
 class Fake3D extends FlxSpriteGroup
 {
+    public static inline var NEAR_CLIP:Float = 1;
     public static inline var CUBE_DATA:String =
         "v -1 -1 -1\n" +
         "v 1 -1 -1\n" +
@@ -341,33 +343,55 @@ class Fake3D extends FlxSpriteGroup
 
     override function draw()
     {
-        projectVertices();
         super.draw();
 
         for (camera in cameras)
         {
             if (!camera.visible || !camera.exists) continue;
 
+            projectVertices(camera);
+
             var gfx = camera.canvas.graphics;
 
             for (matName in materialIndices.keys())
             {
                 var idx = materialIndices.get(matName);
+                var visibleIdx = clipIndices(idx);
+                if (visibleIdx.length == 0) continue;
+
                 var tex = materialBitmaps.exists(matName) ? materialBitmaps.get(matName) : texture;
 
                 gfx.beginBitmapFill(tex, null, true, true);
-                gfx.drawTriangles(projected, idx, uvtData, TriangleCulling.NEGATIVE);
+                gfx.drawTriangles(projected, visibleIdx, uvtData, TriangleCulling.NONE);
                 gfx.endFill();
             }
         }
     }
-
-    function projectVertices()
+    function clipIndices(idx:Vector<Int>):Vector<Int>
     {
-        var cx = FlxG.width * 0.5;
-        var cy = FlxG.height * 0.5;
+        var out = new Vector<Int>();
+        var i = 0;
+        while (i < idx.length)
+        {
+            var a = idx[i];
+            var b = idx[i + 1];
+            var c = idx[i + 2];
 
-        var focal = (FlxG.height * 0.5) / Math.tan(fov * Math.PI / 360);
+            if (zDepths[a] >= NEAR_CLIP && zDepths[b] >= NEAR_CLIP && zDepths[c] >= NEAR_CLIP)
+            {
+                out.push(a);
+                out.push(b);
+                out.push(c);
+            }
+            i += 3;
+        }
+        return out;
+    }
+    function transformToCameraSpace(lx:Float, ly:Float, lz:Float):Array<Float>
+    {
+        var x = lx * modelScale;
+        var y = ly * modelScale;
+        var z = lz * modelScale;
 
         var sx = Math.sin(rotX * Math.PI / 180);
         var sy = Math.sin(rotY * Math.PI / 180);
@@ -375,6 +399,22 @@ class Fake3D extends FlxSpriteGroup
         var cxr = Math.cos(rotX * Math.PI / 180);
         var cyr = Math.cos(rotY * Math.PI / 180);
         var czr = Math.cos(rotZ * Math.PI / 180);
+
+        var ty = y * cxr - z * sx;
+        var tz = y * sx + z * cxr;
+        y = ty; z = tz;
+
+        var tx = x * cyr + z * sy;
+        tz = -x * sy + z * cyr;
+        x = tx; z = tz;
+
+        tx = x * czr - y * sz;
+        ty = x * sz + y * czr;
+        x = tx; y = ty;
+
+        x += posX - (camX + sharedCamX);
+        y += posY - (camY + sharedCamY);
+        z += posZ - (camZ + sharedCamZ);
 
         var totalCamPitch = camPitch + sharedCamPitch;
         var totalCamYaw = camYaw + sharedCamYaw;
@@ -387,54 +427,76 @@ class Fake3D extends FlxSpriteGroup
         var ccy = Math.cos(totalCamYaw * Math.PI / 180);
         var ccz = Math.cos(totalCamRoll * Math.PI / 180);
 
+        tx = x * ccy - z * csy;
+        tz = x * csy + z * ccy;
+        x = tx; z = tz;
+
+        ty = y * ccx - z * csx;
+        tz = y * csx + z * ccx;
+        y = ty; z = tz;
+
+        tx = x * ccz - y * csz;
+        ty = x * csz + y * ccz;
+        x = tx; y = ty;
+
+        return [x, y, z];
+    }
+    inline function screenParams(camera:FlxCamera):{cx:Float, cy:Float, focal:Float}
+    {
+        var camZoom = camera.zoom;
+        return {
+            cx: camera.width * 0.5 - camera.scroll.x * camZoom,
+            cy: camera.height * 0.5 - camera.scroll.y * camZoom,
+            focal: (camera.height * 0.5) / Math.tan(fov * Math.PI / 360) * camZoom
+        };
+    }
+
+    function projectVertices(camera:FlxCamera)
+    {
+        var sp = screenParams(camera);
+
         var vi = 0;
         var pi = 0;
         var uvi = 0;
+        var vIndex = 0;
 
         while (vi < vertices.length)
         {
-            var x = vertices[vi] * modelScale;
-            var y = vertices[vi + 1] * modelScale;
-            var z = vertices[vi + 2] * modelScale;
+            var cam = transformToCameraSpace(vertices[vi], vertices[vi + 1], vertices[vi + 2]);
+            var x = cam[0];
+            var y = cam[1];
+            var z = cam[2];
 
-            var ty = y * cxr - z * sx;
-            var tz = y * sx + z * cxr;
-            y = ty; z = tz;
+            zDepths[vIndex] = z;
 
-            var tx = x * cyr + z * sy;
-            tz = -x * sy + z * cyr;
-            x = tx; z = tz;
-
-            tx = x * czr - y * sz;
-            ty = x * sz + y * czr;
-            x = tx; y = ty;
-
-            x += posX - (camX + sharedCamX);
-            y += posY - (camY + sharedCamY);
-            z += posZ - (camZ + sharedCamZ);
-
-            tx = x * ccy - z * csy;
-            tz = x * csy + z * ccy;
-            x = tx; z = tz;
-
-            ty = y * ccx - z * csx;
-            tz = y * csx + z * ccx;
-            y = ty; z = tz;
-
-            tx = x * ccz - y * csz;
-            ty = x * csz + y * ccz;
-            x = tx; y = ty;
-
-            if (z < 1) z = 1;
-
-            var s = focal / z;
-            projected[pi] = cx + x * s;
-            projected[pi + 1] = cy + y * s;
-            uvtData[uvi + 2] = 1.0 / z;
+            var zSafe = (z < NEAR_CLIP) ? NEAR_CLIP : z;
+            var s = sp.focal / zSafe;
+            projected[pi] = sp.cx + x * s;
+            projected[pi + 1] = sp.cy + y * s;
+            uvtData[uvi + 2] = 1.0 / zSafe;
 
             vi += 3;
             pi += 2;
             uvi += 3;
+            vIndex++;
         }
+    }
+    public function projectPoint(localX:Float, localY:Float, localZ:Float, ?camera:FlxCamera):Dynamic
+    {
+        if (camera == null) camera = FlxG.camera;
+
+        var cam = transformToCameraSpace(localX, localY, localZ);
+        var z = cam[2];
+        if (z < NEAR_CLIP) return null;
+
+        var sp = screenParams(camera);
+        var s = sp.focal / z;
+
+        return {
+            x: sp.cx + cam[0] * s,
+            y: sp.cy + cam[1] * s,
+            scale: s,
+            z: z
+        };
     }
 }

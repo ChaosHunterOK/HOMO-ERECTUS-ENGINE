@@ -54,6 +54,7 @@ import lime.utils.UInt8Array;
 import flixel.addons.transition.FlxTransitionableState;
 import flixel.addons.transition.TransitionData;
 import backend.assets.Fake3D;
+import openfl.filters.BlurFilter;
 
 #if desktop
 import Sys;
@@ -217,6 +218,7 @@ class CustomState extends MusicBeatState
 		interp.variables.set("SongInfoPanel", SongInfoPanel);
 		interp.variables.set("flixelSave", FlxG.save);
 		interp.variables.set("Record", Record);
+		interp.variables.set("BlurFilter", BlurFilter);
 		interp.variables.set("Math", Math);
 		interp.variables.set("Song", Song);
 		interp.variables.set("FlxSpriteGroup", FlxSpriteGroup);

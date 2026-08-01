@@ -36,6 +36,8 @@ typedef SwagSong =
 	var convertMineToNuke:Null<Bool>;
 	var mania:Null<Int>;
 	var ?opponentCount:Null<Int>;
+	var ?timeSigNumerator:Null<Int>;
+	var ?timeSigDenominator:Null<Int>;
 }
 
 class Song
@@ -56,6 +58,8 @@ class Song
 	public var cutsceneType:String = "none";
 	public var uiType:String = 'normal';
 	public var isHey:Null<Bool> = false;
+	public var timeSigNumerator:Null<Int> = 4;
+	public var timeSigDenominator:Null<Int> = 4;
 	public function new(song, notes, bpm)
 	{
 		this.song = song;
@@ -217,6 +221,12 @@ class Song
 		if (parsedJson.forceJudgements == null) {
 			parsedJson.forceJudgements = false;
 		}
+		if (parsedJson.timeSigNumerator == null || parsedJson.timeSigNumerator <= 0) {
+			parsedJson.timeSigNumerator = 4;
+		}
+		if (parsedJson.timeSigDenominator == null || parsedJson.timeSigDenominator <= 0) {
+			parsedJson.timeSigDenominator = 4;
+		}
 		if (parsedJson.cutsceneType == null) {
 			switch (parsedJson.song.toLowerCase()) {
 				case 'roses':
@@ -281,6 +291,10 @@ class Song
 			parsedJson.bpm = realJson.bpm;
 			parsedJson.needsVoices = realJson.needsVoices;
 			parsedJson.speed = realJson.speed;
+			if (realJson.timeSigNumerator != null && realJson.timeSigNumerator > 0)
+				parsedJson.timeSigNumerator = realJson.timeSigNumerator;
+			if (realJson.timeSigDenominator != null && realJson.timeSigDenominator > 0)
+				parsedJson.timeSigDenominator = realJson.timeSigDenominator;
 			//parsedJson.events = realJson.events;
 		}
 		return parsedJson;

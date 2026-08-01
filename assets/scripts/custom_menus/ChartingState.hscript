@@ -167,9 +167,16 @@ function create()
 			preferredNoteAmount: 4,
 			forceJudgements: false,
 			convertMineToNuke: false,
-			mania: 0
+			mania: 0,
+			timeSigNumerator: 4,
+			timeSigDenominator: 4
 		};
 	}
+
+	if (_song.timeSigNumerator == null || _song.timeSigNumerator <= 0)
+		_song.timeSigNumerator = 4;
+	if (_song.timeSigDenominator == null || _song.timeSigDenominator <= 0)
+		_song.timeSigDenominator = 4;
 
 	if (FNFAssets.exists(SUtil.getPath() + 'assets/images/custom_notetypes/notetypes.txt'))
 	{
@@ -212,15 +219,16 @@ function create()
 	rightIcon.scrollFactor.set(1, 1);
 	ignoreWarnings = FlixG.save.data.ignoreWarnings;
 
-	addSection(16);
+	addSection(getStepsPerMeasure(_song.timeSigNumerator, _song.timeSigDenominator));
 
 	// sections = _song.notes;
-
-	reloadGridLayer();
 
 	loadSong(_song.song);
 	Conductor.changeBPM(_song.bpm);
 	Conductor.mapBPMChanges(_song);
+	Conductor.changeTimeSig(_song.timeSigNumerator, _song.timeSigDenominator);
+	recalcSectionTimeSigs();
+	reloadGridLayer();
 
 	bpmTxt = new FlxText(1000 + 120, 50, 0, "", 16);
 	bpmTxt.scrollFactor.set();
@@ -312,6 +320,9 @@ var stepperSectionBPM;
 var check_altAnim;
 var check_crossfadeBf;
 var check_crossfadeDad;
+var check_changeTimeSig;
+var stepperSectionTimeSigNum;
+var stepperSectionTimeSigDen;
 
 function addSectionUI()
 {
@@ -332,6 +343,16 @@ function addSectionUI()
 	stepperAltAnim.value = 0;
 	stepperAltAnim.name = 'alt_anim_number';
 	blockPressWhileTypingOnStepper.push(stepperAltAnim);
+
+	stepperSectionTimeSigNum = new FlxUINumericStepper(160, 80, 1, _song.timeSigNumerator, 1, 32, 0);
+	stepperSectionTimeSigNum.value = _song.timeSigNumerator;
+	stepperSectionTimeSigNum.name = 'section_timesig_num';
+	blockPressWhileTypingOnStepper.push(stepperSectionTimeSigNum);
+
+	stepperSectionTimeSigDen = new FlxUINumericStepper(220, 80, 1, _song.timeSigDenominator, 1, 32, 0);
+	stepperSectionTimeSigDen.value = _song.timeSigDenominator;
+	stepperSectionTimeSigDen.name = 'section_timesig_den';
+	blockPressWhileTypingOnStepper.push(stepperSectionTimeSigDen);
 
 	var stepperCopy = new FlxUINumericStepper(110, 130, 1, 1, -999, 999, 0);
 	blockPressWhileTypingOnStepper.push(stepperCopy);
@@ -384,6 +405,9 @@ function addSectionUI()
 	check_changeBPM = new FlxUICheckBox(10, 60, null, null, 'Change BPM', 100);
 	check_changeBPM.name = 'check_changeBPM';
 
+	check_changeTimeSig = new FlxUICheckBox(160, 60, null, null, 'Change Time Sig', 100);
+	check_changeTimeSig.name = 'check_changeTimeSig';
+
 	tab_group_section.add(stepperLength);
 	tab_group_section.add(stepperSectionBPM);
 	tab_group_section.add(stepperCopy);
@@ -393,6 +417,9 @@ function addSectionUI()
 	tab_group_section.add(check_altAnim);
 	tab_group_section.add(stepperAltAnim);
 	tab_group_section.add(check_changeBPM);
+	tab_group_section.add(check_changeTimeSig);
+	tab_group_section.add(stepperSectionTimeSigNum);
+	tab_group_section.add(stepperSectionTimeSigDen);
 	tab_group_section.add(copyButton);
 	tab_group_section.add(clearSectionButton);
 	tab_group_section.add(swapSection);
@@ -405,6 +432,8 @@ var playSoundBf = null;
 var playSoundDad = null;
 var check_warnings = null;
 var diffDropDown;
+var stepperSongTimeSigNum;
+var stepperSongTimeSigDen;
 function addSongUI()
 {
 	var tab_group_song = new FlxUI(null, UI_box);
@@ -425,6 +454,17 @@ function addSongUI()
 	stepperSpeed.value = _song.speed;
 	stepperSpeed.name = 'song_speed';
 	blockPressWhileTypingOnStepper.push(stepperSpeed);
+
+	var labelTimeSig = new FlxText(150, 230, 0, "Time Signature:", 8);
+	stepperSongTimeSigNum = new FlxUINumericStepper(150, 245, 1, _song.timeSigNumerator, 1, 32, 0);
+	stepperSongTimeSigNum.value = _song.timeSigNumerator;
+	stepperSongTimeSigNum.name = 'song_timesig_num';
+	blockPressWhileTypingOnStepper.push(stepperSongTimeSigNum);
+
+	stepperSongTimeSigDen = new FlxUINumericStepper(210, 245, 1, _song.timeSigDenominator, 1, 32, 0);
+	stepperSongTimeSigDen.value = _song.timeSigDenominator;
+	stepperSongTimeSigDen.name = 'song_timesig_den';
+	blockPressWhileTypingOnStepper.push(stepperSongTimeSigDen);
 
 	var labelDiff = new FlxText(15, 139, 0, "Song Target Difficulty:", 8);
 	diffDropDown = new FlxUIDropDownMenuCustom(15, 152, FlxUIDropDownMenuCustom.makeStrIdLabelArray(difficultyChoices, true), function(pressed) {
@@ -513,6 +553,9 @@ function addSongUI()
 	tab_group_song.add(stepperBPM);
 	tab_group_song.add(labelSpeed);
 	tab_group_song.add(stepperSpeed);
+	tab_group_song.add(labelTimeSig);
+	tab_group_song.add(stepperSongTimeSigNum);
+	tab_group_song.add(stepperSongTimeSigDen);
 	tab_group_song.add(labelDiff);
 	tab_group_song.add(diffDropDown);
 	tab_group_song.add(labelMania);
@@ -994,6 +1037,14 @@ function getEvent(id, sender, data, params)
 			case 'Change BPM':
 				_song.notes[curSection].changeBPM = check.checked;
 				FlixG.log.add('changed bpm shit');
+			case 'Change Time Sig':
+				_song.notes[curSection].changeTimeSig = check.checked;
+
+				recalcSectionTimeSigs();
+				Conductor.mapBPMChanges(_song);
+
+				reloadGridLayer();
+				updateSectionUI();
 			case "Alt Animation":
 				_song.notes[curSection].altAnim = check.checked;
 			case "Is Moody":
@@ -1039,6 +1090,7 @@ function getEvent(id, sender, data, params)
 		if (wname == 'section_length')
 		{
 			_song.notes[curSection].lengthInSteps = Std.int(nums.value);
+			Conductor.mapBPMChanges(_song);
 			updateGrid();
 		}
 		else if (wname == 'song_speed')
@@ -1050,6 +1102,46 @@ function getEvent(id, sender, data, params)
 			tempBpm = nums.value;
 			Conductor.mapBPMChanges(_song);
 			Conductor.changeBPM(nums.value);
+		}
+		else if (wname == 'song_timesig_num')
+		{
+			_song.timeSigNumerator = Std.int(nums.value);
+
+			recalcSectionTimeSigs();
+			Conductor.mapBPMChanges(_song);
+
+			reloadGridLayer();
+			updateSectionUI();
+		}
+		else if (wname == 'song_timesig_den')
+		{
+			_song.timeSigDenominator = Std.int(nums.value);
+
+			recalcSectionTimeSigs();
+			Conductor.mapBPMChanges(_song);
+
+			reloadGridLayer();
+			updateSectionUI();
+		}
+		else if (wname == 'section_timesig_num')
+		{
+			_song.notes[curSection].timeSigNum = Std.int(nums.value);
+
+			recalcSectionTimeSigs();
+			Conductor.mapBPMChanges(_song);
+
+			reloadGridLayer();
+			updateSectionUI();
+		}
+		else if (wname == 'section_timesig_den')
+		{
+			_song.notes[curSection].timeSigDen = Std.int(nums.value);
+
+			recalcSectionTimeSigs();
+			Conductor.mapBPMChanges(_song);
+
+			reloadGridLayer();
+			updateSectionUI();
 		}
 		else if (wname == 'note_susLength')
 		{
@@ -1129,7 +1221,14 @@ function sectionStartTime(add)
 			{
 				daBPM = _song.notes[i].bpm;
 			}
-			daPos += 4 * (1000 * 60 / daBPM);
+			var leinst = _song.notes[i].lengthInSteps;
+			if (leinst == null || leinst <= 0)
+			{
+				var tsNum = (_song.notes[i].timeSigNum != null && _song.notes[i].timeSigNum > 0) ? _song.notes[i].timeSigNum : _song.timeSigNumerator;
+				var tsDen = (_song.notes[i].timeSigDen != null && _song.notes[i].timeSigDen > 0) ? _song.notes[i].timeSigDen : _song.timeSigDenominator;
+				leinst = getStepsPerMeasure(tsNum, tsDen);
+			}
+			daPos += leinst * (1000 * 60 / daBPM / 4);
 		}
 	}
 	return daPos;
@@ -1192,7 +1291,7 @@ function update(elapsed)
 	_song.stage = stageTextField.text;
 	_song.cutsceneType = cutsceneTextField.text;
 	_song.uiType = uiTextField.text;
-	strumLine.y = getYfromStrum((Conductor.songPosition - sectionStartTime(0)) / zoomList[curZoom]  % (Conductor.stepCrochet * _song.notes[curSection].lengthInSteps),true);
+	strumLine.y = getYfromStrum((Conductor.songPosition - sectionStartTime(0)) % (Conductor.stepCrochet * _song.notes[curSection].lengthInSteps),true);
 	camPos.y = strumLine.y;
 
 	var top1 = _song.player1;
@@ -1209,17 +1308,18 @@ function update(elapsed)
 		temricon = top2;
 		rightIcon.switchAnim(temricon);
 	}
-
-	if (curBeat % 4 == 0 && curStep >= 16 * (curSection + 1))
+	while (curStep >= totalStepsUpToSection(curSection + 1))
 	{
 		if (_song.notes[curSection + 1] == null)
 		{
-			addSection(16);
+			addSection(getStepsPerMeasure(Conductor.timeSigNumerator, Conductor.timeSigDenominator));
+			recalcSectionTimeSigs();
 		}
 
 		changeSection(curSection + 1, false);
 	}
-	else if(strumLine.y < -10) {
+	while (curSection > 0 && curStep < totalStepsUpToSection(curSection))
+	{
 		changeSection(curSection - 1, false);
 	}
 
@@ -1604,7 +1704,7 @@ function updateWaveform()
 	var row = 0;
 	while (row < gridH)
 	{
-		var localStrum = FlxMath.remapToRange(row, 0, gridH, 0, 16 * Conductor.stepCrochet);
+		var localStrum = FlxMath.remapToRange(row, 0, gridH, 0, getCurSectionSteps() * Conductor.stepCrochet);
 		var absTime = sectionStart + localStrum;
 		var idx = Std.int(absTime / WAVEFORM_STEP_MS);
 		if (waveformSamples != null && idx >= 0 && idx < waveformSamples.length)
@@ -1627,13 +1727,20 @@ function updateWaveform()
 }
 
 function reloadGridLayer() {
+	syncTimeSigToCurSection();
+
 	gridLayer.clear();
+
+	var sectionSteps = getCurSectionSteps();
 
 	var noteCols = Main.ammo[_song.mania] * 2;
 	var gridW = GRID_SIZE + GRID_SIZE * noteCols;
-	var gridH = Std.int(GRID_SIZE * 16 * zoomList[curZoom]);
-
-	gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, gridW, gridH);
+	var numerator = _song.timeSigNumerator;
+	var denominator = _song.timeSigDenominator;
+	var totalRows = sectionSteps;
+	var rowHeight = GRID_SIZE * zoomList[curZoom];
+	var gridH = Std.int(totalRows * rowHeight);
+	gridBG = FlxGridOverlay.create(GRID_SIZE,Std.int(rowHeight),gridW,Std.int(gridH));
 	gridBG.x = 0;
 	gridBG.y = 0;
 
@@ -1648,6 +1755,26 @@ function reloadGridLayer() {
 	var line2 = new FlxSprite(gridOriginX + GRID_SIZE).makeGraphic(2, gridH, 0xFF000000);
 	gridLayer.add(line1);
 	gridLayer.add(line2);
+	var visibleSteps = sectionSteps;
+	var rowH = GRID_SIZE * zoomList[curZoom];
+	var stepsPerBeatShow = Conductor.stepsPerBeat;
+	if (stepsPerBeatShow == null || stepsPerBeatShow <= 0) stepsPerBeatShow = Std.int(16 / _song.timeSigDenominator);
+	var stepsPerMeasureShow = Conductor.stepsPerMeasure;
+	if (stepsPerMeasureShow == null || stepsPerMeasureShow <= 0) stepsPerMeasureShow = getStepsPerMeasure(_song.timeSigNumerator, _song.timeSigDenominator);
+
+	var stepRow = 0;
+	while (stepRow <= visibleSteps)
+	{
+		if (stepRow > 0)
+		{
+			var isMeasureLine = (Std.int(stepRow) % Std.int(stepsPerMeasureShow) == 0);
+			var beatLine = new FlxSprite(gridOriginX, stepRow * rowH).makeGraphic(gridW, isMeasureLine ? 3 : 1, isMeasureLine ? 0xFFffffff : 0xFF888888);
+			beatLine.alpha = isMeasureLine ? 0.8 : 0.4;
+			gridLayer.add(beatLine);
+		}
+		stepRow += stepsPerBeatShow;
+	}
+
 	if (strumLine != null)
 		remove(strumLine);
 
@@ -1714,41 +1841,66 @@ function resetSection(songBeginning)
 	updateSectionUI();
 }
 
+function getSectionGridY(section)
+{
+    var y = gridOriginY;
+
+    for (i in 0...section)
+    {
+        var oldNum = _song.notes[i].timeSigNum;
+        var oldDen = _song.notes[i].timeSigDen;
+
+        if (oldNum <= 0) oldNum = _song.timeSigNumerator;
+        if (oldDen <= 0) oldDen = _song.timeSigDenominator;
+
+        var rows = getStepsPerMeasure(oldNum, oldDen);
+
+        y += rows * GRID_SIZE * zoomList[curZoom];
+    }
+
+    return y;
+}
+
 function changeSection(sec, updateMusic)
 {
-	trace('changing section' + sec);
+    if (_song.notes[sec] == null)
+    {
+        changeSection(0, true);
+        return;
+    }
 
-	if (_song.notes[sec] != null)
-	{
-		curSection = sec;
+    curSection = sec;
 
-		updateGrid();
+    syncTimeSigToCurSection();
+    reloadGridLayer();
 
-		if (updateMusic)
-		{
-			FlxG.sound.music.pause();
-			FlxG.sound.music.time = sectionStartTime(0);
-			
-			if (_song.needsVoices) {
-				vocals.pause();
-				vocals.time = FlxG.sound.music.time;
-			}
+    if (updateMusic)
+    {
+        FlxG.sound.music.pause();
+        FlxG.sound.music.time = sectionStartTime(0);
 
-			if (sfxtrack != null)
-			{
-				sfxtrack.pause();
-				sfxtrack.time = FlxG.sound.music.time;
-			}
-		}
+        if (_song.needsVoices)
+        {
+            vocals.pause();
+            vocals.time = FlxG.sound.music.time;
+        }
 
-		updateGrid();
-		updateSectionUI();
-		if (gridOriginY != null)
-			camPos.y = gridOriginY + (curSection * GRID_SIZE * 16) + (GRID_SIZE * 8);
-	}
-	else
-		changeSection(0, true);
-	Conductor.songPosition = FlxG.sound.music.time;
+        if (sfxtrack != null)
+        {
+            sfxtrack.pause();
+            sfxtrack.time = FlxG.sound.music.time;
+        }
+    }
+
+    updateGrid();
+    updateSectionUI();
+
+    var rows = getCurSectionSteps();
+
+    camPos.y = getSectionGridY(sec) +
+        (rows * GRID_SIZE * zoomList[curZoom]) * 0.5;
+
+    Conductor.songPosition = FlxG.sound.music.time;
 }
 
 function copySection(sectionNum)
@@ -1770,8 +1922,12 @@ function updateSectionUI()
 {
 	var sec = _song.notes[curSection];
 
-	if (sec.lengthInSteps == null)
-		sec.lengthInSteps = 16;
+	if (sec.lengthInSteps == null || sec.lengthInSteps <= 0)
+	{
+		var tsNum = (sec.timeSigNum != null && sec.timeSigNum > 0) ? sec.timeSigNum : _song.timeSigNumerator;
+		var tsDen = (sec.timeSigDen != null && sec.timeSigDen > 0) ? sec.timeSigDen : _song.timeSigDenominator;
+		sec.lengthInSteps = getStepsPerMeasure(tsNum, tsDen);
+	}
 
 	stepperLength.value = sec.lengthInSteps;
 
@@ -1797,6 +1953,15 @@ function updateSectionUI()
 	}
 	stepperAltAnim.value = sec.altAnimNum;
 	stepperSectionBPM.value = sec.bpm;
+
+	if (sec.timeSigNum == null || sec.timeSigNum <= 0)
+		sec.timeSigNum = _song.timeSigNumerator;
+	if (sec.timeSigDen == null || sec.timeSigDen <= 0)
+		sec.timeSigDen = _song.timeSigDenominator;
+
+	check_changeTimeSig.checked = sec.changeTimeSig;
+	stepperSectionTimeSigNum.value = sec.timeSigNum;
+	stepperSectionTimeSigDen.value = sec.timeSigDen;
 
 	updateHeads();
 }
@@ -1865,6 +2030,8 @@ function updateGrid()
 		Conductor.changeBPM(daBPM); 
 	}
 
+	syncTimeSigToCurSection();
+
 	//var yummyPng = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/normal/NOTE_assets.png');
 	//var yummyXml = FNFAssets.getText(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/normal/NOTE_assets.xml');
 	
@@ -1920,7 +2087,7 @@ function updateGrid()
 }
 
 function setupSusNote(note) {
-	var height = Math.floor(FlxMath.remapToRange(note.sustainLength, 0, Conductor.stepCrochet * 16, 0, GRID_SIZE * 16 * zoomList[curZoom]) + (GRID_SIZE * zoomList[curZoom]) - GRID_SIZE / 2);
+	var height = Math.floor((note.sustainLength / Conductor.stepCrochet) * GRID_SIZE * zoomList[curZoom] + (GRID_SIZE * zoomList[curZoom]) - GRID_SIZE / 2);
 	var minHeight = Std.int((GRID_SIZE * zoomList[curZoom] / 2) + GRID_SIZE / 2);
 	if(height < minHeight) height = minHeight;
 	if(height < 1) height = 1; //Prevents error of invalid height
@@ -1960,8 +2127,13 @@ function setupNoteData(i)
 	var leinst;
 	leinst = _song.notes[curSection].lengthInSteps;
 
-	if (leinst == null)
-		leinst = 16;
+	if (leinst == null || leinst <= 0)
+	{
+		var curSec = _song.notes[curSection];
+		var tsNum = (curSec.timeSigNum != null && curSec.timeSigNum > 0) ? curSec.timeSigNum : _song.timeSigNumerator;
+		var tsDen = (curSec.timeSigDen != null && curSec.timeSigDen > 0) ? curSec.timeSigDen : _song.timeSigDenominator;
+		leinst = getStepsPerMeasure(tsNum, tsDen);
+	}
 
 	note.y = getYfromStrumNotes((daStrumTime - sectionStartTime(0)) % (Conductor.stepCrochet * leinst));
 
@@ -1981,6 +2153,93 @@ function getEventName(names)
 	return retStr;
 }
 
+function totalStepsUpToSection(sec)
+{
+	var total = 0;
+	for (i in 0...sec)
+	{
+		if (_song.notes[i] != null)
+		{
+			var len = _song.notes[i].lengthInSteps;
+			if (len == null || len <= 0)
+			{
+				var tsNum = (_song.notes[i].timeSigNum != null && _song.notes[i].timeSigNum > 0) ? _song.notes[i].timeSigNum : _song.timeSigNumerator;
+				var tsDen = (_song.notes[i].timeSigDen != null && _song.notes[i].timeSigDen > 0) ? _song.notes[i].timeSigDen : _song.timeSigDenominator;
+				len = getStepsPerMeasure(tsNum, tsDen);
+			}
+			total += len;
+		}
+	}
+	return total;
+}
+function getStepsPerMeasure(num, den)
+{
+	if (num == null || num <= 0) num = 4;
+	if (den == null || den <= 0) den = 4;
+	var stepsPerBeat = Std.int(Math.floor(16 / den));
+	return Std.int(num * stepsPerBeat);
+}
+
+function getCurSectionSteps()
+{
+	if (_song == null || _song.notes == null || _song.notes[curSection] == null)
+		return getStepsPerMeasure(_song.timeSigNumerator, _song.timeSigDenominator);
+
+	var sec = _song.notes[curSection];
+	var steps = sec.lengthInSteps;
+
+	if (steps == null || steps <= 0)
+	{
+		var tsNum = (sec.timeSigNum != null && sec.timeSigNum > 0) ? sec.timeSigNum : _song.timeSigNumerator;
+		var tsDen = (sec.timeSigDen != null && sec.timeSigDen > 0) ? sec.timeSigDen : _song.timeSigDenominator;
+		steps = getStepsPerMeasure(tsNum, tsDen);
+	}
+
+	return steps;
+}
+
+function syncTimeSigToCurSection()
+{
+	if (_song == null || _song.notes == null || _song.notes[curSection] == null)
+		return;
+
+	if (_song.notes[curSection].changeTimeSig && _song.notes[curSection].timeSigNum > 0 && _song.notes[curSection].timeSigDen > 0)
+		Conductor.changeTimeSig(Std.int(_song.notes[curSection].timeSigNum), Std.int(_song.notes[curSection].timeSigDen));
+	else {
+		var daTimeSigNum = _song.timeSigNumerator;
+		var daTimeSigDen = _song.timeSigDenominator;
+		for (i in 0...curSection)
+			if (_song.notes[i].changeTimeSig && _song.notes[i].timeSigNum > 0 && _song.notes[i].timeSigDen > 0) {
+				daTimeSigNum = _song.notes[i].timeSigNum;
+				daTimeSigDen = _song.notes[i].timeSigDen;
+			}
+		Conductor.changeTimeSig(Std.int(daTimeSigNum), Std.int(daTimeSigDen));
+	}
+}
+
+function recalcSectionTimeSigs()
+{
+	if (_song == null || _song.notes == null)
+		return;
+
+	var activeNum = _song.timeSigNumerator;
+	var activeDen = _song.timeSigDenominator;
+
+	for (i in 0..._song.notes.length)
+	{
+		var sec = _song.notes[i];
+		if (sec == null) continue;
+
+		if (sec.changeTimeSig && sec.timeSigNum > 0 && sec.timeSigDen > 0)
+		{
+			activeNum = sec.timeSigNum;
+			activeDen = sec.timeSigDen;
+		}
+
+		sec.lengthInSteps = getStepsPerMeasure(activeNum, activeDen);
+	}
+}
+
 function addSection(lengthInSteps)
 {
 	var sec = {
@@ -1993,7 +2252,10 @@ function addSection(lengthInSteps)
 		altAnim: false,
 		altAnimNum: 0,
 		crossfadeBf: false,
-		crossfadeDad: false
+		crossfadeDad: false,
+		timeSigNum: _song.timeSigNumerator,
+		timeSigDen: _song.timeSigDenominator,
+		changeTimeSig: false
 	};
 
 	_song.notes.push(sec);
@@ -2143,19 +2405,20 @@ function getStrumTime(yPos,doZoomCalc)
 {
 	var leZoom = zoomList[curZoom];
 	if(!doZoomCalc) leZoom = 1;
-	return FlxMath.remapToRange(yPos, gridBG.y, gridBG.y + gridBG.height * leZoom, 0, 16 * Conductor.stepCrochet);
+	return FlxMath.remapToRange(yPos, gridBG.y, gridBG.y + gridBG.height * leZoom, 0, getCurSectionSteps() * Conductor.stepCrochet);
 }
 
 function getYfromStrum(strumTime,doZoomCalc)
 {
 	var leZoom = zoomList[curZoom];
 	if(!doZoomCalc) leZoom = 1;
-	return FlxMath.remapToRange(strumTime, 0, 16 * Conductor.stepCrochet, gridBG.y, gridBG.y + gridBG.height * leZoom);
+	return FlxMath.remapToRange(strumTime, 0, getCurSectionSteps() * Conductor.stepCrochet, gridBG.y, gridBG.y + gridBG.height * leZoom);
 }
 function getYfromStrumNotes(strumTime)
 	{
-		var value = strumTime / (4 * 4 * Conductor.stepCrochet);
-		return GRID_SIZE * 4 * 4 * zoomList[curZoom] * value + gridBG.y;
+		var sectionSteps = getCurSectionSteps();
+		var value = strumTime / (sectionSteps * Conductor.stepCrochet);
+		return GRID_SIZE * sectionSteps * zoomList[curZoom] * value + gridBG.y;
 	}
 var daSpacing = 0.3;
 
@@ -2181,15 +2444,6 @@ function loadJson(song)
 	var proceed = true;
 	var diffSuxx = '-' + diffDropDown.selectedLabel.toLowerCase();
 	if (diffSuxx == '-normal') {diffSuxx = '';}
-
-	if (_song.song.toLowerCase() == 'amnesia')
-		proceed = false;
-
-	if (_song.song.toLowerCase() == 'discharge')
-		proceed = false;
-
-	if (_song.song.toLowerCase() == 'triple-trouble')
-		proceed = false;
 
 	if (!FNFAssets.exists(SUtil.getPath() + 'assets/data/' + _song.song.toLowerCase() + '/' + _song.song.toLowerCase() + diffSuxx + '.json'))
 		proceed = false;
@@ -2278,7 +2532,9 @@ function saveEvents()
 		preferredNoteAmount: _song.preferredNoteAmount,
 		forceJudgements: false,
 		convertMineToNuke: false,
-		mania: _song.mania
+		mania: _song.mania,
+		timeSigNumerator: _song.timeSigNumerator,
+		timeSigDenominator: _song.timeSigDenominator
 	};
 
 	var json = {

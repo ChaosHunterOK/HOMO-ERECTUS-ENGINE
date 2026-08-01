@@ -1,6 +1,7 @@
 package;
 
 import Conductor.BPMChangeEvent;
+import Conductor;
 import flixel.FlxG;
 import flixel.addons.transition.FlxTransitionableState;
 import flixel.addons.ui.FlxUIState;
@@ -148,7 +149,9 @@ if (isOpp)
 
 	private function updateBeat():Void
 	{
-		curBeat = Math.floor(curStep / 4);
+		var stepsPerBeat = Conductor.stepsPerBeat;
+		if (stepsPerBeat <= 0) stepsPerBeat = 4;
+		curBeat = Math.floor(curStep / stepsPerBeat);
 	}
 
 	private function updateCurStep():Void
@@ -156,7 +159,9 @@ if (isOpp)
 		var lastChange:BPMChangeEvent = {
 			stepTime: 0,
 			songTime: 0,
-			bpm: 0
+			bpm: 0,
+			timeSigNum: Conductor.timeSigNumerator,
+			timeSigDen: Conductor.timeSigDenominator
 		}
 		for (i in 0...Conductor.bpmChangeMap.length)
 		{
@@ -169,7 +174,9 @@ if (isOpp)
 
 	public function stepHit():Void
 	{
-		if (curStep % 4 == 0)
+		var stepsPerBeat = Conductor.stepsPerBeat;
+		if (stepsPerBeat <= 0) stepsPerBeat = 4;
+		if (curStep % Std.int(stepsPerBeat) == 0)
 			beatHit();
 	}
 

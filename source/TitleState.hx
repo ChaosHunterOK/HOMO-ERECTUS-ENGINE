@@ -154,6 +154,7 @@ class TitleState extends MusicBeatState
 		interp.variables.set("ShaderCustom", ShaderCustom);
 		interp.variables.set("FlxShaderFix", FlxShaderFix);
 		interp.variables.set("ShaderFilter", ShaderFilter);
+		interp.variables.set("Sys",Sys);
 		#if mobile
 		interp.variables.set("addVirtualPad", addVirtualPad);
 		interp.variables.set("removeVirtualPad", removeVirtualPad);

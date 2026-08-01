@@ -1,6 +1,7 @@
 package;
 
 import Conductor.BPMChangeEvent;
+import Conductor;
 import flixel.FlxG;
 import flixel.FlxSubState;
 #if mobile
@@ -91,7 +92,9 @@ class MusicBeatSubstate extends FlxSubState
 		var lastChange:BPMChangeEvent = {
 			stepTime: 0,
 			songTime: 0,
-			bpm: 0
+			bpm: 0,
+			timeSigNum: Conductor.timeSigNumerator,
+			timeSigDen: Conductor.timeSigDenominator
 		}
 		for (i in 0...Conductor.bpmChangeMap.length)
 		{

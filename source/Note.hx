@@ -237,7 +237,7 @@ class Note extends DynamicSprite
 		if (thingie.dontMiss != null) dontMiss = thingie.dontMiss;
 		if (thingie.customNotePath != null) customNotePath = thingie.customNotePath;
 		
-		if (healAmount < 0 || healMultiplier < 0) dontCountNote = true;
+		if ((healAmount != null && healAmount < 0) || healMultiplier < 0) dontCountNote = true;
 		
 		if (thingie.singInfo != null) {
 			oppntSing = thingie.singInfo;
@@ -349,7 +349,7 @@ class Note extends DynamicSprite
 			var totalAnims = specialNoteInfo.animInt.length;
 			for (i in 0...colArray.length) 
 			{
-				if (i < totalAnims) 
+				if (i < totalAnims && specialNoteInfo.animInt[i] != null) 
 				{
 					animation.add(colArray[i] + 'Scroll', [specialNoteInfo.animInt[i]]);
 				}
@@ -484,16 +484,11 @@ class Note extends DynamicSprite
 			addFallbackAnim('cherryScroll', 'green mine${animSuffix}');
 			addFallbackAnim('cyanScroll', 'red mine${animSuffix}');
 		}
-		if (dontEdit) {
-			animation.addByPrefix('greenScroll', specialNoteInfo.animNames[2]);
-			animation.addByPrefix('redScroll', specialNoteInfo.animNames[3]);
-			animation.addByPrefix('purpleScroll', specialNoteInfo.animNames[0]);
-			animation.addByPrefix('blueScroll', specialNoteInfo.animNames[1]);
-			animation.addByPrefix('whiteScroll', specialNoteInfo.animNames[4]);
-			animation.addByPrefix('yellowScroll', specialNoteInfo.animNames[5]);
-			animation.addByPrefix('lilaScroll', specialNoteInfo.animNames[6]);
-			animation.addByPrefix('cherryScroll', specialNoteInfo.animNames[7]);
-			animation.addByPrefix('cyanScroll', specialNoteInfo.animNames[8]);
+		if (dontEdit && specialNoteInfo.animNames != null) {
+			for (i in 0...colArray.length) {
+				if (i < specialNoteInfo.animNames.length && specialNoteInfo.animNames[i] != null)
+					animation.addByPrefix(colArray[i] + 'Scroll', specialNoteInfo.animNames[i]);
+			}
 		}
 	}
 

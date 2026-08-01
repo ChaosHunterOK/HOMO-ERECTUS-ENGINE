@@ -102,14 +102,15 @@ class PluginManager {
         interp.variables.set("FlxCamera", FlxCamera);
         interp.variables.set("ShaderCustom", ShaderCustom);
         interp.variables.set("ShaderFilter", ShaderFilter);
+        interp.variables.set("WindowsData", WindowsData);
         #if VIDEOS_ALLOWED
         interp.variables.set("FlxVideo", FlxVideo);
-#end
-#if mobile
-interp.variables.set("mobile", true);
-#else
-interp.variables.set("mobile", false);
-#end
+        #end
+        #if mobile
+        interp.variables.set("mobile", true);
+        #else
+        interp.variables.set("mobile", false);
+        #end
 		// : )
 		interp.variables.set("FlxG", HscriptGlobals);
 		interp.variables.set("FlxTimer", flixel.util.FlxTimer);
@@ -132,6 +133,7 @@ interp.variables.set("mobile", false);
         interp.variables.set("PluginManager", PluginManager);
         interp.variables.set("callExternClass", instanceExClass); //Call modules?? :D
 		interp.variables.set("globalVars", Main.globalVars);
+        interp.variables.set("Sprite", flash.display.Sprite);
 		interp.variables.set('addHaxeLibrary', function (libName:String, ?libFolder:String = '',varName:String = '') {
 			try {
                 if(varName.length == 0)
