@@ -86,24 +86,26 @@ class Fake3D extends FlxSpriteGroup
             var dz = -moveX * sinY + moveZ * cosY;
             var len = Math.sqrt(dx * dx + dz * dz);
 
-            sharedCamX += dx / len * camMoveSpeed * elapsed;
-            sharedCamZ += dz / len * camMoveSpeed * elapsed;
+            sharedCamX += (dx / len) * camMoveSpeed * elapsed;
+            sharedCamZ += (dz / len) * camMoveSpeed * elapsed;
         }
 
         if (FlxG.keys.pressed.SPACE) sharedCamY -= camMoveSpeed * elapsed;
         if (FlxG.keys.pressed.CONTROL) sharedCamY += camMoveSpeed * elapsed;
     }
+
     public var texture:BitmapData;
     public var materialBitmaps:Map<String, BitmapData> = new Map();
 
-    var vertices = new Vector<Float>();
-    var projected = new Vector<Float>();
-    var indices = new Vector<Int>();
-    var uvtData = new Vector<Float>();
+    var vertices:Vector<Float> = new Vector<Float>();
+    var projected:Vector<Float> = new Vector<Float>();
+    var indices:Vector<Int> = new Vector<Int>();
+    var uvtData:Vector<Float> = new Vector<Float>();
     var zDepths:Array<Float> = [];
 
     var materialIndices:Map<String, Vector<Int>> = new Map();
     var materialOrder:Array<String> = [];
+
     public function new(x:Float, y:Float, ?objPath:String, ?texturePath:String, ?texturePaths:Array<String>, ?materialTextures:Map<String, String>)
     {
         super(x, y);
@@ -124,9 +126,11 @@ class Fake3D extends FlxSpriteGroup
             parseOBJ(CUBE_DATA);
         else
             loadOBJ(objPath);
+
         if (materialTextures != null)
             for (matName in materialTextures.keys())
                 setMaterialTexture(matName, materialTextures.get(matName));
+
         if (texturePaths != null)
             setTexturesInOrder(texturePaths);
     }
@@ -193,6 +197,7 @@ class Fake3D extends FlxSpriteGroup
                 }
             }
         }
+
         materialOrder = [];
         for (m in rawFaceMaterial)
             if (materialOrder.indexOf(m) == -1)
@@ -257,7 +262,7 @@ class Fake3D extends FlxSpriteGroup
         for (matName in groupBuilders.keys())
             materialIndices.set(matName, arrayToVector(groupBuilders.get(matName)));
 
-        projected = new Vector<Float>(Std.int(vertices.length / 3) * 2, true);
+        projected = new Vector<Float>(Std.int(vertices.length / 3) * 2);
         zDepths = [for (i in 0...Std.int(vertices.length / 3)) 1.0];
     }
 
@@ -284,6 +289,7 @@ class Fake3D extends FlxSpriteGroup
             trace('OBJ not found: $path');
         }
     }
+
     public function loadMTL(path:String):Void
     {
         if (!FNFAssets.exists(path))
@@ -309,6 +315,7 @@ class Fake3D extends FlxSpriteGroup
             }
         }
     }
+
     public function setMaterialTexture(materialName:String, path:String):Void
     {
         if (FNFAssets.exists(path))
@@ -316,6 +323,7 @@ class Fake3D extends FlxSpriteGroup
         else
             trace('Texture not found for material "$materialName": $path');
     }
+
     public function setMaterialBitmap(materialName:String, bitmap:BitmapData):Void
         materialBitmaps.set(materialName, bitmap);
 
@@ -327,12 +335,13 @@ class Fake3D extends FlxSpriteGroup
                 setMaterialTexture(materialOrder[i], paths[i]);
         }
     }
+
     public function getMaterialNames():Array<String>
         return materialOrder.copy();
 
     function arrayToVector(arr:Array<Int>):Vector<Int>
     {
-        var vec = new Vector<Int>(arr.length, true);
+        var vec = new Vector<Int>(arr.length);
         for (i in 0...arr.length)
             vec[i] = arr[i];
         return vec;
@@ -359,6 +368,8 @@ class Fake3D extends FlxSpriteGroup
                 var visibleIdx = clipIndices(idx);
                 if (visibleIdx.length == 0) continue;
 
+                visibleIdx = sortIndicesByDepth(visibleIdx);
+
                 var tex = materialBitmaps.exists(matName) ? materialBitmaps.get(matName) : texture;
 
                 gfx.beginBitmapFill(tex, null, true, true);
@@ -367,6 +378,7 @@ class Fake3D extends FlxSpriteGroup
             }
         }
     }
+
     function clipIndices(idx:Vector<Int>):Vector<Int>
     {
         var out = new Vector<Int>();
@@ -387,18 +399,50 @@ class Fake3D extends FlxSpriteGroup
         }
         return out;
     }
+    function sortIndicesByDepth(idx:Vector<Int>):Vector<Int>
+    {
+        var triCount = Std.int(idx.length / 3);
+        var order:Array<Int> = [for (i in 0...triCount) i];
+
+        order.sort(function(t1, t2)
+        {
+            var z1 = triAvgDepth(idx, t1);
+            var z2 = triAvgDepth(idx, t2);
+            return (z1 < z2) ? 1 : ((z1 > z2) ? -1 : 0);
+        });
+
+        var out = new Vector<Int>(idx.length);
+        var o = 0;
+        for (t in order)
+        {
+            out[o] = idx[t * 3];
+            out[o + 1] = idx[t * 3 + 1];
+            out[o + 2] = idx[t * 3 + 2];
+            o += 3;
+        }
+        return out;
+    }
+
+    inline function triAvgDepth(idx:Vector<Int>, t:Int):Float
+    {
+        var a = idx[t * 3];
+        var b = idx[t * 3 + 1];
+        var c = idx[t * 3 + 2];
+        return (zDepths[a] + zDepths[b] + zDepths[c]) / 3;
+    }
+
     function transformToCameraSpace(lx:Float, ly:Float, lz:Float):Array<Float>
     {
         var x = lx * modelScale;
         var y = ly * modelScale;
         var z = lz * modelScale;
+        var radX = rotX * Math.PI / 180;
+        var radY = rotY * Math.PI / 180;
+        var radZ = rotZ * Math.PI / 180;
 
-        var sx = Math.sin(rotX * Math.PI / 180);
-        var sy = Math.sin(rotY * Math.PI / 180);
-        var sz = Math.sin(rotZ * Math.PI / 180);
-        var cxr = Math.cos(rotX * Math.PI / 180);
-        var cyr = Math.cos(rotY * Math.PI / 180);
-        var czr = Math.cos(rotZ * Math.PI / 180);
+        var sx = Math.sin(radX), cxr = Math.cos(radX);
+        var sy = Math.sin(radY), cyr = Math.cos(radY);
+        var sz = Math.sin(radZ), czr = Math.cos(radZ);
 
         var ty = y * cxr - z * sx;
         var tz = y * sx + z * cxr;
@@ -416,16 +460,13 @@ class Fake3D extends FlxSpriteGroup
         y += posY - (camY + sharedCamY);
         z += posZ - (camZ + sharedCamZ);
 
-        var totalCamPitch = camPitch + sharedCamPitch;
-        var totalCamYaw = camYaw + sharedCamYaw;
-        var totalCamRoll = camRoll + sharedCamRoll;
+        var totalCamPitch = -(camPitch + sharedCamPitch) * Math.PI / 180;
+        var totalCamYaw = -(camYaw + sharedCamYaw) * Math.PI / 180;
+        var totalCamRoll = -(camRoll + sharedCamRoll) * Math.PI / 180;
 
-        var csx = Math.sin(totalCamPitch * Math.PI / 180);
-        var csy = Math.sin(totalCamYaw * Math.PI / 180);
-        var csz = Math.sin(totalCamRoll * Math.PI / 180);
-        var ccx = Math.cos(totalCamPitch * Math.PI / 180);
-        var ccy = Math.cos(totalCamYaw * Math.PI / 180);
-        var ccz = Math.cos(totalCamRoll * Math.PI / 180);
+        var csy = Math.sin(totalCamYaw), ccy = Math.cos(totalCamYaw);
+        var csx = Math.sin(totalCamPitch), ccx = Math.cos(totalCamPitch);
+        var csz = Math.sin(totalCamRoll), ccz = Math.cos(totalCamRoll);
 
         tx = x * ccy - z * csy;
         tz = x * csy + z * ccy;

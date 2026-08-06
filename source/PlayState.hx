@@ -1650,7 +1650,7 @@ class PlayState extends MusicBeatState
 						makeHaxeState(file.substr(0, file.length - 8), basePath + "assets/data/" + SONG.song.toLowerCase() + "/", file.substr(0, file.length - 8));	
 					}
 				}
-		}
+	}
 		var uiJson = CoolUtil.parseJson(FNFAssets.getText(basePath + "assets/images/custom_ui/ui_layouts/ui.json"));
 		makeHaxeStateUI("ui", basePath + "assets/images/custom_ui/ui_layouts/" + Reflect.field(uiJson, 'layout') + "/", "../" + Reflect.field(uiJson, 'layout') + ".hscript");
 		trace('ui done');
@@ -1938,10 +1938,10 @@ class PlayState extends MusicBeatState
 
 		if (startOnTime > 0) {
 			clearNotesBefore(startOnTime);
-			setSongTime(startOnTime - 350);
+			startSong();
 			return;
 		} else if (skipCountdown) {
-			setSongTime(0);
+			startSong();
 			return;
 		}
 		var imgPath = basePath + "assets/images/";
@@ -2113,10 +2113,12 @@ class PlayState extends MusicBeatState
 		if (!paused)
 			FlxG.sound.playMusic(FNFAssets.getSound(useSong), 1, false);
 		songLength = FlxG.sound.music.length;
-		if(startOnTime > 0)
-		{
-			setSongTime(startOnTime - 500);
+		if (startOnTime <= 0) {
+			Conductor.songPosition = 0;
+			songTime = 0;
 		}
+		if(startOnTime > 0)
+			setSongTime(startOnTime - 350);
 		startOnTime = 0;
 
 		FlxG.sound.music.onComplete = endSong;
@@ -2614,14 +2616,17 @@ class PlayState extends MusicBeatState
 		setAllHaxeVar('gfSpeed', gfSpeed);
 		setAllHaxeVar('health', health);
 		callAllHScript('update', [elapsed]);
+		var hasPosUpdateFuncs = notePosUpdateFuncs.length > 0;
 		for (note in notes.members) {
-			if (note != null && noteModifiers.exists(note)) {
-				var mod = noteModifiers.get(note);
+			if (note == null) continue;
+			var mod = noteModifiers.get(note);
+			if (mod != null) {
 				note.x += mod.xOffset;
 				note.y += mod.yOffset;
 			}
-			for (updateFunc in notePosUpdateFuncs)
-				if (note != null) updateFunc(note);
+			if (hasPosUpdateFuncs)
+				for (updateFunc in notePosUpdateFuncs)
+					updateFunc(note);
 		}
 
 		var membersArr = members;
@@ -2696,10 +2701,7 @@ class PlayState extends MusicBeatState
 				enemyComboBreak.members[i].x = enemyStrumMembers[i].x;
 		}
 		var properHealth = opponentPlayer ? 100 - Math.round(health*50) : Math.round(health*50);
-		if (properHealth != lastHealthTxtValue) {
-			healthTxt.text = "Health:" + properHealth + "%";
-			lastHealthTxtValue = properHealth;
-		}
+		healthTxt.text = "Health:" + properHealth + "%";
 		/*
 		switch (OptionsHandler.options.accuracyMode) {
 			case Simple | Binary | Complex: 
@@ -2719,10 +2721,8 @@ class PlayState extends MusicBeatState
 
 		if (failedCombo)
 			health = opponentPlayer ? 50 : -50;
-		if (accuracy != lastAccuracyTxtValue) {
-			accuracyTxt.text = "Accuracy:" + accuracy + "%";
-			lastAccuracyTxtValue = accuracy;
-		}
+
+		accuracyTxt.text = "Accuracy:" + accuracy + "%";
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
 			persistentUpdate = false;
@@ -2822,14 +2822,10 @@ class PlayState extends MusicBeatState
 		}
 		
 		// duo mode shouldn't show low health
-		var healthTxtIsLow = properHealth < 20 && !duoMode;
-		if (healthTxtIsLow != lastHealthTxtIsLow) {
-			if (healthTxtIsLow)
-				healthTxt.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 20, FlxColor.RED, RIGHT, OUTLINE, FlxColor.BLACK);
-			else
-				healthTxt.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
-			lastHealthTxtIsLow = healthTxtIsLow;
-		}
+		if (properHealth < 20 && !duoMode)
+			healthTxt.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 20, FlxColor.RED, RIGHT, OUTLINE, FlxColor.BLACK);
+		else
+			healthTxt.setFormat(SUtil.getPath() + "assets/fonts/vcr.ttf", 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		player2Icon = SONG.player2;
 		if (healthBar.percent > 80) {
 			iconP2.iconState = Dying;
@@ -3030,7 +3026,7 @@ class PlayState extends MusicBeatState
 				FlxG.resetState();
 			} else {
 				// 1 / 1000 chance for Gitaroo Man easter egg
-				if (FlxG.random.bool(0.1))
+				if (FlxG.random.bool(0.1) && !chartingMode)
 					LoadingState.loadAndSwitchState(new GitarooPause());
 				else
 				{

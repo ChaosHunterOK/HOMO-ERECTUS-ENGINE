@@ -208,11 +208,11 @@ class StrumNote extends FlxSprite
 			}
 		}
 		if(animation.curAnim.name == 'confirm' && !isPixelNote) {
-			var daOffset = [0.0,0.0];
-			if (animOffsets.exists('confirm'))
-				daOffset = animOffsets.get('confirm');
-			offset.x = (frameWidth - width) * 0.5+ daOffset[0];
-			offset.y = (frameHeight - height) * 0.5 + daOffset[1];
+			var daOffset = animOffsets.get('confirm');
+			var offX = daOffset != null ? daOffset[0] : 0.0;
+			var offY = daOffset != null ? daOffset[1] : 0.0;
+			offset.x = (frameWidth - width) * 0.5 + offX;
+			offset.y = (frameHeight - height) * 0.5 + offY;
 		}
 
 		super.update(elapsed);
@@ -234,11 +234,11 @@ class StrumNote extends FlxSprite
 
 	public function playAnim(anim:String, ?force:Bool = false) {
 		animation.play(anim, force);
-		var daOffset = [0.0,0.0];
-		if (animOffsets.exists(anim))
-		 	daOffset = animOffsets.get(anim);
-		offset.x = (frameWidth - width) * 0.5 +daOffset[0];
-		offset.y = (frameHeight - height) * 0.5 + daOffset[1];
+		var daOffset = animOffsets.get(anim);
+		var offX = daOffset != null ? daOffset[0] : 0.0;
+		var offY = daOffset != null ? daOffset[1] : 0.0;
+		offset.x = (frameWidth - width) * 0.5 + offX;
+		offset.y = (frameHeight - height) * 0.5 + offY;
 		centerOrigin();
 		if(animation.curAnim == null || animation.curAnim.name == 'static') {
 		} else {
