@@ -90,7 +90,7 @@ class Song
 			rawJson = rawJson.substr(0, rawJson.length - 1);
 			// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
 		}
-		var parsedJson = parseJSONshit(rawJson);
+		var parsedJson = parseChartJson(rawJson, folder);
 		if (parsedJson.stage == null) {
 			// sw-switch case :fuckboy:
 			parsedJson.stage = switch (parsedJson.song.toLowerCase()) {
@@ -286,7 +286,7 @@ class Song
 		{
 			// means this isn't normal difficulty
 			// lets finally overwrite notes
-			var realJson = parseJSONshit(FNFAssets.getText(SUtil.getPath() + "assets/data/" + folder.toLowerCase() + "/" + jsonInput.toLowerCase() + '.json').trim());
+			var realJson = parseChartJson(FNFAssets.getText(SUtil.getPath() + "assets/data/" + folder.toLowerCase() + "/" + jsonInput.toLowerCase() + '.json').trim(), folder);
 			parsedJson.notes = realJson.notes;
 			parsedJson.bpm = realJson.bpm;
 			parsedJson.needsVoices = realJson.needsVoices;
@@ -304,5 +304,177 @@ class Song
 	{
 		var swagShit:SwagSong = cast CoolUtil.parseJson(rawJson).song;
 		return swagShit;
+	}
+	public static function parseChartJson(rawJson:String, ?folder:String):SwagSong
+	{
+		var quick:Dynamic = null;
+		try
+			quick = haxe.Json.parse(rawJson)
+		catch (e:Dynamic)
+			quick = null;
+
+		if (quick != null && isCodenameChart(quick))
+			return convertCodenameChart(quick, folder);
+
+		return parseJSONshit(rawJson);
+	}
+
+	public static function isCodenameChart(parsed:Dynamic):Bool
+	{
+		if (parsed == null) return false;
+		if (Reflect.hasField(parsed, "notes")) return false; // already a normal SwagSong-shaped json
+		return (Reflect.hasField(parsed, "codenameChart") && parsed.codenameChart == true) || Reflect.hasField(parsed, "strumLines");
+	}
+
+	public static function convertCodenameChart(codename:Dynamic, ?folder:String):SwagSong
+	{
+		var meta:Dynamic = null;
+		if (folder != null)
+		{
+			var metaPath = SUtil.getPath() + "assets/data/" + folder.toLowerCase() + "/meta.json";
+			if (FNFAssets.exists(metaPath))
+			{
+				try
+					meta = haxe.Json.parse(FNFAssets.getText(metaPath).trim())
+				catch (e:Dynamic)
+					meta = null;
+			}
+		}
+
+		var customValues:Dynamic = (meta != null && Reflect.hasField(meta, "customValues")) ? meta.customValues : null;
+
+		inline function metaField(name:String, def:Dynamic):Dynamic
+		{
+			if (meta != null && Reflect.hasField(meta, name) && Reflect.field(meta, name) != null)
+				return Reflect.field(meta, name);
+			if (Reflect.hasField(codename, name) && Reflect.field(codename, name) != null)
+				return Reflect.field(codename, name);
+			return def;
+		}
+
+		var songName:String = folder;
+		if (songName == null)
+		{
+			if (customValues != null && Reflect.hasField(customValues, "songName") && customValues.songName != null)
+				songName = customValues.songName;
+			else if (meta != null && Reflect.hasField(meta, "name") && meta.name != null)
+				songName = meta.name;
+			else
+				songName = "unknown";
+		}
+
+		var song:SwagSong = cast {};
+		song.song = songName;
+		song.bpm = metaField("bpm", 100);
+		song.needsVoices = metaField("needsVoices", true);
+		song.speed = codename.scrollSpeed != null ? codename.scrollSpeed : 1;
+		song.stage = codename.stage != null ? codename.stage : "stage";
+		song.player1 = "bf";
+		song.player2 = "dad";
+		song.gf = "gf";
+		{
+			var slList:Array<Dynamic> = Reflect.hasField(codename, "strumLines") ? codename.strumLines : [];
+			for (sl in slList)
+			{
+				if (sl.characters == null || sl.characters.length == 0) continue;
+				var charName:String = sl.characters[0];
+				switch (sl.type)
+				{
+					case 0: song.player1 = charName;
+					case 1: song.player2 = charName;
+					case 2: song.gf = charName;
+				}
+			}
+			if (song.player1 == "bf" && customValues != null && Reflect.hasField(customValues, "character") && customValues.character != null)
+				song.player1 = customValues.character;
+		}
+		if (meta != null && Reflect.hasField(meta, "beatsPerMeasure") && meta.beatsPerMeasure != null)
+			song.timeSigNumerator = meta.beatsPerMeasure;
+
+		var events:Array<Dynamic> = [];
+		if (Reflect.hasField(codename, "events") && codename.events != null)
+		{
+			for (ev in (codename.events:Array<Dynamic>))
+			{
+				var t:Float = ev.t != null ? ev.t : (ev.time != null ? ev.time : 0);
+				var name:String = ev.e != null ? ev.e : (ev.event != null ? ev.event : (ev.name != null ? ev.name : ""));
+				var val1:Dynamic = null;
+				var val2:Dynamic = null;
+				if (ev.v != null)
+				{
+					if (Reflect.hasField(ev.v, "value1")) val1 = Reflect.field(ev.v, "value1");
+					if (Reflect.hasField(ev.v, "value2")) val2 = Reflect.field(ev.v, "value2");
+				}
+				events.push([t, [[name, val1, val2]]]);
+			}
+		}
+		song.events = events;
+		var strumLines:Array<Dynamic> = Reflect.hasField(codename, "strumLines") ? codename.strumLines : [];
+		var noteTypeNames:Array<String> = Reflect.hasField(codename, "noteTypes") ? codename.noteTypes : [];
+
+		var ammo:Int = 4;
+		for (sl in strumLines)
+			if (sl.keyCount != null && sl.keyCount > ammo)
+				ammo = sl.keyCount;
+
+		var flat:Array<{time:Float, lane:Int, sus:Float, isPlayer:Bool}> = [];
+		for (sl in strumLines)
+		{
+			if (sl.notes == null) continue;
+			var isPlayer:Bool = (sl.type == 0);
+			for (n in (sl.notes:Array<Dynamic>))
+			{
+				var lane:Int = n.id != null ? n.id : 0;
+				if (n.type != null && n.type > 0 && noteTypeNames[n.type] != null && noteTypeNames[n.type].toLowerCase().indexOf("mine") != -1)
+					lane += ammo * 2;
+
+				flat.push({time: n.time, lane: lane, sus: n.sLen != null ? n.sLen : 0, isPlayer: isPlayer});
+			}
+		}
+		flat.sort((a, b) -> a.time < b.time ? -1 : (a.time > b.time ? 1 : 0));
+
+		var stepsPerBeat:Int = (meta != null && Reflect.hasField(meta, "stepsPerBeat") && meta.stepsPerBeat != null) ? meta.stepsPerBeat : 4;
+		var beatsPerMeasure:Int = (meta != null && Reflect.hasField(meta, "beatsPerMeasure") && meta.beatsPerMeasure != null) ? meta.beatsPerMeasure : 4;
+
+		var stepCrochet:Float = (60000 / song.bpm) / stepsPerBeat;
+		var stepsPerSection:Int = stepsPerBeat * beatsPerMeasure;
+		var sectionLength:Float = stepCrochet * stepsPerSection;
+		if (sectionLength <= 0) sectionLength = 1;
+
+		var sections:Array<SwagSection> = [];
+		var i:Int = 0;
+		var sectionStart:Float = 0;
+		while (i < flat.length)
+		{
+			var sec:SwagSection = cast {};
+			sec.sectionNotes = [];
+			sec.lengthInSteps = stepsPerSection;
+			sec.mustHitSection = true;
+			sec.changeBPM = false;
+			sec.bpm = song.bpm;
+			sec.altAnim = false;
+
+			var sectionEnd = sectionStart + sectionLength;
+			while (i < flat.length && flat[i].time < sectionEnd)
+			{
+				var note = flat[i];
+				sec.sectionNotes.push([note.time, note.lane, note.sus, 0]);
+				i++;
+			}
+			sections.push(sec);
+			sectionStart = sectionEnd;
+		}
+		song.notes = sections;
+
+		song.preferredNoteAmount = ammo;
+		song.mania = switch (ammo)
+		{
+			case 6: 1;
+			case 7: 2;
+			case 9: 3;
+			default: 0;
+		}
+
+		return song;
 	}
 }
