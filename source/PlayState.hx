@@ -261,12 +261,13 @@ class PlayState extends MusicBeatState
 	
 	public static var instance:PlayState;
 	public static var customStateName:String = "";
-	private var noteModifiers:Map<Note, {xOffset:Float, yOffset:Float, rotation:Float, scaleX:Float, scaleY:Float, skewX:Float, skewY:Float, colorAlpha:Float}> = new Map();
+	private var noteModifiers:Map<Note, NoteModData> = new Map();
 	private var notePosUpdateFuncs:Array<Note->Void> = [];
 	public var currentNoteScrollMult:Float = 1.0;
 	public var scrollPatternActive:Bool = false;
 	private var scrollPatternPoints:Array<{time:Float, mult:Float}> = [];
 	private var noteEffects:Map<String, Array<Note->Void>> = new Map();
+	private var activeNoteEffects:Array<String> = [];
 	public var jukeboxMode:Bool = false;
 	public var bumpOffset:Float = 0;
 	private var onScrollSpeedChange:Array<Float->Void> = [];
@@ -399,7 +400,6 @@ class PlayState extends MusicBeatState
 	var vnshNotes:Bool = false;
 	var invsNotes:Bool = false;
 	var snakeNotes:Bool = false;
-	var snekNumber:Float = 0;
 	var drunkNotes:Bool = false;
 	var alcholTimer:FlxTimer;
 	var notesHitArray:Array<Date> = [];
@@ -1232,6 +1232,9 @@ class PlayState extends MusicBeatState
 		showCombo = OptionsHandler.options.showCombo;
 		Judge.setJudge(cast OptionsHandler.options.judge);
 		pixelUI = uiSmelly.isPixel;
+
+		registerDefaultNoteEffects();
+
 		if (!OptionsHandler.options.skipModifierMenu) {
 			fullComboMode = ModifierState.namedModifiers.fc.value;
 			goodCombo = ModifierState.namedModifiers.gfc.value;
@@ -1243,6 +1246,8 @@ class PlayState extends MusicBeatState
 			invsNotes = ModifierState.namedModifiers.invis.value;
 			snakeNotes = ModifierState.namedModifiers.snake.value;
 			drunkNotes = ModifierState.namedModifiers.drunk.value;
+			setNoteEffectActive('snake', snakeNotes);
+			setNoteEffectActive('drunk', drunkNotes);
 			// nightcoreMode = ModifierState.modifiers[18].value;
 			// daycoreMode = ModifierState.modifiers[19].value;
 			inALoop = ModifierState.namedModifiers.loop.value;
@@ -2027,15 +2032,6 @@ class PlayState extends MusicBeatState
 			if (accelNotes && !paused)
 				noteSpeed += 0.01;
 		}, 0);
-
-		var snekBase:Float = 0;
-		new FlxTimer().start(0.01, function (_)
-		{
-			if (snakeNotes && !paused) {
-				snekNumber = Math.sin(snekBase) * 100;
-				snekBase += Math.PI / 100;
-			}
-		}, 0);
 	}
 	public function setSongTime(time:Float)
 	{
@@ -2604,6 +2600,93 @@ class PlayState extends MusicBeatState
 	private var paused:Bool = false;
 	var startedCountdown:Bool = false;
 	var canPause:Bool = true;
+	static inline function neutralNoteMod():NoteModData
+		return {
+			xOffset: 0,
+			yOffset: 0,
+			rotation: 0,
+			scaleX: 1,
+			scaleY: 1,
+			skewX: 0,
+			skewY: 0,
+			colorAlpha: 1,
+			depth: 0
+		};
+	
+	public function getNoteMod(note:Note):NoteModData
+	{
+		var mod = noteModifiers.get(note);
+		if (mod == null)
+		{
+			mod = neutralNoteMod();
+			noteModifiers.set(note, mod);
+		}
+		return mod;
+	}
+	public function registerNoteEffect(name:String, func:Note->Void):Void
+	{
+		if (!noteEffects.exists(name))
+			noteEffects.set(name, []);
+		noteEffects.get(name).push(func);
+	}
+
+	public function setNoteEffectActive(name:String, active:Bool):Void
+	{
+		if (active)
+		{
+			if (!activeNoteEffects.contains(name))
+				activeNoteEffects.push(name);
+		}
+		else
+			activeNoteEffects.remove(name);
+	}
+
+	public inline function isNoteEffectActive(name:String):Bool
+		return activeNoteEffects.contains(name);
+	public function registerDefaultNoteEffects():Void
+	{
+		registerNoteEffect('drunk', NoteEffects.drunk);
+		registerNoteEffect('snake', NoteEffects.snake);
+	}
+	function applyNoteEffects(note:Note, elapsed:Float):Void
+	{
+		var mod = neutralNoteMod();
+		noteModifiers.set(note, mod);
+
+		if (activeNoteEffects.length > 0)
+		{
+			for (effectName in activeNoteEffects)
+			{
+				var funcs = noteEffects.get(effectName);
+				if (funcs == null) continue;
+				for (func in funcs)
+					func(note);
+			}
+		}
+
+		if (mod.xOffset != 0) note.x += mod.xOffset;
+		if (mod.yOffset != 0) note.y += mod.yOffset;
+		if (mod.rotation != 0) note.angle += mod.rotation;
+		if (mod.skewX != 0 || mod.skewY != 0) applySkew(note, mod.skewX, mod.skewY);
+		if (mod.scaleX != 1 || mod.scaleY != 1)
+		{
+			note.scale.x *= mod.scaleX;
+			note.scale.y *= mod.scaleY;
+			note.updateHitbox();
+		}
+		if (mod.colorAlpha != 1) note.alpha *= mod.colorAlpha;
+
+		if (notePosUpdateFuncs.length > 0)
+			for (updateFunc in notePosUpdateFuncs)
+				updateFunc(note);
+	}
+	static function applySkew(note:Note, dx:Float, dy:Float):Void
+	{
+		var skewObj:Dynamic = Reflect.getProperty(note, "skew");
+		if (skewObj == null) return;
+		Reflect.setProperty(skewObj, "x", (Reflect.getProperty(skewObj, "x") : Float) + dx);
+		Reflect.setProperty(skewObj, "y", (Reflect.getProperty(skewObj, "y") : Float) + dy);
+	}
 
 	override public function update(elapsed:Float)
 	{
@@ -2616,18 +2699,8 @@ class PlayState extends MusicBeatState
 		setAllHaxeVar('gfSpeed', gfSpeed);
 		setAllHaxeVar('health', health);
 		callAllHScript('update', [elapsed]);
-		var hasPosUpdateFuncs = notePosUpdateFuncs.length > 0;
-		for (note in notes.members) {
-			if (note == null) continue;
-			var mod = noteModifiers.get(note);
-			if (mod != null) {
-				note.x += mod.xOffset;
-				note.y += mod.yOffset;
-			}
-			if (hasPosUpdateFuncs)
-				for (updateFunc in notePosUpdateFuncs)
-					updateFunc(note);
-		}
+		if (!paused)
+			NoteEffects.updateTimers(elapsed);
 
 		var membersArr = members;
 		var shaderUpdatesArr = shaderUpdates;
@@ -3331,25 +3404,13 @@ class PlayState extends MusicBeatState
 					daNote.hittedNote = true;
 				}
 
-				var neg = downscroll ? -1 : 1;
-				//if (drunkNotes) {
-				//	daNote.y = (strumLine.y - neg * (Conductor.songPosition - daNote.strumTime) * ((Math.sin(songTime/400)/6)+0.5) * noteSpeed * FlxMath.roundDecimal(PlayState.daScrollSpeed, 2));
-				//} else {
-				//	daNote.y = (strumLine.y - neg * (Conductor.songPosition - daNote.strumTime) * (noteSpeed * FlxMath.roundDecimal(PlayState.daScrollSpeed, 2)));
-				//}
 				if (vnshNotes) {
 					if (downscroll)
 						daNote.alpha = FlxMath.remapToRange(-daNote.y, -strumLine.y,0 , 0, 1);
 					else
 						daNote.alpha = FlxMath.remapToRange(daNote.y, strumLine.y, FlxG.height, 0, 1);
 				}
-					
-				if (snakeNotes) {
-					if (daNote.mustPress)
-						daNote.x = (FlxG.width/2)+snekNumber+(Note.swagWidth*daNote.noteData)+50;
-					else
-						daNote.x = snekNumber+(Note.swagWidth*daNote.noteData)+50;
-				}
+				applyNoteEffects(daNote, elapsed);
 				// WIP interpolation shit? Need to fix the pause issue
 				// daNote.y = (strumLine.y - (songTime - daNote.strumTime) * (0.45 * daScrollSpeed));
 

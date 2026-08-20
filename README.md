@@ -70,8 +70,8 @@ Other installations you'd need is the additional libraries, a fully updated list
 haxelib install flixel 5.2.2
 haxelib install flixel-addons 3.0.2
 
-haxelib install lime 8.0.0
-haxelib install openfl 9.1.0
+haxelib install lime 8.0.2
+haxelib install openfl 9.2.2
 
 haxelib install hscript
 haxelib install flixel-ui
@@ -79,6 +79,8 @@ haxelib install tjson
 haxelib install json2object
 haxelib install uniontypes
 haxelib install hxcpp-debug-server
+haxelib install hxvlc 1.5.0
+haxelib install flxanimate 3.0.4
 ```
 
 Well, if you already had flixel and flixel-addons installed with a recent version, you'll have to change it in order to compile.
@@ -94,6 +96,7 @@ haxelib git hscript-ex https://github.com/ianharrigan/hscript-ex
 
 ### Compiling game
 
+You don't need most of the stuff shown here
 
 To run it from your desktop (Windows, Mac, Linux) it can be a bit more involved. For Linux, you only need to open a terminal in the project directory and run 'lime test linux -debug' and then run the executible file in export/release/linux/bin. For Windows, you need to install Visual Studio Community 2019. While installing VSC, don't click on any of the options to install workloads. Instead, go to the individual components tab and choose the following:
 * MSVC v142 - VS 2019 C++ x64/x86 build tools
