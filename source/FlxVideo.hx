@@ -43,7 +43,8 @@ class FlxVideo
 	public var repeat:Bool = false;
 
 	public var isPaused(default, null):Bool = false;
-	private var pausedByPauseAll:Bool = false;
+	private var autoPauseDepth:Int = 0;
+	private var pausedByAutoPause:Bool = false;
 
 	private var currentPath:String = "";
 
@@ -104,19 +105,36 @@ class FlxVideo
 	{
 		for (video in instances)
 			if (video != null)
-			{
-				video.pausedByPauseAll = !video.isPaused;
-				video.pause();
-			}
+				video.autoPause();
 	}
 	public static function resumeAll():Void
 	{
 		for (video in instances)
-			if (video != null && video.pausedByPauseAll)
-			{
-				video.resume();
-				video.pausedByPauseAll = false;
-			}
+			if (video != null)
+				video.autoResume();
+	}
+
+	private function autoPause():Void
+	{
+		autoPauseDepth++;
+
+		if (autoPauseDepth == 1 && !isPaused)
+		{
+			pause();
+			pausedByAutoPause = true;
+		}
+	}
+
+	private function autoResume():Void
+	{
+		if (autoPauseDepth > 0)
+			autoPauseDepth--;
+
+		if (autoPauseDepth == 0 && pausedByAutoPause)
+		{
+			resume();
+			pausedByAutoPause = false;
+		}
 	}
 	public static function hideAll():Void
 	{
@@ -291,7 +309,8 @@ class FlxVideo
 	private function cleanupVideo():Void
 	{
 		isPaused = false;
-		pausedByPauseAll = false;
+		autoPauseDepth = 0;
+		pausedByAutoPause = false;
 
 		#if cpp
 		if (FlxG.stage != null)

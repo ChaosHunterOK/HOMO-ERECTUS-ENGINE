@@ -28,6 +28,7 @@ typedef SwagSong =
 	var isMoody:Null<Bool>;
 	var cutsceneType:String;
 	var uiType:String;
+	var ?uiLayout:String;
 	var isSpooky:Null<Bool>;
 	var isHey:Null<Bool>;
 	var isCheer:Null<Bool>;

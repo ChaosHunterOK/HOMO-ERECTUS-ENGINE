@@ -5,6 +5,7 @@ import DynamicSprite.DynamicAtlasFrames;
 import flixel.FlxG;
 import Judgement.TUI;
 import flixel.graphics.frames.FlxAtlasFrames;
+import sys.FileSystem;
 
 class NoteSplash extends FlxSprite {
 
@@ -35,6 +36,10 @@ class NoteSplash extends FlxSprite {
     }
     private function setAnims(?c:Int) {
         var curUiType:TUI = Reflect.field(Judgement.uiJson, PlayState.SONG.uiType);
+        if (PlayState.SONG == null) {
+            trace("smth judgement ui error");
+            return;
+        }
 
         //frames = DynamicAtlasFrames.fromSparrow(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/${curUiType.uses}/noteSplashes.png',
         //SUtil.getPath() + 'assets/images/custom_ui/ui_packs/${curUiType.uses}/noteSplashes.xml');
@@ -45,6 +50,8 @@ class NoteSplash extends FlxSprite {
             SUtil.getPath() + 'assets/images/custom_ui/ui_packs/${curUiType.uses}/noteSplashes.xml');
         }
         frames = gotFrames;
+
+        if (frames == null) return;
 
         if (oneType) {
             if (c != null) {

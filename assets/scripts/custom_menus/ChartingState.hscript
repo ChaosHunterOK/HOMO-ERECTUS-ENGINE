@@ -64,6 +64,7 @@ var player2TextField;
 var gfTextField;
 var cutsceneTextField;
 var uiTextField;
+var uiLayoutTextField;
 var stageTextField;
 var isAltNoteCheck;
 var isCrossfade;
@@ -618,6 +619,15 @@ function addCharsUI()
 	uiText = new FlxText(150, 110, 110, "UI Type:", 8);
 	uiTextField = new FlxUIInputText(150, 125, 110, _song.uiType, 8);
 	blockPressWhileTypingOn.push(uiTextField);
+	var uiLayout = _song.uiLayout;
+	if (uiLayout == null || uiLayout == "")
+	{
+		var uiLayoutJson = CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/images/custom_ui/ui_layouts/ui.json"));
+		uiLayout = uiLayoutJson.layout;
+	}
+	var uiLayoutLabel = new FlxText(150, 160, 110, "UI Layout:", 8);
+	uiLayoutTextField = new FlxUIInputText(150, 175, 110, uiLayout, 8);
+	blockPressWhileTypingOn.push(uiLayoutTextField);
 
 	tab_group_char.add(playerText);
 	tab_group_char.add(player1TextField);
@@ -632,6 +642,8 @@ function addCharsUI()
 	tab_group_char.add(cutsceneTextField);
 	tab_group_char.add(uiText);
 	tab_group_char.add(uiTextField);
+	tab_group_char.add(uiLayoutLabel);
+	tab_group_char.add(uiLayoutTextField);
 
 	UI_box.addGroup(tab_group_char);
 	UI_box.scrollFactor.set();
@@ -1291,6 +1303,7 @@ function update(elapsed)
 	_song.stage = stageTextField.text;
 	_song.cutsceneType = cutsceneTextField.text;
 	_song.uiType = uiTextField.text;
+	_song.uiLayout = uiLayoutTextField.text;
 	strumLine.y = getYfromStrum((Conductor.songPosition - sectionStartTime(0)) % (Conductor.stepCrochet * _song.notes[curSection].lengthInSteps),true);
 	camPos.y = strumLine.y;
 
@@ -2528,6 +2541,7 @@ function saveEvents()
 		isMoody: _song.isMoody,
 		cutsceneType: _song.cutsceneType,
 		uiType: _song.uiType,
+		uiLayout: _song.uiLayout,
 		isCheer: _song.isCheer,
 		preferredNoteAmount: _song.preferredNoteAmount,
 		forceJudgements: false,

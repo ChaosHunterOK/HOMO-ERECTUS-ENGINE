@@ -1657,7 +1657,18 @@ class PlayState extends MusicBeatState
 				}
 	}
 		var uiJson = CoolUtil.parseJson(FNFAssets.getText(basePath + "assets/images/custom_ui/ui_layouts/ui.json"));
-		makeHaxeStateUI("ui", basePath + "assets/images/custom_ui/ui_layouts/" + Reflect.field(uiJson, 'layout') + "/", "../" + Reflect.field(uiJson, 'layout') + ".hscript");
+		var defaultLayout:Dynamic = Reflect.field(uiJson, 'layout');
+		var layoutName:String = SONG.uiLayout;
+		if (layoutName == null || layoutName.trim() == '')
+			layoutName = defaultLayout;
+		if (layoutName == null || layoutName.trim() == '')
+			layoutName = 'default';
+
+		var layoutScript:String = basePath + "assets/images/custom_ui/ui_layouts/" + layoutName + "/" + layoutName + ".hscript";
+		if (!FNFAssets.exists(layoutScript) && defaultLayout != null && layoutName != defaultLayout)
+			layoutName = defaultLayout;
+
+		makeHaxeStateUI("ui", basePath + "assets/images/custom_ui/ui_layouts/" + layoutName + "/", "../" + layoutName + ".hscript");
 		trace('ui done');
 
 		var scriptPushed:Array<String> = [];
@@ -1671,7 +1682,6 @@ class PlayState extends MusicBeatState
 	}
 		if ((alwaysDoCutscenes || isStoryMode )&& (!seenCutscene || chartingMode))
 		{
-
 			switch (SONG.cutsceneType)
 			{
 				case 'senpai':
