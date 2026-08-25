@@ -619,7 +619,7 @@ function addCharsUI()
 	uiText = new FlxText(150, 110, 110, "UI Type:", 8);
 	uiTextField = new FlxUIInputText(150, 125, 110, _song.uiType, 8);
 	blockPressWhileTypingOn.push(uiTextField);
-	var uiLayout = _song.uiLayout;
+	var uiLayout = _song.forceLayout;
 	if (uiLayout == null || uiLayout == "")
 	{
 		var uiLayoutJson = CoolUtil.parseJson(FNFAssets.getText(SUtil.getPath() + "assets/images/custom_ui/ui_layouts/ui.json"));
@@ -1303,7 +1303,7 @@ function update(elapsed)
 	_song.stage = stageTextField.text;
 	_song.cutsceneType = cutsceneTextField.text;
 	_song.uiType = uiTextField.text;
-	_song.uiLayout = uiLayoutTextField.text;
+	_song.forceLayout = uiLayoutTextField.text;
 	strumLine.y = getYfromStrum((Conductor.songPosition - sectionStartTime(0)) % (Conductor.stepCrochet * _song.notes[curSection].lengthInSteps),true);
 	camPos.y = strumLine.y;
 
@@ -2541,7 +2541,7 @@ function saveEvents()
 		isMoody: _song.isMoody,
 		cutsceneType: _song.cutsceneType,
 		uiType: _song.uiType,
-		uiLayout: _song.uiLayout,
+		forceLayout: _song.forceLayout,
 		isCheer: _song.isCheer,
 		preferredNoteAmount: _song.preferredNoteAmount,
 		forceJudgements: false,
