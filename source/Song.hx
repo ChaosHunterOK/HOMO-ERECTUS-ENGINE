@@ -28,7 +28,7 @@ typedef SwagSong =
 	var isMoody:Null<Bool>;
 	var cutsceneType:String;
 	var uiType:String;
-	var ?uiLayout:String;
+	var ?forceLayout:String;
 	var isSpooky:Null<Bool>;
 	var isHey:Null<Bool>;
 	var isCheer:Null<Bool>;
@@ -72,19 +72,12 @@ class Song
 	{
 		var rawJson:String = "";
 		if (jsonInput != folder && FNFAssets.exists(SUtil.getPath() + "assets/data/" + folder.toLowerCase() + "/" + folder.toLowerCase() + ".json"))
-		{
-			// means this isn't normal difficulty
-			// raw json 
-
 			rawJson = FNFAssets.getText(SUtil.getPath() + "assets/data/"+folder.toLowerCase()+"/"+folder.toLowerCase()+".json").trim();
-		} else {
+		else
 			rawJson = FNFAssets.getText(SUtil.getPath() + "assets/data/" + folder.toLowerCase() + "/" + jsonInput.toLowerCase() + '.json').trim();
-		}
 
 		if (jsonInput == 'events')
-		{
 			rawJson = FNFAssets.getText(SUtil.getPath() + "assets/data/" + folder.toLowerCase() + "/" + jsonInput.toLowerCase() + '.json').trim();
-		}
 		
 		while (!rawJson.endsWith("}"))
 		{
@@ -148,9 +141,8 @@ class Song
 
 		if (parsedJson.isCheer = null) {
 			parsedJson.isCheer = false;
-			if (parsedJson.song.toLowerCase() == "tutorial") {
+			if (parsedJson.song.toLowerCase() == "tutorial")
 				parsedJson.isCheer = true;
-			}
 		}
 		if (parsedJson.preferredNoteAmount == null) {
 			switch (parsedJson.mania) {
@@ -193,41 +185,36 @@ class Song
 					parsedJson.gf = 'gf-pixel';
 				case 'tank':
 					parsedJson.gf = 'gf-tankmen';
-					if (parsedJson.song.toLowerCase() == "stress") {
+					if (parsedJson.song.toLowerCase() == "stress")
 						parsedJson.gf = "pico-speaker";
-					}
 				default:
 					parsedJson.gf = 'gf';
 			}
 
 		}
 		if (parsedJson.isMoody == null) {
-			if (parsedJson.song.toLowerCase() == 'roses') {
+			if (parsedJson.song.toLowerCase() == 'roses')
 				parsedJson.isMoody = true;
-			} else {
+			else
 				parsedJson.isMoody = false;
-			}
 		}
 		// is spooky means trails on spirit
 		if (parsedJson.isSpooky == null) {
-			if (parsedJson.stage.toLowerCase() == 'mallEvil') {
+			if (parsedJson.stage.toLowerCase() == 'mallEvil')
 				parsedJson.isSpooky = true;
-			} else {
+			else
 				parsedJson.isSpooky = false;
-			}
 		}
-		if (parsedJson.song.toLowerCase() == 'winter-horrorland') {
+		if (parsedJson.song.toLowerCase() == 'winter-horrorland')
 			parsedJson.cutsceneType = "monster";
-		}
-		if (parsedJson.forceJudgements == null) {
+		if (parsedJson.forceJudgements == null)
 			parsedJson.forceJudgements = false;
-		}
-		if (parsedJson.timeSigNumerator == null || parsedJson.timeSigNumerator <= 0) {
+		if (parsedJson.timeSigNumerator == null || parsedJson.timeSigNumerator <= 0)
 			parsedJson.timeSigNumerator = 4;
-		}
-		if (parsedJson.timeSigDenominator == null || parsedJson.timeSigDenominator <= 0) {
+		if (parsedJson.timeSigDenominator == null || parsedJson.timeSigDenominator <= 0)
 			parsedJson.timeSigDenominator = 4;
-		}
+		if (parsedJson.forceLayout == null)
+			parsedJson.forceLayout = 'none';
 		if (parsedJson.cutsceneType == null) {
 			switch (parsedJson.song.toLowerCase()) {
 				case 'roses':
@@ -263,9 +250,8 @@ class Song
 					'normal';
 			}
 		}
-		if (parsedJson.player1 == "bf-pixel" && OptionsHandler.options.stressTankmen) {
+		if (parsedJson.player1 == "bf-pixel" && OptionsHandler.options.stressTankmen)
 			parsedJson.player1 = "bulb-pixel";
-		}
 		// FIX THE CASTING ON WINDOWS/NATIVE
 		// Windows???
 		// trace(songData);

@@ -152,7 +152,6 @@ class TitleState extends MusicBeatState
 		interp.variables.set("pi", Math.PI);
 		interp.variables.set("curMusicName", Main.curMusicName);
 		interp.variables.set("ShaderCustom", ShaderCustom);
-		interp.variables.set("FlxShaderFix", FlxShaderFix);
 		interp.variables.set("ShaderFilter", ShaderFilter);
 		interp.variables.set("Sys",Sys);
 		#if mobile

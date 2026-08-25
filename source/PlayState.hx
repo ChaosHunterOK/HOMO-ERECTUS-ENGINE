@@ -1658,17 +1658,10 @@ class PlayState extends MusicBeatState
 	}
 		var uiJson = CoolUtil.parseJson(FNFAssets.getText(basePath + "assets/images/custom_ui/ui_layouts/ui.json"));
 		var defaultLayout:Dynamic = Reflect.field(uiJson, 'layout');
-		var layoutName:String = SONG.uiLayout;
-		if (layoutName == null || layoutName.trim() == '')
-			layoutName = defaultLayout;
-		if (layoutName == null || layoutName.trim() == '')
-			layoutName = 'default';
-
-		var layoutScript:String = basePath + "assets/images/custom_ui/ui_layouts/" + layoutName + "/" + layoutName + ".hscript";
-		if (!FNFAssets.exists(layoutScript) && defaultLayout != null && layoutName != defaultLayout)
-			layoutName = defaultLayout;
-
-		makeHaxeStateUI("ui", basePath + "assets/images/custom_ui/ui_layouts/" + layoutName + "/", "../" + layoutName + ".hscript");
+		if (SONG.forceLayout != 'none')
+			makeHaxeStateUI("ui", basePath + "assets/images/custom_ui/ui_layouts/" + SONG.forceLayout + "/", "../" + SONG.forceLayout + ".hscript");
+		else if (Reflect.field(uiJson, 'layout') != 'none')
+			makeHaxeStateUI("ui", basePath + "assets/images/custom_ui/ui_layouts/" + Reflect.field(uiJson, 'layout') + "/", "../" + Reflect.field(uiJson, 'layout') + ".hscript");
 		trace('ui done');
 
 		var scriptPushed:Array<String> = [];

@@ -250,7 +250,6 @@ class CustomState extends MusicBeatState
 		interp.variables.set("EdtNote", EdtNote);
 		interp.variables.set("FileParser", FileParser);
 		interp.variables.set("FirstTimeState", FirstTimeState);
-		interp.variables.set("FlxShaderFix", FlxShaderFix);
 		interp.variables.set("FlxUIDropDownMenuCustom", FlxUIDropDownMenuCustom);
 		interp.variables.set("Fake3D", Fake3D);
 		#if VIDEOS_ALLOWED

@@ -2,30 +2,25 @@ import openfl.utils.Assets;
 import openfl.display.BitmapData;
 import openfl.display.ShaderParameterType;
 import openfl.display.ShaderInput;
-import openfl.display.GraphicsShader;
-import flixel.graphics.tile.FlxGraphicsShader;
-import openfl.display.Shader;
-import haxe.io.Bytes;
 import openfl.display.ShaderParameter;
-import haxe.Exception;
-import sys.FileSystem;
-import sys.io.File;
 import flixel.system.FlxAssets.FlxShader;
+import haxe.Exception;
 import haxe.io.Path;
-import openfl.display.DisplayObject;
-import openfl.events.EventDispatcher;
+import Reflect;
+import Std;
 
 using StringTools;
 
-//felt like some stuff were broken
-class Shader extends FlxShaderFix {
+class CustomShaderWrapper extends FlxShader 
+{
     public var shaderData(get, null):Dynamic;
-    private function get_shaderData() {
+    private inline function get_shaderData():Dynamic 
+    {
         return __data;
     }
 
-    public static var entireFuckingCustomVertexHeader:String =
-  " attribute float openfl_Alpha;
+    public static var entireFuckingCustomVertexHeader:String = 
+    "attribute float openfl_Alpha;
     attribute vec4 openfl_ColorMultiplier;
     attribute vec4 openfl_ColorOffset;
     attribute vec4 openfl_Position;
@@ -42,7 +37,7 @@ class Shader extends FlxShaderFix {
     ";
 
     public static var entireFuckingCustomVertexBody:String = 
-   "openfl_Alphav = openfl_Alpha;
+    "openfl_Alphav = openfl_Alpha;
     openfl_TextureCoordv = openfl_TextureCoord;
     if (openfl_HasColorTransform) {
         openfl_ColorMultiplierv = openfl_ColorMultiplier;
@@ -51,9 +46,8 @@ class Shader extends FlxShaderFix {
     gl_Position = openfl_Matrix * openfl_Position;
     ";
 
-    public static var entireFuckingCustomFragmentHeader:String = "
-    
-    varying float openfl_Alphav;
+    public static var entireFuckingCustomFragmentHeader:String = 
+    "varying float openfl_Alphav;
     varying vec4 openfl_ColorMultiplierv;
     varying vec4 openfl_ColorOffsetv;
     varying vec2 openfl_TextureCoordv;
@@ -95,20 +89,16 @@ class Shader extends FlxShaderFix {
     vec2 getCamPos(vec2 uv)
     {
         vec2 texSize = max(openfl_TextureSize, vec2(1.0));
-
         vec2 camMin = _camSize.xy / texSize;
         vec2 camMax = (_camSize.xy + _camSize.zw) / texSize;
-
         return clamp((uv - camMin) / max(camMax - camMin, vec2(0.0001)), vec2(0.0), vec2(1.0));
     }
 
     vec2 camToOg(vec2 uv)
     {
         vec2 texSize = max(openfl_TextureSize, vec2(1.0));
-
         vec2 camMin = _camSize.xy / texSize;
         vec2 camMax = (_camSize.xy + _camSize.zw) / texSize;
-
         return mix(camMin, camMax, clamp(uv, vec2(0.0), vec2(1.0)));
     }
     vec4 textureCam(sampler2D bitmap, vec2 pos) {
@@ -116,7 +106,8 @@ class Shader extends FlxShaderFix {
     }
     ";
 
-    public static var entireFuckingCustomFragmentBody:String = "vec4 color = texture2D (bitmap, openfl_TextureCoordv);
+    public static var entireFuckingCustomFragmentBody:String = 
+    "vec4 color = texture2D (bitmap, openfl_TextureCoordv);
     if (color.a == 0.0) {
         gl_FragColor = vec4 (0.0, 0.0, 0.0, 0.0);
     } else if (openfl_HasColorTransform) {
@@ -137,29 +128,41 @@ class Shader extends FlxShaderFix {
     }
     ";
 
-    public function new(fragCode:String, vertCode:String) {
-        this.glFragmentSource = fragCode.replace("#pragma body", entireFuckingCustomFragmentBody).replace("#pragma header", entireFuckingCustomFragmentHeader).replace(" attribute ", " uniform ");
-        this.glVertexSource = vertCode.replace("#pragma body", entireFuckingCustomVertexBody).replace("#pragma header", entireFuckingCustomVertexHeader);
+    public function new(fragCode:String, vertCode:String) 
+    {
+        var finalFrag = fragCode.replace("#pragma body", entireFuckingCustomFragmentBody)
+                               .replace("#pragma header", entireFuckingCustomFragmentHeader);
+        var finalVert = vertCode.replace("#pragma body", entireFuckingCustomVertexBody)
+                               .replace("#pragma header", entireFuckingCustomVertexHeader);
+
+        this.glFragmentSource = finalFrag;
+        this.glVertexSource = finalVert;
         super();
     }
 
-    public static function create(cShader:String) {
+    public static function create(cShader:String):CustomShaderWrapper 
+    {
         var fragPath = SUtil.getPath() + 'assets/shaders/' + cShader + '.frag';
         var vertPath = SUtil.getPath() + 'assets/shaders/' + cShader + '.vert'; 
 
-        var fragExists:Bool = true;
-        var vertExists:Bool = true;
-        fragExists = FNFAssets.exists(fragPath);
-        vertExists = FNFAssets.exists(vertPath);
-        if (!(fragExists || vertExists)) {
-            throw new Exception("Shader not found.");
+        var fragExists:Bool = FNFAssets.exists(fragPath);
+        var vertExists:Bool = FNFAssets.exists(vertPath);
+
+        if (!fragExists && !vertExists) {
+            throw new Exception("Shader assets not found for: " + cShader);
         }
-        return new Shader(FNFAssets.getText(fragPath), FNFAssets.getText(vertPath));
+
+        var fragSource = fragExists ? FNFAssets.getText(fragPath) : "#pragma header\nvoid main() { #pragma body\n }";
+        var vertSource = vertExists ? FNFAssets.getText(vertPath) : "#pragma header\nvoid main() { #pragma body\n }";
+
+        return new CustomShaderWrapper(fragSource, vertSource);
     }
 
-    public function setValue(name:String, value:Dynamic):Void {
+    public function setValue(name:String, value:Dynamic):Void 
+    {
         var field = Reflect.field(this.data, name);
         if (field == null) return;
+
         if (Std.isOfType(value, Array)) {
             field.value = cast(value, Array<Dynamic>).copy();
         } else {
@@ -173,18 +176,12 @@ class Shader extends FlxShaderFix {
         #end
     }
 
-    public function setValues(values:Map<String, Any>):Void {
+    public function setValues(values:Map<String, Any>):Void 
+    {
         if (values == null) return;
 
         for (key in values.keys()) {
-            var field = Reflect.field(this.data, key);
-            if (field == null) continue;
-
-            var value = values.get(key);
-
-            field.value = Std.isOfType(value, Array) ? value : [value];
-
-            Reflect.setField(this.data, key, field);
+            setValue(key, values.get(key));
         }
     }
 
@@ -232,9 +229,8 @@ class Shader extends FlxShaderFix {
                     default:
                 }
 
-
                 Reflect.setField(__data, name, input);
-                try {Reflect.setField(this, name, input);} catch(e) {}
+                try { Reflect.setField(this, name, input); } catch(e:Dynamic) {}
             }
             else if (!Reflect.hasField(__data, name) || Reflect.field(__data, name) == null)
             {
@@ -307,7 +303,7 @@ class Shader extends FlxShaderFix {
                         }
 
                         Reflect.setField(__data, name, parameter);
-                        try {Reflect.setField(this, name, parameter);} catch(e) {}
+                        try { Reflect.setField(this, name, parameter); } catch(e:Dynamic) {}
 
                     case INT, INT2, INT3, INT4:
                         var parameter = new ShaderParameter<Int>();
@@ -318,15 +314,16 @@ class Shader extends FlxShaderFix {
                         @:privateAccess
                         parameter.__arrayLength = arrayLength;
                         @:privateAccess
-                        parameter.__isBool = true;
+                        parameter.__isBool = false;
                         @:privateAccess
                         parameter.__isUniform = isUniform;
                         @:privateAccess
                         parameter.__length = length;
                         parameter.value = [0, 0, 0, 0];
                         __paramInt.push(parameter);
+
                         Reflect.setField(__data, name, parameter);
-                        try {Reflect.setField(this, name, parameter);} catch(e) {}
+                        try { Reflect.setField(this, name, parameter); } catch(e:Dynamic) {}
 
                     default:
                         var parameter = new ShaderParameter<Float>();
@@ -365,9 +362,7 @@ class Shader extends FlxShaderFix {
                         }
 
                         Reflect.setField(__data, name, parameter);
-                        try {Reflect.setField(this, name, parameter);} catch(e) {}
-
-                        
+                        try { Reflect.setField(this, name, parameter); } catch(e:Dynamic) {}
                 }
             }
 
@@ -377,61 +372,25 @@ class Shader extends FlxShaderFix {
     }
 }
 
-class ShaderCustom extends Shader {
-	
-    public function setCamSize(x:Float, y:Float, width:Float, height:Float) {
+class ShaderCustom extends CustomShaderWrapper 
+{
+    public function setCamSize(x:Float, y:Float, width:Float, height:Float):Void 
+    {
         if (data._camSize != null)
             data._camSize.value = [x, y, width, height];
     }
 
-    public function init(fragCode:String, vertCode:String) {
-
-    }
-    public function new(cShader:String /*, values:Map<String, Any>*/ ) {
-        //var mPath = Paths.modsPath;
-
+    public function new(cShader:String) 
+    {
         var fragPath = SUtil.getPath() + "assets/shaders/" + cShader + ".frag";
         var vertPath = SUtil.getPath() + "assets/shaders/" + cShader + ".vert";
 
-        var glVertexSource = "#pragma header
-        attribute float alpha;
-        attribute vec4 colorMultiplier;
-        attribute vec4 colorOffset;
-        uniform bool hasColorTransform;
-        
-        void main(void)
-        {
-            openfl_Alphav = openfl_Alpha;
-            openfl_TextureCoordv = openfl_TextureCoord;
-            if (openfl_HasColorTransform) {
-                    openfl_ColorMultiplierv = openfl_ColorMultiplier;
-                    openfl_ColorOffsetv = openfl_ColorOffset / 255.0;
-            }
-            gl_Position = openfl_Matrix * openfl_Position;
-            openfl_Alphav = openfl_Alpha * alpha;
-            if (hasColorTransform)
-            {
-                    openfl_ColorOffsetv = colorOffset / 255.0;
-                    openfl_ColorMultiplierv = colorMultiplier;
-            }
-        }".replace("#pragma body", Shader.entireFuckingCustomVertexBody).replace("#pragma header", Shader.entireFuckingCustomVertexHeader);
+        var defaultVert = "#pragma header\nvoid main(void){\n#pragma body\n}";
+        var defaultFrag = "#pragma header\nvoid main(void){\ngl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);\n}";
 
-        var glFragmentSource = "
-        #pragma header
-    
-        void main(void)
-        {
-            gl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);
-        }".replace("#pragma body", Shader.entireFuckingCustomFragmentBody).replace("#pragma header", Shader.entireFuckingCustomFragmentHeader).replace(" attribute ", " uniform ");
+        var fragSource = (fragPath.trim() != "" && FNFAssets.exists(fragPath)) ? FNFAssets.getText(fragPath) : defaultFrag;
+        var vertSource = (vertPath.trim() != "" && FNFAssets.exists(vertPath)) ? FNFAssets.getText(vertPath) : defaultVert;
 
-        if (fragPath.trim() != "" && FNFAssets.exists(fragPath))
-            glFragmentSource = FNFAssets.getText(fragPath);
-        
-        if (vertPath.trim() != "" && FNFAssets.exists(vertPath)) {
-            var vert = FNFAssets.getText(vertPath);
-            glVertexSource = vert;
-        }
-
-        super(glFragmentSource, glVertexSource);
+        super(fragSource, vertSource);
     }
 }
