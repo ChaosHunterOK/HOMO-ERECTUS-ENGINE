@@ -15,9 +15,7 @@ class CustomShaderWrapper extends FlxShader
 {
     public var shaderData(get, null):Dynamic;
     private inline function get_shaderData():Dynamic 
-    {
         return __data;
-    }
 
     public static var entireFuckingCustomVertexHeader:String = 
     "attribute float openfl_Alpha;
@@ -34,6 +32,8 @@ class CustomShaderWrapper extends FlxShader
     uniform vec2 openfl_TextureSize;
     uniform mat4 projectionMatrix;
     uniform mat4 modelViewMatrix;
+    uniform float iTime;
+    uniform float u_time;
     ";
 
     public static var entireFuckingCustomVertexBody:String = 
@@ -47,7 +47,11 @@ class CustomShaderWrapper extends FlxShader
     ";
 
     public static var entireFuckingCustomFragmentHeader:String = 
-    "varying float openfl_Alphav;
+    "#ifdef GL_ES
+    precision mediump float;
+    #endif
+
+    varying float openfl_Alphav;
     varying vec4 openfl_ColorMultiplierv;
     varying vec4 openfl_ColorOffsetv;
     varying vec2 openfl_TextureCoordv;
@@ -56,6 +60,9 @@ class CustomShaderWrapper extends FlxShader
     uniform sampler2D bitmap;
     uniform bool hasTransform;
     uniform bool hasColorTransform;
+    uniform float iTime;
+    uniform float u_time;
+
     vec4 flixel_texture2D(sampler2D bitmap, vec2 coord)
     {
         vec4 color = texture2D(bitmap, coord);
@@ -84,7 +91,8 @@ class CustomShaderWrapper extends FlxShader
         }
         return vec4(0.0, 0.0, 0.0, 0.0);
     }
-    uniform vec4 _camSize; // x, y, w, h
+    
+    uniform vec4 _camSize;
 
     vec2 getCamPos(vec2 uv)
     {
@@ -160,29 +168,33 @@ class CustomShaderWrapper extends FlxShader
 
     public function setValue(name:String, value:Dynamic):Void 
     {
-        var field = Reflect.field(this.data, name);
-        if (field == null) return;
+        if (this.data == null) return;
+        var prop:Dynamic = Reflect.field(this.data, name);
+        if (prop == null) return;
 
         if (Std.isOfType(value, Array)) {
-            field.value = cast(value, Array<Dynamic>).copy();
+            prop.value = cast(value, Array<Dynamic>).copy();
         } else {
-            field.value = [value];
+            prop.value = [value];
         }
-        Reflect.setField(this.data, name, field);
 
         #if lime
-        if (field.__uniform != null)
-            field.__uniform = null;
+        if (Reflect.hasField(prop, "__uniform") && prop.__uniform != null)
+            prop.__uniform = null;
         #end
     }
 
-    public function setValues(values:Map<String, Any>):Void 
+    public function setValues(values:Map<String, Dynamic>):Void 
     {
         if (values == null) return;
-
         for (key in values.keys()) {
             setValue(key, values.get(key));
         }
+    }
+
+    public function update(elapsed:Float):Void {
+        if (data.iTime != null) data.iTime.value[0] += elapsed;
+        if (data.u_time != null) data.u_time.value[0] += elapsed;
     }
 
     @:noCompletion private override function __processGLData(source:String, storageType:String):Void
@@ -380,17 +392,54 @@ class ShaderCustom extends CustomShaderWrapper
             data._camSize.value = [x, y, width, height];
     }
 
-    public function new(cShader:String) 
-    {
+    public function new(cShader:String /*, values:Map<String, Any>*/ ) {
+        //var mPath = Paths.modsPath;
+
         var fragPath = SUtil.getPath() + "assets/shaders/" + cShader + ".frag";
         var vertPath = SUtil.getPath() + "assets/shaders/" + cShader + ".vert";
 
-        var defaultVert = "#pragma header\nvoid main(void){\n#pragma body\n}";
-        var defaultFrag = "#pragma header\nvoid main(void){\ngl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);\n}";
+        var glVertexSource = "#pragma header
+        attribute float alpha;
+        attribute vec4 colorMultiplier;
+        attribute vec4 colorOffset;
+        uniform bool hasColorTransform;
+        
+        void main(void)
+        {
+            openfl_Alphav = openfl_Alpha;
+            openfl_TextureCoordv = openfl_TextureCoord;
+            if (openfl_HasColorTransform) {
+                    openfl_ColorMultiplierv = openfl_ColorMultiplier;
+                    openfl_ColorOffsetv = openfl_ColorOffset / 255.0;
+            }
+            gl_Position = openfl_Matrix * openfl_Position;
+            openfl_Alphav = openfl_Alpha * alpha;
+            if (hasColorTransform)
+            {
+                    openfl_ColorOffsetv = colorOffset / 255.0;
+                    openfl_ColorMultiplierv = colorMultiplier;
+            }
+        }".replace("#pragma body", CustomShaderWrapper.entireFuckingCustomVertexBody)
+          .replace("#pragma header", CustomShaderWrapper.entireFuckingCustomVertexHeader);
 
-        var fragSource = (fragPath.trim() != "" && FNFAssets.exists(fragPath)) ? FNFAssets.getText(fragPath) : defaultFrag;
-        var vertSource = (vertPath.trim() != "" && FNFAssets.exists(vertPath)) ? FNFAssets.getText(vertPath) : defaultVert;
+        var glFragmentSource = "
+        #pragma header
+    
+        void main(void)
+        {
+            gl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);
+        }".replace("#pragma body", CustomShaderWrapper.entireFuckingCustomFragmentBody)
+          .replace("#pragma header", CustomShaderWrapper.entireFuckingCustomFragmentHeader)
+          .replace(" attribute ", " uniform ");
 
-        super(fragSource, vertSource);
+        if (fragPath.trim() != "" && FNFAssets.exists(fragPath))
+            glFragmentSource = FNFAssets.getText(fragPath);
+        
+        if (vertPath.trim() != "" && FNFAssets.exists(vertPath)) {
+            var vert = FNFAssets.getText(vertPath);
+            glVertexSource = vert;
+        }
+
+        super(glFragmentSource, glVertexSource);
     }
 }
