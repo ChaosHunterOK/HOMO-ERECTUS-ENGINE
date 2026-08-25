@@ -32,8 +32,6 @@ class CustomShaderWrapper extends FlxShader
     uniform vec2 openfl_TextureSize;
     uniform mat4 projectionMatrix;
     uniform mat4 modelViewMatrix;
-    uniform float iTime;
-    uniform float u_time;
     ";
 
     public static var entireFuckingCustomVertexBody:String = 
@@ -60,8 +58,6 @@ class CustomShaderWrapper extends FlxShader
     uniform sampler2D bitmap;
     uniform bool hasTransform;
     uniform bool hasColorTransform;
-    uniform float iTime;
-    uniform float u_time;
 
     vec4 flixel_texture2D(sampler2D bitmap, vec2 coord)
     {
@@ -190,11 +186,6 @@ class CustomShaderWrapper extends FlxShader
         for (key in values.keys()) {
             setValue(key, values.get(key));
         }
-    }
-
-    public function update(elapsed:Float):Void {
-        if (data.iTime != null) data.iTime.value[0] += elapsed;
-        if (data.u_time != null) data.u_time.value[0] += elapsed;
     }
 
     @:noCompletion private override function __processGLData(source:String, storageType:String):Void
