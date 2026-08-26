@@ -16,6 +16,7 @@ class StrumNote extends FlxSprite
 	public var noteData:Int = 0;
 	public var direction:Float = 90;
 	public var downScroll:Bool = false;
+	public var downscroll(get, set):Bool;
 	public var sustainReduce:Bool = true;
 	public var isPixelNote:Bool = false;
 	private var player:Int;
@@ -26,6 +27,15 @@ class StrumNote extends FlxSprite
 	public var holdEnding:Bool = false;
 	var wasHolding:Bool = false;
 	public var opponentIndex:Int = 0;
+
+	private inline function get_downscroll():Bool
+		return downScroll;
+
+	private inline function set_downscroll(value:Bool):Bool
+	{
+		downScroll = value;
+		return value;
+	}
 
 	public function new(x:Float, y:Float, leData:Int, player:Int) {
 		animOffsets = new Map<String, Array<Float>>();

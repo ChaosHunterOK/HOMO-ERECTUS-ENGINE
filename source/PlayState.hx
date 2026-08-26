@@ -3483,23 +3483,14 @@ class PlayState extends MusicBeatState
 		#end
 	}
 
-	public function checkEventNote() {
+	public function checkEventNote()
 		Events.checkEventNote(this);
-	}
-
 	public function changeCharacterCore(charName:String, charType:Int, ?deleteBefore:Bool = false):Void
-	{
 		Events.changeCharacterCore(this, charName, charType, deleteBefore);
-	}
-
 	function changeCharacter(value1:String, value2:String, value3:String):Void
-	{
 		Events.changeCharacter(this, value1, value2, value3);
-	}
-
-	public function triggerEventNote(eventName:String, value1:String, value2:String, value3:String) {
+	public function triggerEventNote(eventName:String, value1:String, value2:String, value3:String)
 		Events.triggerEventNote(this, eventName, value1, value2, value3);
-	}
 	function endSong():Void
 	{
 		endingSong = true;
@@ -3562,9 +3553,8 @@ class PlayState extends MusicBeatState
 			doof.finishThing = endForReal;
 			doof.cameras = [camHUD];
 			schoolIntro(doof, false);
-		} else if (!endingCutscene) {
+		} else if (!endingCutscene)
 			endForReal();
-		}
 		
 		callAllHScript('onEndSong', [SONG.song]);
 	}
