@@ -530,8 +530,6 @@ class Note extends DynamicSprite
 				prevNote.scale.y = prevNote.getSustainScale();
 				prevNote.updateHitbox();
 			}
-			scale.y = getSustainScale();
-			updateHitbox();
 		}
 		else
 		{
