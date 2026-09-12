@@ -634,6 +634,7 @@ class PlayState extends MusicBeatState
 		interp.variables.set("playerOneTurn", function() {});
 		interp.variables.set("playerOneMiss", function() {});
 		interp.variables.set("playerOneSing", function() {});
+		interp.variables.set("onNoteSkinTypeChanged", function(?type:String = null, ?player:Int = -1) {});
 		interp.variables.set("skipCountdown", function() {return skipCountdown;});
 		interp.variables.set("songStart", function(song) {});
 		interp.variables.set("onPause", function() {});
@@ -1120,6 +1121,8 @@ class PlayState extends MusicBeatState
 			for (strum in enemyStrums.members)
 				if (strum != null) strum.reloadSkin();
 		}
+
+		callAllHScript("onNoteSkinTypeChanged", [resolvedType, player]);
 
 		return true;
 	}
