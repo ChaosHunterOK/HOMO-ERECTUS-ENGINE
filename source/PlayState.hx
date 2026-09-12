@@ -1144,6 +1144,7 @@ class PlayState extends MusicBeatState
 	var useSongBar:Bool = true;
 	var songName:FlxText;
 	var uiSmelly:TUI;
+	var ohNoteskinType:String;
 	var basePath = SUtil.getPath();
 	override public function create()
 	{
@@ -1294,6 +1295,7 @@ class PlayState extends MusicBeatState
 			controlsPlayerTwo.setKeyboardScheme(Duo(false));
 		if (SONG == null)
 			SONG = Song.loadFromJson('tutorial');
+		ohNoteskinType = SONG.uiType;
 		
 		if (OptionsHandler.options.showSplashes)
 		{
@@ -1920,6 +1922,12 @@ class PlayState extends MusicBeatState
 			else
 				startCountdown();
 		}
+
+	function cuhhCuhhNoteCuhh():Void
+	{
+		if (ohNoteskinType != null && SONG.uiType != ohNoteskinType)
+			setNoteSkinType(ohNoteskinType);
+	}
 
 	var startTimer:FlxTimer;
 	var perfectModeOld:Bool = false;
@@ -3101,9 +3109,11 @@ class PlayState extends MusicBeatState
 			deathCounter++;
 			
 			if (inALoop) {
+				cuhhCuhhNoteCuhh();
 				cleanupMemory();
 				FlxG.resetState();
 			} else {
+				cuhhCuhhNoteCuhh();
 				// 1 / 1000 chance for Gitaroo Man easter egg
 				if (FlxG.random.bool(0.1) && !chartingMode)
 					LoadingState.loadAndSwitchState(new GitarooPause());
