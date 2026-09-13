@@ -12,7 +12,6 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
   static final FRAMERATE_DEFAULT:Int = 24;
   public var strumNote:StrumNote;
   public var glow:FlxSprite;
-  var sparks:FlxSprite;
   public var ending:Bool = false;
 
   public function new(strumNote:StrumNote)
@@ -42,9 +41,6 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     var curUiType:TUI = Reflect.field(Judgement.uiJson, PlayState.SONG.uiType);
     glow = new FlxSprite();
     add(glow);
-
-    sparks = new FlxSprite();
-    add(sparks);
     if (PlayState.SONG == null) {
         trace("smth judgement ui error");
         return;
@@ -75,45 +71,30 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
         var finishSignal = Reflect.field(glow.animation, "onFinish");
         if (finishSignal != null)
-        {
             Reflect.callMethod(finishSignal, Reflect.field(finishSignal, "add"), [onAnimationFinished]);
-        }
         else
-        {
             glow.animation.finishCallback = onAnimationFinished;
-        }
         if (glow.animation.getByName('holdCoverStart' + colorTitle) == null && glow.animation.getByName('holdCoverStart') != null)
-        {
             glow.animation.addByPrefix('holdCoverStart' + colorTitle, 'holdCoverStart', FRAMERATE_DEFAULT, false);
-        }
         if (glow.animation.getByName('holdCover' + colorTitle) == null && glow.animation.getByName('holdCover') != null)
-        {
             glow.animation.addByPrefix('holdCover' + colorTitle, 'holdCover', FRAMERATE_DEFAULT, true);
-        }
         if (glow.animation.getByName('holdCoverEnd' + colorTitle) == null && glow.animation.getByName('holdCoverEnd') != null)
-        {
             glow.animation.addByPrefix('holdCoverEnd' + colorTitle, 'holdCoverEnd', FRAMERATE_DEFAULT, false);
-        }
     //}
 
     if (strumNote.isPixelNote){
       glow.antialiasing = false;
-      sparks.antialiasing = false;
       this.antialiasing = false;
     }
 
     glow.alpha = 0.8 * strumNote.alpha;
-    sparks.alpha = 0.8 * strumNote.alpha;
     this.alpha = 0.8 * strumNote.alpha;
 
     glow.visible = false;
-    sparks.visible = false;
     this.visible = false;
 
     if (glow.animation.getAnimationList().length < 3)
-    {
       trace('WARNING: NoteHoldCover failed to initialize all animations.');
-    }
   }
 
   public override function update(elapsed):Void
@@ -122,30 +103,25 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     var a = 0.8 * strumNote.alpha;
     this.alpha = a;
     if (glow != null) glow.alpha = a;
-    if (sparks != null) sparks.alpha = a;
   }
 
   public function playStart():Void
   {
     this.visible = true;
     glow.visible = true;
-    if (sparks != null) sparks.visible = true;
     glow.setPosition(this.x, this.y);
     var colorIdx = getColorIdx();
     var color = Note.colArray[colorIdx];
     var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
     var anim = 'holdCoverStart' + colorTitle;
     if (glow.animation.curAnim == null || glow.animation.curAnim.name != anim)
-    {
         glow.animation.play(anim, true);
-    }
   }
 
   public function playContinue():Void
   {
     this.visible = true;
     glow.visible = true;
-    if (sparks != null) sparks.visible = true;
     glow.setPosition(this.x, this.y);
     var colorIdx = getColorIdx();
     var color = Note.colArray[colorIdx];
@@ -155,18 +131,14 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     if (glow.animation.curAnim != null)
     {
       var curName = glow.animation.curAnim.name;
-      var isPlayingStart = StringTools.startsWith(curName, 'holdCover' + colorTitle);
+      var isPlayingStart = StringTools.startsWith(curName, animName);
       var isPlayingContinue = (curName == animName);
       
       if (!isPlayingStart && !isPlayingContinue)
-      {
         glow.animation.play(animName);
-      }
     }
     else
-    {
       glow.animation.play(animName);
-    }
   }
 
     public function playEnd():Void
@@ -175,7 +147,6 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
         this.visible = true;
         glow.visible = true;
-        if (sparks != null) sparks.visible = true;
 
         glow.setPosition(this.x, this.y);
 
@@ -193,7 +164,6 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     this.visible = false;
 
     if (glow != null) glow.visible = false;
-    if (sparks != null) sparks.visible = false;
   }
 
   public override function revive():Void
@@ -202,12 +172,10 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
     this.visible = true;
     this.alpha = 0.8 * strumNote.alpha;
-    if (strumNote.isPixelNote){
+    if (strumNote.isPixelNote)
       this.antialiasing = false;
-    }
 
     if (glow != null) glow.visible = true;
-    if (sparks != null) sparks.visible = true;
   }
 
   public function onAnimationFinished(animationName:String):Void
@@ -217,14 +185,11 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
     
     if (StringTools.startsWith(animationName, 'holdCoverStart' + colorTitle))
-    {
       playContinue();
-    }
     else if (StringTools.startsWith(animationName, 'holdCoverEnd' + colorTitle))
     {
         ending = false;
 
-        if (sparks != null) sparks.visible = false;
         if (glow != null) glow.visible = false;
 
         this.visible = false;
