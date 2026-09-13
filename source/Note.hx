@@ -202,7 +202,7 @@ class Note extends DynamicSprite
 			updateHitbox();
 			offsetX -= width / 2;
 			if (isPixel) offsetX += 30;
-			if (prevNote.isSustainNote)
+			if (prevNote.isSustainNote && prevNote.animation != null)
 			{
 				var prevAnimID = prevNote.getAnimID(mania);
 				prevNote.animation.play(colArray[prevAnimID] + 'hold');
@@ -523,7 +523,7 @@ class Note extends DynamicSprite
 
 			if (isPixel)
 				offsetX += 30;
-			if (prevNote != null && prevNote.isSustainNote)
+			if (prevNote != null && prevNote.isSustainNote && prevNote.animation != null)
 			{
 				prevNote.animation.play(colArray[animToPlay] + 'hold');
 

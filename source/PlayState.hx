@@ -206,6 +206,7 @@ class PlayState extends MusicBeatState
 
 	public var notes:FlxTypedGroup<Note>;
 	private var unspawnNotes:Array<Note> = [];
+	private var pendingNoteSkinReload:Bool = false;
 	public var eventNotes:Array<EventNote> = [];
 	// var curVideo:Null<Dynamic> = null;
 
@@ -1107,8 +1108,7 @@ class PlayState extends MusicBeatState
 
 		for (note in notes)
 			if (note != null) note.reloadSkin();
-		for (note in unspawnNotes)
-			if (note != null) note.reloadSkin();
+		pendingNoteSkinReload = true;
 
 		var refreshPlayer = (player == 0 || player < 0);
 		var refreshEnemy = (player == 1 || player < 0);
@@ -2983,6 +2983,7 @@ class PlayState extends MusicBeatState
 			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
 			{
 				var dunceNote:Note = unspawnNotes[0];
+				if (pendingNoteSkinReload && dunceNote != null) dunceNote.reloadSkin();
 				notes.insert(0, dunceNote);
 				unspawnNotes.splice(0, 1);
 			}
@@ -3160,6 +3161,7 @@ class PlayState extends MusicBeatState
 			if (unspawnNotes[0].strumTime - Conductor.songPosition < 1500)
 			{
 				var dunceNote:Note = unspawnNotes[0];
+				if (pendingNoteSkinReload && dunceNote != null) dunceNote.reloadSkin();
 				notes.add(dunceNote);
 
 				callAllHScript("noteLoaded", [dunceNote]);
