@@ -25,6 +25,7 @@ import Discord.DiscordClient;
 #end
 #end
 
+import WindowsData;
 using StringTools;
 
 typedef WindowConfig = {
@@ -70,6 +71,7 @@ class Main extends Sprite
     }
 
     private function init(?E:Event):Void {
+        WindowsData.setWindowColorMode(WindowColorMode.DARK);
         if (hasEventListener(Event.ADDED_TO_STAGE))
             removeEventListener(Event.ADDED_TO_STAGE, init);
 

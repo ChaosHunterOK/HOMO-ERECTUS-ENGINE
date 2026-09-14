@@ -13,6 +13,27 @@ package;
 #include <tchar.h>
 #include <dwmapi.h>
 #include <winuser.h>
+
+static BOOL CALLBACK __WindowsData_EnumProc(HWND hwnd, LPARAM lParam)
+{
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    if (pid == GetCurrentProcessId() && IsWindowVisible(hwnd) && GetWindow(hwnd, GW_OWNER) == NULL)
+    {
+        *((HWND*)lParam) = hwnd;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static HWND __WindowsData_GetGameWindow()
+{
+    HWND result = NULL;
+    EnumWindows(__WindowsData_EnumProc, (LPARAM)&result);
+    if (result == NULL)
+        result = GetActiveWindow();
+    return result;
+}
 ')
 #elseif linux
 @:headerCode("#include <stdio.h>")
@@ -56,7 +77,8 @@ class WindowsData
 	#if windows
 	@:functionCode('
         int darkMode = mode;
-        HWND window = GetActiveWindow();
+        HWND window = __WindowsData_GetGameWindow();
+        if (window == NULL) return;
         if (S_OK != DwmSetWindowAttribute(window, 19, &darkMode, sizeof(darkMode))) {
             DwmSetWindowAttribute(window, 20, &darkMode, sizeof(darkMode));
         }
@@ -82,7 +104,8 @@ class WindowsData
 	}
 
 	@:functionCode('
-	HWND window = GetActiveWindow();
+	HWND window = __WindowsData_GetGameWindow();
+	if (window == NULL) return;
 	SetWindowLong(window, GWL_EXSTYLE, GetWindowLong(window, GWL_EXSTYLE) ^ WS_EX_LAYERED);
 	')
 	@:noCompletion
@@ -91,18 +114,19 @@ class WindowsData
 	}
 
 	@:functionCode('
-        HWND window = GetActiveWindow();
+        HWND window = __WindowsData_GetGameWindow();
+        if (window == NULL) return alpha;
 
 		float a = alpha;
 
-		if (alpha > 1) {
+		if (a > 1) {
 			a = 1;
-		} 
-		if (alpha < 0) {
+		}
+		if (a < 0) {
 			a = 0;
 		}
 
-       	SetLayeredWindowAttributes(window, 0, (255 * (a * 100)) / 100, LWA_ALPHA);
+       	SetLayeredWindowAttributes(window, 0, (BYTE)(a * 255), LWA_ALPHA);
 
     ')
 	/**
@@ -117,7 +141,7 @@ class WindowsData
 	#end
 }
 
-@:enum abstract WindowColorMode(Int)
+enum abstract WindowColorMode(Int)
 {
 	var DARK:WindowColorMode = 1;
 	var LIGHT:WindowColorMode = 0;
