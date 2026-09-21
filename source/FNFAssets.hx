@@ -3,7 +3,6 @@ package;
 // A helper class to make supporting web easier
 //#if sys
 import sys.FileSystem;
-import animateatlas.AtlasFrameMaker;
 import sys.io.File;
 //#end
 import openfl.utils.Assets;

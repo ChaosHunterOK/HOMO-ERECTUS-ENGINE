@@ -1,4 +1,4 @@
-package flixel.system;
+package flixel.sound;
 
 import flash.events.Event;
 import flash.events.IEventDispatcher;
@@ -11,7 +11,7 @@ import flixel.FlxG;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.system.FlxAssets.FlxSoundAsset;
-//import flixel.sound.FlxSoundGroup;
+import flixel.sound.FlxSoundGroup;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxStringUtil;
 import openfl.Assets;
@@ -584,7 +584,7 @@ class FlxSound extends FlxBasic
 	/**
 	 * Call after adjusting the volume to update the sound channel's settings.
 	 */
-	@:allow(flixel.system.FlxSoundGroup)
+	@:allow(flixel.sound.FlxSoundGroup)
 	function updateTransform():Void
 	{
 		_transform.volume = #if FLX_SOUND_SYSTEM (FlxG.sound.muted ? 0 : 1) * FlxG.sound.volume * #end

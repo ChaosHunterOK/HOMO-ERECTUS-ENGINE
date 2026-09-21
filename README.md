@@ -46,6 +46,9 @@ take down mods that don't follow this rule.
 - [CopiluCuSarmale] (https://github.com/ChaosHunterOK) - Main programmer
 - [Saunter] (https://github.com/table-coder) - Programmer
 
+## Misc
+- Psych Team
+
 
 ## Build instructions
 
@@ -67,7 +70,7 @@ The link to that is on the [HaxeFlixel website](https://haxeflixel.com/documenta
 Other installations you'd need is the additional libraries, a fully updated list will be in `Project.xml` in the project root, but here are the one's I'm using as of writing.
 
 ```
-haxelib install flixel 5.2.2
+haxelib install flixel 5.3.1
 haxelib install flixel-addons 3.0.2
 
 haxelib install lime 8.0.2
@@ -80,7 +83,7 @@ haxelib install json2object
 haxelib install uniontypes
 haxelib install hxcpp-debug-server
 haxelib install hxvlc 1.5.0
-haxelib install flxanimate 3.0.4
+haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate 768740a56b26aa0c072720e0d1236b94afe68e3e
 ```
 
 Well, if you already had flixel and flixel-addons installed with a recent version, you'll have to change it in order to compile.

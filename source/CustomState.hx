@@ -15,7 +15,7 @@ import flixel.FlxCamera;
 import lime.utils.Assets;
 import flixel.group.FlxSpriteGroup;
 import Section.SwagSection;
-import flixel.system.FlxSound;
+import flixel.sound.FlxSound;
 import Song.SwagSong;
 import flixel.FlxBasic;
 import openfl.geom.Matrix;

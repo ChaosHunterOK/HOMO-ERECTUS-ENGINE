@@ -3,15 +3,14 @@ package;
 import flixel.system.frontEnds.CameraFrontEnd;
 import flixel.system.frontEnds.BitmapFrontEnd;
 import flixel.system.FlxAssets.FlxSoundAsset;
-import flixel.system.FlxSound;
-import flixel.system.FlxSoundGroup;
+import flixel.sound.FlxSound;
+import flixel.sound.FlxSoundGroup;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.system.frontEnds.SoundFrontEnd;
 import openfl.display.DisplayObject;
 import flixel.input.keyboard.FlxKeyboard;
 import flixel.system.frontEnds.InputFrontEnd;
 import flixel.math.FlxRect;
-import animateatlas.AtlasFrameMaker;
 import flixel.text.FlxText;
 import flixel.FlxState;
 import openfl.filters.ShaderFilter;
@@ -40,12 +39,13 @@ import android.FlxHitbox;
 import android.FlxVirtualPad;
 import flixel.ui.FlxButton;
 #end
+
 class PluginManager {
     public static var interp = new InterpEx();
     public static var hscriptClasses:Array<String> = [];
     public static var hscriptInstances:Array<Dynamic> = [];
     //private static var nextId:Int = 1;
-	@:access(hscript.InterpEx)
+    @:access(hscript.InterpEx)
     public static function init() 
     {
         //checks if the text file that has the names of the classes stored exists, otherwise this function will do nothing.
@@ -54,11 +54,11 @@ class PluginManager {
         
         //split lines of text, given to separate them into different names. something basic but powerful.
         var filelist = hscriptClasses = CoolUtil.coolTextFile(SUtil.getPath() + "assets/scripts/plugin_classes/classes.txt");
-		addVarsToInterp(interp); //this little thing is responsible for adding the corresponding variables.
+        addVarsToInterp(interp); //this little thing is responsible for adding the corresponding variables.
         HscriptGlobals.init();
         for (file in filelist) {
             if (FNFAssets.exists(SUtil.getPath() + "assets/scripts/plugin_classes/" + file + ".hx")) {
-				interp.addModule(FNFAssets.getText(SUtil.getPath() + "assets/scripts/plugin_classes/" + file + '.hx'));
+                interp.addModule(FNFAssets.getText(SUtil.getPath() + "assets/scripts/plugin_classes/" + file + '.hx'));
             }
         }
         trace(InterpEx._scriptClassDescriptors);
@@ -77,8 +77,8 @@ class PluginManager {
     }
 
     public static function instanceExClass(classname:String, args:Array<Dynamic> = null) {
-		return interp.createScriptClassInstance(classname, args);
-	}
+        return interp.createScriptClassInstance(classname, args);
+    }
 
     public static function addVarsToInterp<T:Interp>(interp:T):T {
         #if mobile
@@ -86,19 +86,18 @@ class PluginManager {
         interp.variables.set("FlxDPadMode", FlxDPadMode);
         interp.variables.set("FlxVirtualPad", FlxVirtualPad);
         #end
-		interp.variables.set("Conductor", Conductor);
-		interp.variables.set("FlxSprite", DynamicSprite);
-		interp.variables.set("FlxSound", DynamicSound);
-		interp.variables.set("FlxAtlasFrames", DynamicSprite.DynamicAtlasFrames);
-		interp.variables.set("FlxGroup", flixel.group.FlxGroup);
-		interp.variables.set("FlxAngle", flixel.math.FlxAngle);
-		interp.variables.set("FlxMath", flixel.math.FlxMath);
-		interp.variables.set("TitleState", TitleState);
-		interp.variables.set("makeRangeArray", CoolUtil.numberArray);
-		interp.variables.set("FNFAssets", FNFAssets);
+        interp.variables.set("Conductor", Conductor);
+        interp.variables.set("FlxSprite", DynamicSprite);
+        interp.variables.set("FlxSound", DynamicSound);
+        interp.variables.set("FlxAtlasFrames", DynamicSprite.DynamicAtlasFrames);
+        interp.variables.set("FlxGroup", flixel.group.FlxGroup);
+        interp.variables.set("FlxAngle", flixel.math.FlxAngle);
+        interp.variables.set("FlxMath", flixel.math.FlxMath);
+        interp.variables.set("TitleState", TitleState);
+        interp.variables.set("makeRangeArray", CoolUtil.numberArray);
+        interp.variables.set("FNFAssets", FNFAssets);
         interp.variables.set("CoolUtil", CoolUtil);
         interp.variables.set("Main", Main);
-        interp.variables.set("AtlasFrameMaker", AtlasFrameMaker);
         interp.variables.set("FlxCamera", FlxCamera);
         interp.variables.set("ShaderCustom", ShaderCustom);
         interp.variables.set("ShaderFilter", ShaderFilter);
@@ -111,19 +110,19 @@ class PluginManager {
         #else
         interp.variables.set("mobile", false);
         #end
-		// : )
-		interp.variables.set("FlxG", HscriptGlobals);
-		interp.variables.set("FlxTimer", flixel.util.FlxTimer);
-		interp.variables.set("FlxTween", flixel.tweens.FlxTween);
-		interp.variables.set("Std", Std);
+        // : )
+        interp.variables.set("FlxG", HscriptGlobals);
+        interp.variables.set("FlxTimer", flixel.util.FlxTimer);
+        interp.variables.set("FlxTween", flixel.tweens.FlxTween);
+        interp.variables.set("Std", Std);
         interp.variables.set("SUtil", SUtil);
-		interp.variables.set("StringTools", StringTools);
-		interp.variables.set("MetroSprite", MetroSprite);
-		interp.variables.set("FlxTrail", FlxTrail);
-		interp.variables.set("FlxEase", FlxEase);
-		interp.variables.set("Reflect", Reflect);
-		interp.variables.set("Character", Character);
-		interp.variables.set("OptionsHandler", OptionsHandler);
+        interp.variables.set("StringTools", StringTools);
+        interp.variables.set("MetroSprite", MetroSprite);
+        interp.variables.set("FlxTrail", FlxTrail);
+        interp.variables.set("FlxEase", FlxEase);
+        interp.variables.set("Reflect", Reflect);
+        interp.variables.set("Character", Character);
+        interp.variables.set("OptionsHandler", OptionsHandler);
         interp.variables.set("FlxText", FlxText);
         interp.variables.set("FlxTextBorderStyle", FlxTextBorderStyle);
         interp.variables.set("FlxBackdrop", FlxBackdrop);
@@ -132,41 +131,39 @@ class PluginManager {
         interp.variables.set("FlixG", FlxG);
         interp.variables.set("PluginManager", PluginManager);
         interp.variables.set("callExternClass", instanceExClass); //Call modules?? :D
-		interp.variables.set("globalVars", Main.globalVars);
+        interp.variables.set("globalVars", Main.globalVars);
         interp.variables.set("Sprite", flash.display.Sprite);
-		interp.variables.set('addHaxeLibrary', function (libName:String, ?libFolder:String = '',varName:String = '') {
-			try {
+        interp.variables.set('addHaxeLibrary', function (libName:String, ?libFolder:String = '',varName:String = '') {
+            try {
                 if(varName.length == 0)
                     varName = libName;
-				var str:String = '';
-				if(libFolder.length > 0)
-					str = libFolder + '.';
-				interp.variables.set(varName, Type.resolveClass(str + libName));
-			}
-			catch (e) {
-				openfl.Lib.application.window.alert(e.message, "ADD LIBRARY FAILED BRUH");
-			}
-		});
+                var str:String = '';
+                if(libFolder.length > 0)
+                    str = libFolder + '.';
+                interp.variables.set(varName, Type.resolveClass(str + libName));
+            }
+            catch (e) {
+                openfl.Lib.application.window.alert(e.message, "ADD LIBRARY FAILED BRUH");
+            }
+        });
 
         //interp.variables.set("GitarooPause", GitarooPause);
-		#if debug
-		interp.variables.set("debug", true);
-		#else
-		interp.variables.set("debug", false);
-		#end
+        #if debug
+        interp.variables.set("debug", true);
+        #else
+        interp.variables.set("debug", false);
+        #end
 
         return interp;
     }
 }
+
 class HscriptGlobals {
     public static var VERSION = FlxG.VERSION;
     public static var autoPause(get, set):Bool;
     public static var bitmap(get, never):BitmapFrontEnd;
-    // no bitmapLog
     public static var camera(get ,set):FlxCamera;
     public static var cameras(get, never):CameraFrontEnd;
-    // no console frontend
-    // no debugger frontend
     public static var drawFramerate(get, set):Int;
     public static var elapsed(get, never):Float;
     public static var fixedTimestep(get, set):Bool;
@@ -176,30 +173,23 @@ class HscriptGlobals {
     public static var height(get, never):Int;
     public static var initialHeight(get, never):Int;
     public static var initialWidth(get, never):Int;
-    //public static var initialZoom(get, never):Float;
     public static var inputs(get, never):InputFrontEnd;
     public static var keys(get, never):FlxKeyboard;
-    // no log
     public static var maxElapsed(get, set):Float;
     public static var mouse = FlxG.mouse;
-    // no plugins
     public static var random= FlxG.random;
     public static var renderBlit(get, never):Bool;
     public static var renderMethod(get, never):FlxRenderMethod;
     public static var renderTile(get, never):Bool;
-    // no save because there are other ways to access it and i don't trust you guys
     public static var sound(default, null):HscriptSoundFrontEndWrapper;
     public static var stage(get, never):Stage;
     public static var state(get, never):FlxState;
-    // no swipes because no mobile : )
     public static var timeScale(get, set):Float;
-    // no touch because no mobile : )
     public static var updateFramerate(get,set):Int;
-    // no vcr : )
-    // no watch : )
     public static var width(get, never):Int;
     public static var worldBounds(get, never):FlxRect;
     public static var worldDivisions(get, set):Int;
+
     public static function init() {
         sound = new HscriptSoundFrontEndWrapper(FlxG.sound);
     }
@@ -215,36 +205,36 @@ class HscriptGlobals {
     static function set_autoPause(b:Bool):Bool {
         return FlxG.autoPause = b;
     }
-	static function get_drawFramerate():Int
-	{
-		return FlxG.drawFramerate;
-	}
+    static function get_drawFramerate():Int
+    {
+        return FlxG.drawFramerate;
+    }
 
-	static function set_drawFramerate(b:Int):Int
-	{
-		return FlxG.drawFramerate = b;
-	}
+    static function set_drawFramerate(b:Int):Int
+    {
+        return FlxG.drawFramerate = b;
+    }
     static function get_elapsed():Float {
         return FlxG.elapsed;
     }
-	static function get_fixedTimestep():Bool
-	{
-		return FlxG.fixedTimestep;
-	}
+    static function get_fixedTimestep():Bool
+    {
+        return FlxG.fixedTimestep;
+    }
 
-	static function set_fixedTimestep(b:Bool):Bool
-	{
-		return FlxG.fixedTimestep = b;
-	}
-	static function get_fullscreen():Bool
-	{
-		return FlxG.fullscreen;
-	}
+    static function set_fixedTimestep(b:Bool):Bool
+    {
+        return FlxG.fixedTimestep = b;
+    }
+    static function get_fullscreen():Bool
+    {
+        return FlxG.fullscreen;
+    }
 
-	static function set_fullscreen(b:Bool):Bool
-	{
-		return FlxG.fullscreen = b;
-	}
+    static function set_fullscreen(b:Bool):Bool
+    {
+        return FlxG.fullscreen = b;
+    }
     static function get_height():Int {
         return FlxG.height;
     }
@@ -266,9 +256,6 @@ class HscriptGlobals {
     static function get_initialWidth():Int {
         return FlxG.initialWidth;
     }
-    //static function get_initialZoom():Float {
-    //    return FlxG.initialZoom;
-    //}
     static function get_inputs() {
         return FlxG.inputs;
     }
@@ -317,10 +304,10 @@ class HscriptGlobals {
     static function get_worldDivisions() {
         return FlxG.worldDivisions;
     }
-	static function set_worldDivisions(s)
-	{
-		return FlxG.worldDivisions = s;
-	}
+    static function set_worldDivisions(s)
+    {
+        return FlxG.worldDivisions = s;
+    }
 
     public static function addChildBelowMouse<T:DisplayObject>(Child:T, IndexModifier:Int = 0):T {
         return FlxG.addChildBelowMouse(Child, IndexModifier);
@@ -331,12 +318,11 @@ class HscriptGlobals {
     public static function collide(?ObjectOrGroup1, ?ObjectOrGroup2, ?NotifyCallback) {
         return FlxG.collide(ObjectOrGroup1, ObjectOrGroup2, NotifyCallback);
     }
-    // no open url because i don't trust you guys
 
-	public static function overlap(?ObjectOrGroup1, ?ObjectOrGroup2, ?NotifyCallback, ?ProcessCallback)
-	{
-		return FlxG.overlap(ObjectOrGroup1, ObjectOrGroup2, NotifyCallback, ProcessCallback);
-	}
+    public static function overlap(?ObjectOrGroup1, ?ObjectOrGroup2, ?NotifyCallback, ?ProcessCallback)
+    {
+        return FlxG.overlap(ObjectOrGroup1, ObjectOrGroup2, NotifyCallback, ProcessCallback);
+    }
     public static function pixelPerfectOverlap(Sprite1, Sprite2, AlphaTolerance = 255, ?Camera) {
         return FlxG.pixelPerfectOverlap(Sprite1, Sprite2, AlphaTolerance, Camera);
     }
@@ -346,14 +332,12 @@ class HscriptGlobals {
     public static function removePostProcess(postProcess) {
         FlxG.removePostProcess(postProcess);
     }
-    // no reset game or reset state because i don't trust you guys
     public static function resizeGame(Width, Height) {
         FlxG.resizeGame(Width, Height);
     }
     public static function resizeWindow(Width, Height) {
         FlxG.resizeWindow(Width, Height);
     }
-    // no switch state because i don't trust you guys
 }
 
 class HscriptSoundFrontEndWrapper {
@@ -363,10 +347,7 @@ class HscriptSoundFrontEndWrapper {
     public var defaultSoundGroup(get, set):FlxSoundGroup;
     public var list(get, never):FlxTypedGroup<FlxSound>;
     public var music (get, set):FlxSound;
-    // no mute keys because why do you need that
-    // no muted because i don't trust you guys
-    // no soundtray enabled because i'm lazy 
-    // no volume because i don't trust you guys
+
     function get_defaultMusicGroup() {
         return wrapping.defaultMusicGroup;
     }
@@ -388,7 +369,7 @@ class HscriptSoundFrontEndWrapper {
     function set_music(a) {
         return wrapping.music = a;
     }
-    public function load(?EmbeddedSound:FlxSoundAsset, Volume = 1.0, Looped = false, ?Group, AutoDestroy = false, AutoPlay = false, ?URL, ?OnComplete) {
+    public function load(?EmbeddedSound:FlxSoundAsset, Volume = 1.0, Looped = false, ?Group:FlxSoundGroup, AutoDestroy = false, AutoPlay = false, ?URL:String, ?OnComplete:Void->Void) {
         if ((EmbeddedSound is String)) {
             var sound = FNFAssets.getSound(EmbeddedSound);
             return wrapping.load(sound, Volume, Looped, Group, AutoDestroy, AutoPlay, URL, OnComplete);
@@ -398,7 +379,7 @@ class HscriptSoundFrontEndWrapper {
     public function pause() {
         wrapping.pause();
     }
-    public function play(EmbeddedSound:FlxSoundAsset, Volume = 1.0, Looped = false, ?Group, AutoDestroy = true, ?OnComplete) {
+    public function play(EmbeddedSound:FlxSoundAsset, Volume = 1.0, Looped = false, ?Group:FlxSoundGroup, AutoDestroy = true, ?OnComplete:Void->Void) {
         if ((EmbeddedSound is String)) {
             var sound = FNFAssets.getSound(EmbeddedSound);
             return wrapping.play(sound, Volume, Looped, Group, AutoDestroy, OnComplete);
@@ -406,14 +387,13 @@ class HscriptSoundFrontEndWrapper {
         return wrapping.play(EmbeddedSound, Volume, Looped, Group, AutoDestroy, OnComplete);
     }
 
-    public function playMusic(Music:FlxSoundAsset,Volume= 1.0, Looped = true, ?Group ) {
+    public function playMusic(Music:FlxSoundAsset, Volume = 1.0, Looped = true, ?Group:FlxSoundGroup){
         if ((Music is String)) {
             var sound = FNFAssets.getSound(Music);
             wrapping.playMusic(sound, Volume, Looped, Group);
             return;
         }
         wrapping.playMusic(Music, Volume, Looped, Group);        
-
     }
     public function resume() {
         wrapping.resume();

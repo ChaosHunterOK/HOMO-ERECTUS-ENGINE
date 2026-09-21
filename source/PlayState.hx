@@ -34,7 +34,7 @@ import openfl.display.BitmapData;
 import haxe.io.Bytes;
 import backend.assets.Fake3D;
 import backend.Events;
-import animateatlas.AtlasFrameMaker;
+import flxanimate.PsychFlxAnimate;
 import flixel.FlxSprite;
 import flixel.FlxBasic;
 import flixel.FlxState;
@@ -52,7 +52,7 @@ import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.math.FlxRect;
-import flixel.system.FlxSound;
+import flixel.sound.FlxSound;
 import flixel.text.FlxText;
 import hscript.Interp;
 import flixel.addons.editors.pex.FlxPexParser;
@@ -601,7 +601,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("notes", notes);
 		interp.variables.set("Random", FlxG.random);
 		interp.variables.set("Time", openfl.Lib.getTimer);
-		interp.variables.set("AtlasFrameMaker", AtlasFrameMaker);
 		interp.variables.set("CoolUtil", CoolUtil);
 		interp.variables.set("FNFAssets", FNFAssets);
 		interp.variables.set("PlayState", PlayState);
@@ -706,6 +705,7 @@ class PlayState extends MusicBeatState
 		interp.variables.set("AudioBuffer", AudioBuffer);
 		interp.variables.set("addCustomShaderToSprite", addCustomShaderToSprite);
 		interp.variables.set("addCustomShaderToCam", addCustomShaderToCam);
+		interp.variables.set("PsychFlxAnimate", PsychFlxAnimate);
 	}
 
 	function makeHaxeState(usehaxe:String, path:String, filename:String) {
@@ -4124,7 +4124,7 @@ class PlayState extends MusicBeatState
 
 		if (actingOn.holdTimer > Conductor.stepCrochet * beatSteps() * 0.001 && !holdArray.contains(true))
 		{
-			if (actingOn.animation.curAnim.name.startsWith("sing") && !actingOn.animation.curAnim.name.endsWith("miss"))
+			if (actingOn.getCurAnimName().startsWith("sing") && !actingOn.getCurAnimName().endsWith("miss"))
 				actingOn.dance();
 		}
 
@@ -4270,8 +4270,7 @@ class PlayState extends MusicBeatState
 		}
 		health += (note.noteData >= 0 ? 0.01 : 0.005) * healthGainMultiplier;
 		if (note.shouldBeSung) {
-			var isActingSingingDir:Bool = (actingOn.animation.curAnim != null
-				&& actingOn.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(note.noteData))]));
+			var isActingSingingDir:Bool = (actingOn.getCurAnimName().startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(note.noteData))]));
 
 			if (!actingOn.holdAnimationFix || !note.isSustainNote || !isActingSingingDir)
 				actingOn.sing(note.noteData, false, actingOn.altNum);
@@ -4280,8 +4279,7 @@ class PlayState extends MusicBeatState
 
 			if (note.oppntSing != null)
 			{
-				var isOnActingSingingDir:Bool = (onActing.animation.curAnim != null
-					&& onActing.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(note.oppntSing.direction))]));
+				var isOnActingSingingDir:Bool = (onActing.getCurAnimName().startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(note.oppntSing.direction))]));
 
 				if (!onActing.holdAnimationFix || !note.isSustainNote || !isOnActingSingingDir)
 					onActing.sing(
@@ -4423,9 +4421,9 @@ class PlayState extends MusicBeatState
 			lastTimeSigSection = beatHitSection;
 
 			// Dad doesnt interupt his own notes
-			if (!dad.animation.curAnim.name.startsWith("sing") && ((!duoMode && !opponentPlayer) || demoMode))
+			if (!dad.getCurAnimName().startsWith("sing") && ((!duoMode && !opponentPlayer) || demoMode))
 				dad.dance();
-			if (!boyfriend.animation.curAnim.name.startsWith("sing") && (opponentPlayer || demoMode))
+			if (!boyfriend.getCurAnimName().startsWith("sing") && (opponentPlayer || demoMode))
 				boyfriend.dance();
 		}
 		// FlxG.log.add('change bpm' + SONG.notes[beatHitSection].changeBPM);
@@ -4440,11 +4438,11 @@ class PlayState extends MusicBeatState
 		iconP1.updateHitbox();
 		iconP2.updateHitbox();
 		practiceDieIcon.updateHitbox();
-		if (!gf.animation.curAnim.name.startsWith("sing") && curBeat % gfSpeed == 0)
+		if (!gf.getCurAnimName().startsWith("sing") && curBeat % gfSpeed == 0)
 			gf.dance();
-		if (!boyfriend.animation.curAnim.name.startsWith("sing") && !opponentPlayer && !demoMode)
+		if (!boyfriend.getCurAnimName().startsWith("sing") && !opponentPlayer && !demoMode)
 			boyfriend.dance();
-		if (dad.animation.curAnim != null && !dad.animation.curAnim.name.startsWith("sing") && (duoMode || opponentPlayer) && !demoMode)
+		if (!dad.getCurAnimName().startsWith("sing") && (duoMode || opponentPlayer) && !demoMode)
 			dad.dance();
 		if (curBeat % 8 == 7 && SONG.isHey)
 			boyfriend.playAnim('hey', true);

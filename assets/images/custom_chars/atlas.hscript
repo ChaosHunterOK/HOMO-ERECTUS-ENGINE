@@ -6,18 +6,17 @@ function init(char)
 	trace(": )");
 
 	// Texture Atlas
-	var tex = AtlasFrameMaker.construct(hscriptPath);
+	//var tex = FlxAtlasFrames.fromSparrow(SUtil.getPath() + 'assets/images/custom_chars/bf/char.png', SUtil.getPath() + 'assets/images/custom_chars/bf/char.xml');
+	char.loadAtlas(hscriptPath + "atlas");
 
 	trace(": )");
 
-	char.frames = tex;
-
 	// Atlas animations
-	char.animation.addByPrefix('idle', 'idle', 24, false);
-	char.animation.addByPrefix('singUP', 'idle', 24, false);
-	char.animation.addByPrefix('singLEFT', 'idle', 24, false);
-	char.animation.addByPrefix('singRIGHT', 'idle', 24, false);
-	char.animation.addByPrefix('singDOWN', 'idle', 24, false);
+	char.addAtlasAnim('idle', 'idle', 24, false);
+	char.addAtlasAnim('singUP', 'idle', 24, false);
+	char.addAtlasAnim('singLEFT', 'idle', 24, false);
+	char.addAtlasAnim('singRIGHT', 'idle', 24, false);
+	char.addAtlasAnim('singDOWN', 'idle', 24, false);
 
 	trace("finish anim");
 

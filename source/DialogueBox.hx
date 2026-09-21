@@ -12,7 +12,7 @@ import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import flash.display.BitmapData;
 import lime.utils.Assets;
-import flixel.system.FlxSound;
+import flixel.sound.FlxSound;
 import flixel.graphics.frames.FlxFrame;
 import lime.system.System;
 import flixel.system.FlxAssets.FlxSoundAsset;

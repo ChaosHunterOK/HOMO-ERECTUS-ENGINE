@@ -40,10 +40,10 @@ function start(song) {
 		insert(currentPlayState.members.indexOf(currentPlayState.gfGroup), gfCutscene);
 
         var picoCutscene = new FlxSprite(gf.x - 849, gf.y - 264);
-		picoCutscene.antialiasing = true;
-        picoCutscene.frames = AtlasFrameMaker.construct(hscriptPath + 'stressPico/');
+        picoCutscene.antialiasing = true;
+        picoCutscene.frames = FlxAtlasFrames.fromTexturePackerJson(hscriptPath + 'stressPico.png', hscriptPath + 'stressPico.json');
         picoCutscene.animation.addByPrefix('anim', 'Pico Badass', 24, false);
-		insert(currentPlayState.members.indexOf(currentPlayState.gfGroup), picoCutscene);
+        insert(currentPlayState.members.indexOf(currentPlayState.gfGroup), picoCutscene);
         picoCutscene.alpha = 0.00001;
 
 	 var johnCaptain = new FlxSprite(-20, 320);
@@ -66,19 +66,12 @@ function start(song) {
         johnCaptain.x -= 54;
         johnCaptain.y -= 14;
 
-
-
-
-
-
         FlxTween.tween(FlxG.camera, {zoom: 0.9 * 1.2}, 1, {ease: FlxEase.quadInOut});
         dad.alpha = 0.0001;
         boyfriend.alpha = 0.0001;
         gf.alpha = 0.0001;
         camHUD.alpha = 0.0001;
         boyfriend.animation.curAnim.finish();
-
-
     
       currentPlayState.callHscript('doDumbYcuts',[true],'stages');
     

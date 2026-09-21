@@ -3,7 +3,6 @@ package;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.FlxSprite;
-import animateatlas.AtlasFrameMaker;
 /**
  * A sprite that automatically handles loading files dynamically. This is used in hscripts by default.
  * Only overwrites "loadGraphic."
@@ -45,24 +44,6 @@ class DynamicAtlasFrames {
 			png = FNFAssets.getBitmapData(png);
 		}
         return FlxAtlasFrames.fromSpriteSheetPacker(png,txt);
-    }
-    public static function fromTextureAtlas(folder:String) {
-        try {
-            return AtlasFrameMaker.construct(folder);
-        } catch(e:Dynamic) {
-            trace("Error loading Animate Atlas at " + folder + ": " + e);
-            return null;
-        }
-    }
-    public static function fromAnimate(png:FlxGraphicAsset, spriteJson:String, animationJson:String) {
-        if ((png is String)) {
-            png = FNFAssets.getBitmapData(png);
-        }
-        
-        // convert paths to content if they are strings
-        if (FNFAssets.exists(spriteJson)) spriteJson = FNFAssets.getText(spriteJson);
-        if (FNFAssets.exists(animationJson)) animationJson = FNFAssets.getText(animationJson);
-        return AtlasFrameMaker.construct(folderPathFromPath(spriteJson)); 
     }
 
     private static function folderPathFromPath(path:String):String {

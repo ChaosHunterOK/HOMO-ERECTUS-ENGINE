@@ -1,6 +1,6 @@
 package flixel.sound;
 
-import flixel.system.FlxSound;
+import flixel.sound.FlxSound;
 
 class FlxSoundGroup {
     public var volume:Float = 1;
