@@ -4054,7 +4054,7 @@ class PlayState extends MusicBeatState
 			releaseArray = [leftR, downR, upR, rightR];
 			holdArray = [left, down, up, right];
 		}
-		//actingOn.sustainLock = holdArray.contains(true);
+		actingOn.sustainLock = holdArray.contains(true);
 
 		inline function processNotes(isLift:Bool, pressArr:Array<Bool>, releaseArr:Array<Bool>):Void
 		{

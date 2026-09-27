@@ -28,7 +28,7 @@
     "allowDonate": true,
     "fpsCap": true,
     "titleToggle": true,
-    "newChar": true,
+    "newchar": true,
     "newstage": true,
     "newsong": true,
     "newweek": true,
