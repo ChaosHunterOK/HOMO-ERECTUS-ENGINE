@@ -3104,7 +3104,7 @@ class PlayState extends MusicBeatState
 			
 			if (inALoop) {
 				cuhhCuhhNoteCuhh();
-				cleanupMemory();
+				FNFAssets.clearStoredMemory();
 				FlxG.resetState();
 			} else {
 				cuhhCuhhNoteCuhh();
@@ -4495,75 +4495,5 @@ class PlayState extends MusicBeatState
 		FlxTween.tween(cFd, { alpha: 0 }, cfDuration, {
 			onComplete: function(_:FlxTween) cFd.kill()
 		});
-	}
-	public function cleanupMemory():Void
-	{
-		try {
-			// Stop audio
-			if (vocals != null) {
-				vocals.stop();
-				vocals.destroy();
-			}
-			if (vsounds != null) {
-				vsounds.stop();
-				vsounds.destroy();
-			}
-			if (FlxG.sound.music != null)
-				FlxG.sound.music.stop();
-			for (tween in modTweens)
-				if (tween != null && !tween.finished)
-					tween.cancel();
-			modTweens.splice(0, modTweens.length);
-			activeCameraTweens.splice(0, activeCameraTweens.length);
-
-			for (timer in modTimers) {
-				if (timer != null && !timer.finished)
-					timer.cancel();
-			}
-			modTimers.splice(0, modTimers.length);
-			for (key in boyfriendMap.keys()) {
-				var char = boyfriendMap.get(key);
-				if (char != null) char.destroy();
-			}
-			boyfriendMap.clear();
-
-			for (key in dadMap.keys()) {
-				var char = dadMap.get(key);
-				if (char != null) char.destroy();
-			}
-			dadMap.clear();
-
-			for (key in gfMap.keys()) {
-				var char = gfMap.get(key);
-				if (char != null) char.destroy();
-			}
-			gfMap.clear();
-			for (key in spriteZone.keys()) {
-				var spr = spriteZone.get(key);
-				if (spr != null) spr.destroy();
-			}
-			spriteZone.clear();
-			if (unspawnNotes != null) unspawnNotes.splice(0, unspawnNotes.length);
-			if (eventNotes != null) eventNotes.splice(0, eventNotes.length);
-			if (notes != null) {
-				notes.clear();
-				notes.destroy();
-			}
-			eventPushedMap.clear();
-			if (hscriptStates != null) hscriptStates.clear();
-			if (hscriptIsModChart != null) hscriptIsModChart.clear();
-			if (haxeSprites != null) {
-				for (key in haxeSprites.keys()) {
-					var spr = haxeSprites.get(key);
-					if (spr != null) spr.destroy();
-				}
-				haxeSprites.clear();
-			}
-			if (notesHitArray != null) notesHitArray.splice(0, notesHitArray.length);
-			openfl.system.System.gc();
-		}
-		catch (e:Dynamic) {
-			trace("Error during memory cleanup: " + e);
-		}
 	}
 }
