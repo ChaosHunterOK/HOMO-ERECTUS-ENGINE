@@ -1,105 +1,70 @@
 package;
-// https://www.youtube.com/watch?v=SjABiUMmhhA
-// used for judging scores
-// v image of judges
-// https://i.imgur.com/mmygOBv.png
-// FUNYY JOKE LOOK IT'S NAMED JURY LMAOOOOO
 
 enum abstract Jury(Int) from Int to Int {
-    var Judge1;
-    var Judge2;
-    var Judge3;
-    var Judge4;
-    var Judge5;
-    var Judge6;
-    var Judge7;
-    var Judge8;
-    var Judge9; // JUSTICE
-	var Classic;
-	var Hard; // Half of classic
-    
+	var Judge1 = 0;
+	var Judge2 = 1;
+	var Judge3 = 2;
+	var Judge4 = 3;
+	var Judge5 = 4;
+	var Judge6 = 5;
+	var Judge7 = 6;
+	var Judge8 = 7;
+	var Judge9 = 8; // JUSTICE
+	var Classic = 9;
+	var Hard = 10;
 }
+
 class Judge {
-    // it's shit judge because this is the highest value you can be off without missing
-    // I think these are in ms? lmao
-    public static var shitJudge:Float = 166;
-	public static var badJudge:Float = 135;
-	public static var goodJudge:Float = 90;
 	public static var sickJudge:Float = 45;
-    public static var wayoffJudge:Float = 203;
-    public static function resetJudge() {
-		shitJudge = 166;
-		badJudge = 135;
-		goodJudge = 90;
+	public static var goodJudge:Float = 90;
+	public static var badJudge:Float = 135;
+	public static var shitJudge:Float = 166;
+	public static var wayoffJudge:Float = 203;
+	private static final JUDGE_PRESETS:Array<Array<Float>> = [
+		[33, 68, 135, 203, 270],
+		[29, 60, 120, 180, 239],
+		[26, 52, 104, 157, 209],
+		[22, 45, 90, 135, 180],
+		[18, 38, 76, 113, 151],
+		[15, 30, 59, 89, 119],
+		[11, 23, 45, 68, 90],
+		[7, 15, 30, 45, 59],
+		[ 4, 9, 18, 27, 36]
+	];
+
+	public static function resetJudge():Void {
 		sickJudge = 45;
-        wayoffJudge = 203;
-    }
-    public static function setJudge(judge:Jury) {
-        trace(judge);
-        switch (judge) {
-            case Judge1:
-                shitJudge = 203;
-                badJudge = 135;
-                goodJudge = 68;
-                sickJudge = 33;
-                wayoffJudge = 270;
-            case Judge2:
-                shitJudge = 180;
-                badJudge = 120;
-                goodJudge = 60;
-                sickJudge = 29;
-                wayoffJudge = 239;
-            case Judge3:
-                shitJudge = 157;
-                badJudge = 104;
-                goodJudge = 52;
-                sickJudge = 26;
-                wayoffJudge = 209;
-            case Judge4:
-                shitJudge = 135;
-                badJudge = 90;
-                goodJudge = 45;
-                sickJudge = 22;
-                wayoffJudge = 180;
-            case Judge5:
-                shitJudge = 113;
-                badJudge = 76;
-                goodJudge = 38;
-                sickJudge = 18;
-                wayoffJudge = 151;
-            case Judge6:
-                shitJudge = 89;
-                badJudge = 59;
-                goodJudge = 30;
-                sickJudge = 15;
-                wayoffJudge = 119;
-            case Judge7:
-                shitJudge = 68;
-                badJudge = 45;
-                goodJudge = 23;
-                sickJudge = 11;
-                wayoffJudge = 90;
-            case Judge8:
-                shitJudge = 45;
-                badJudge = 30;
-                goodJudge = 15;
-                sickJudge = 7;
-                wayoffJudge = 59;
-            case Judge9:
-                shitJudge = 27;
-                badJudge = 18;
-                goodJudge = 9;
-                sickJudge = 4;
-                wayoffJudge = 36;
-            case Classic:
-                resetJudge();
-            case Hard:
-                resetJudge();
-				shitJudge /= 2;
-				badJudge /= 2;
-				goodJudge /= 2;
-				sickJudge /= 2;
-                wayoffJudge /= 2;
-        }
-    }
+		goodJudge = 90;
+		badJudge = 135;
+		shitJudge = 166;
+		wayoffJudge = 203;
+	}
+
+	public static function setJudge(judge:Jury):Void {
+		trace(judge);
+
+		if (judge == Classic) {
+			resetJudge();
+			return;
+		}
+
+		if (judge == Hard) {
+			resetJudge();
+			sickJudge /= 2;
+			goodJudge /= 2;
+			badJudge /= 2;
+			shitJudge /= 2;
+			wayoffJudge /= 2;
+			return;
+		}
+
+		var preset:Array<Float> = JUDGE_PRESETS[judge];
+		if (preset != null) {
+			sickJudge = preset[0];
+			goodJudge = preset[1];
+			badJudge = preset[2];
+			shitJudge = preset[3];
+			wayoffJudge = preset[4];
+		}
+	}
 }

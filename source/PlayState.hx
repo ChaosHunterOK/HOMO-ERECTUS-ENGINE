@@ -1895,14 +1895,9 @@ class PlayState extends MusicBeatState
 	}
 
 	public function setGlobalSprite(key:String, sprite:FlxSprite):Void
-	{
 		spriteZone.set(key, sprite);
-	}
-
 	public function getGlobalSprite(key:String):Null<FlxSprite>
-	{
 		return spriteZone.get(key);
-	}
 
 	public function removeGlobalSprite(key:String, ?destroy:Bool = false):Void
 	{
@@ -3031,12 +3026,10 @@ class PlayState extends MusicBeatState
 			: (opponentPlayer
 				? (healthBar.percent > 80 ? "Dying" : "Playing")
 				: (healthBar.percent < 20 ? "Dying" : "Playing"));
-			if (supLove) {
+			if (supLove)
 				health += loveMultiplier * (opponentPlayer ? -1 : 1) / 600000;
-			}
-			if (poisonExr) {
+			if (poisonExr)
 				health -= poisonMultiplier * (opponentPlayer ? -1 : 1)/ 700000;
-			}
 			playingAsRpc = "Playing as " + (opponentPlayer ? player2Icon : player1Icon) + " | " + currentIconState;
 			if (section.mustHitSection)
 			{

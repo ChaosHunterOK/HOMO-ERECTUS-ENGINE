@@ -39,29 +39,20 @@ class Record extends FlxTypedSpriteGroup<FlxSprite> {
         } else {
             if (completion) {
 				if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-gold.png'))
-				{
 					sussyRecordGraphic = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-gold.png');
-				}
 				else
-				{
 					sussyRecordGraphic = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/default-gold.png');
-				}
             } else {
 				if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-record.png'))
-				{
 					sussyRecordGraphic = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-record.png');
-				}
 				else
-				{
 					sussyRecordGraphic = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/default-record.png');
-				}
             }
             
-            if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-center.png')) {
+            if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-center.png'))
 				sussyBackup = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-center.png');
-            } else {
+            else
 				sussyBackup = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/default-center.png');
-            }
         }
         completed = completion;
         curWeek = week;
@@ -128,24 +119,16 @@ class Record extends FlxTypedSpriteGroup<FlxSprite> {
             if (rating >= Shit)
             {
                 if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-gold.png'))
-                {
                     sussyRecordGraphic = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-gold.png');
-                }
                 else
-                {
                     sussyRecordGraphic = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/default-gold.png');
-                }
             }
             else
             {
                 if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-record.png'))
-                {
                     sussyRecordGraphic = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-record.png');
-                }
                 else
-                {
                     sussyRecordGraphic = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/default-record.png');
-                }
             }
             if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-shine.png')) {
 				sussyShine = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-shine.png');
@@ -155,21 +138,13 @@ class Record extends FlxTypedSpriteGroup<FlxSprite> {
 				shineXml = FNFAssets.getText(SUtil.getPath() + 'assets/images/campaign-ui-week/default-shine.xml');
             }
             if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-center.png'))
-            {
                 sussyBackup = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-center.png', false);
-            }
             else
-            {
                 sussyBackup = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/default-center.png', false);
-            }
 			if (FNFAssets.exists(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-almost.png'))
-			{
 				almostPng = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/week$week-almost.png');
-			}
 			else
-			{
 				almostPng = FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/campaign-ui-week/default-almost.png');
-			}
         }
         
         remove(shiney);
@@ -188,11 +163,10 @@ class Record extends FlxTypedSpriteGroup<FlxSprite> {
         // smudge.loadGraphic(sussySmudge);
         add(shiney);
         add(doubleShiney);
-        if (rating < Good) {
+        if (rating < Good) 
             shiney.visible = false;
-        } else {
+        else
             shiney.visible = true;
-        }
         doubleShiney.visible = (rating == Sick);
         // smudge.visible = (rating == Shit);
         almostSticker.visible = (rating == Sdcb);

@@ -49,9 +49,8 @@ class SelectSongsState extends MusicBeatSubstate
 
 
 		for (coolCategory in coolCategoryJson) {
-			for (coolSong in coolCategory.songs) {
+			for (coolSong in coolCategory.songs)
 				songs.push(coolSong.name);
-			}
 		}
 
 		// LOAD MUSIC
@@ -114,9 +113,7 @@ class SelectSongsState extends MusicBeatSubstate
 		super.update(elapsed);
 
 		if (FlxG.sound.music.volume < 0.7)
-		{
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
-		}
 
 		lerpScore = Math.floor(FlxMath.lerp(lerpScore, intendedScore, 0.4));
 
@@ -129,18 +126,12 @@ class SelectSongsState extends MusicBeatSubstate
 		var accepted = controls.ACCEPT;
 
 		if (upP)
-		{
 			changeSelection(-1);
-		}
 		if (downP)
-		{
 			changeSelection(1);
-		}
 
 		if (controls.BACK)
-		{
 			close();
-		}
 
 		if (accepted)
 		{
@@ -177,9 +168,7 @@ class SelectSongsState extends MusicBeatSubstate
 			item.alpha = 0.6;
 
 			if (item.targetY == 0)
-			{
 				item.alpha = 1;
-			}
 		}
 	}
 }

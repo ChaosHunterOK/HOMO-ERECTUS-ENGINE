@@ -215,6 +215,8 @@ class FlxVideo
 			cleanupVideo();
 			notifyPlaybackFinished();
 		}
+		#else
+		notifyPlaybackFinished();
 		#end
 	}
 
@@ -264,7 +266,10 @@ class FlxVideo
 
 	public function onVLCComplete():Void
 	{
-		if (repeat && videoSprite != null && !isPlaybackFinished)
+		if (isPlaybackFinished)
+			return;
+
+		if (repeat && videoSprite != null)
 		{
 			videoSprite.load(currentPath);
 			videoSprite.play();
@@ -279,8 +284,6 @@ class FlxVideo
 
 		if (fadeFromBlack)
 			FlxG.camera.fade(FlxColor.BLACK, 1, true);
-
-		trace("Big, Big Chungus, Big Chungus!");
 
 		new FlxTimer().start(0.3, function(tmr:FlxTimer)
 		{
@@ -301,9 +304,8 @@ class FlxVideo
 	{
 		#if cpp
 		cleanupVideo();
-		notifyPlaybackFinished();
 		#end
-		instances.remove(this);
+		notifyPlaybackFinished();
 	}
 
 	private function cleanupVideo():Void
@@ -316,21 +318,27 @@ class FlxVideo
 		if (FlxG.stage != null)
 		{
 			try
-				FlxG.stage.removeEventListener(Event.ENTER_FRAME, checkSkip)
+			{
+				FlxG.stage.removeEventListener(Event.ENTER_FRAME, checkSkip);
+			}
 			catch (e:Dynamic) {}
 		}
 
 		if (videoSprite != null)
 		{
 			try
-				videoSprite.stop()
+			{
+				videoSprite.stop();
+			}
 			catch (e:Dynamic) {}
 
 			if (FlxG.state != null && FlxG.state.members.indexOf(videoSprite) != -1)
 				FlxG.state.remove(videoSprite, true);
 
 			try
-				videoSprite.destroy()
+			{
+				videoSprite.destroy();
+			}
 			catch (e:Dynamic) {}
 
 			videoSprite = null;
@@ -348,19 +356,15 @@ class FlxVideo
 		instances.remove(this);
 
 		if (finishCallback != null)
-		{
 			finishCallback();
-		}
 		else if (stateCallback != null)
-		{
 			LoadingState.loadAndSwitchState(stateCallback);
-		}
 	}
 
 	#if cpp
 	function checkSkip(e:Event)
 	{
-		if (FlxG.keys.justPressed.ENTER)
+		if (FlxG.keys != null && FlxG.keys.justPressed != null && FlxG.keys.justPressed.ENTER)
 			trySkip();
 	}
 

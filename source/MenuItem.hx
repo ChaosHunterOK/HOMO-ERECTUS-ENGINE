@@ -38,13 +38,9 @@ class MenuItem extends FlxSpriteGroup
 			var tex = FlxAtlasFrames.fromSparrow(rawPic, rawXml);
 			var animName:String = "";
 			if (parsedWeekJson.version == 1)
-			{
 				animName = parsedWeekJson.songs[weekNum][0];
-			}
 			if (parsedWeekJson.version == 2)
-			{
 				animName = parsedWeekJson.weeks[weekNum].animation;
-			}
 			week = new FlxSprite();
 			week.frames = tex;
 			// TUTORIAL IS WEEK 0

@@ -37,8 +37,6 @@ class MemoryCounter extends TextField
 			memPeak = mem;
 
 		if (visible)
-		{
 			text = "\nMEM: " + mem + " MB\nMEM peak: " + memPeak + " MB";
-		}
 	}
 }

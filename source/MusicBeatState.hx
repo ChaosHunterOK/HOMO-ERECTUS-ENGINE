@@ -55,7 +55,7 @@ class MusicBeatState extends FlxUIState
 		switch (androidc.mode)
 		{
 			case VIRTUALPAD_RIGHT | VIRTUALPAD_LEFT | VIRTUALPAD_CUSTOM:
-if (isOpp)
+			if (isOpp)
 				controls.setVirtualPadNOTES(androidc.vpad, FULL, NONE);
 				
 			case DUO:
@@ -71,12 +71,11 @@ if (isOpp)
 				}
 			case HITBOX:
 				if (ModifierState.namedModifiers.duo.value){
-				addHitBoi(true);
-				addHitBoi(false);
+					addHitBoi(true);
+					addHitBoi(false);
 				}
-				else{
-				addHitBoi(ModifierState.namedModifiers.oppnt.value);	
-				}
+				else
+					addHitBoi(ModifierState.namedModifiers.oppnt.value);	
 			default:
 		}
 
@@ -94,12 +93,12 @@ if (isOpp)
 	}
 	public function addHitBoi(isOpp:Bool = false){
 		var mania = 0;
-				if (PlayState.SONG != null)
-					mania = PlayState.SONG.mania;
-				if (!isOpp)
-				controls.setHitBox(androidc.hbox,mania);
-				else
-				controlsPlayerTwo.setHitBox(androidc.hbox,mania);	
+		if (PlayState.SONG != null)
+			mania = PlayState.SONG.mania;
+		if (!isOpp)
+			controls.setHitBox(androidc.hbox,mania);
+		else
+			controlsPlayerTwo.setHitBox(androidc.hbox,mania);	
 	}
 	#end
 

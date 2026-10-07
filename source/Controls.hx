@@ -1209,9 +1209,7 @@ class Controls extends FlxActionSet
 	}
 
 	inline public function copyTo(controls:Controls, ?device:Device)
-	{
 		controls.copyFrom(this, device);
-	}
 
 	function mergeKeyboardScheme(scheme:KeyboardScheme):Void
 	{
@@ -1627,7 +1625,5 @@ class Controls extends FlxActionSet
 	}
 
 	inline static function isGamepad(input:FlxActionInput, deviceID:Int)
-	{
 		return input.device == GAMEPAD && (deviceID == FlxInputDeviceID.ALL || input.deviceID == deviceID);
-	}
 }

@@ -134,9 +134,8 @@ class FNFAssets {
 		return getAmbigAsset([id], CoolUtil.HSCRIPT_EXT, AssetType.TEXT);
 	}
 	public static function getAssetWithBackup(id:String, backupID:String, type:AssetType):Dynamic {
-		if (FNFAssets.exists(id)) {
+		if (FNFAssets.exists(id))
 			return FNFAssets.getAsset(id, type);
-		}
 		return FNFAssets.getAsset(backupID, type);
 	} 
 	public static function getAsset(id:String, type:AssetType):Dynamic {
@@ -232,9 +231,8 @@ class FNFAssets {
 				return currentTrackedAssets.get(id);
 			}
 			if (!FileSystem.exists(id)) return null;
-			if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE) {
+			if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE)
 				evictOldestAsset();
-			}
 			try {
 				var newBitmap:BitmapData = BitmapData.fromFile(id);
 				var newGraphic:FlxGraphic = FlxGraphic.fromBitmapData(newBitmap, false, id);
@@ -255,9 +253,8 @@ class FNFAssets {
 			return currentTrackedAssets.get(id);
 		}
 		if (!FileSystem.exists(id)) return null;
-		if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE) {
+		if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE)
 			evictOldestAsset();
-		}
 		
 		try {
 			var newBitmap:BitmapData = BitmapData.fromFile(id);
@@ -272,9 +269,7 @@ class FNFAssets {
 	}
 
 	public static function precacheSound(path:String):Sound
-	{
 		return getSound(path);
-	}
 	public static function getSound(id:String, ?useCache:Bool = true):Sound {
 		#if sys
 		if (!isInScope(id))
@@ -285,9 +280,8 @@ class FNFAssets {
 			updateLRU(path, soundAccessOrder);
 			return currentTrackedSounds.get(path);
 		}
-		if (getMapSize(currentTrackedSounds) >= MAX_SOUND_CACHE_SIZE) {
+		if (getMapSize(currentTrackedSounds) >= MAX_SOUND_CACHE_SIZE)
 			evictOldestSound();
-		}
 		
 		try {
 			if (!FileSystem.exists(path)) {
@@ -356,9 +350,8 @@ class FNFAssets {
 		FlxG.log.notice("Successfully saved LEVEL DATA.");
 	}
 	
-	static function onSaveCancel(_):Void {
+	static function onSaveCancel(_):Void
 		cleanupFileReference();
-	}
 	
 	static function onSaveError(_):Void {
 		cleanupFileReference();
@@ -367,18 +360,16 @@ class FNFAssets {
 	private static function getMapSize<K, V>(map:Map<K, V>):Int
 	{
 		var count = 0;
-		for (key in map.keys()) {
+		for (key in map.keys())
 			count++;
-		}
 		return count;
 	}
 	
 	private static function updateLRU(id:String, orderArray:Array<String>):Void
 	{
 		var index = orderArray.indexOf(id);
-		if (index >= 0) {
+		if (index >= 0)
 			orderArray.splice(index, 1);
-		}
 		orderArray.push(id);
 	}
 	

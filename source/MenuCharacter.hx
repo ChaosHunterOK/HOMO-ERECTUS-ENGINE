@@ -54,9 +54,8 @@ class MenuCharacter extends FlxSprite
 
 		// don't use assets because you can use custom like folders
 		var animJson:TMenuCharAnimation = CoolUtil.parseJson(FNFAssets.getJson("assets/images/campaign-ui-char/"+parsedCharJson[character].like));
-		for (field in Reflect.fields(animJson.animation)) {
+		for (field in Reflect.fields(animJson.animation))
 			animation.addByPrefix(field, Reflect.field(animJson.animation, field), 24, (field == "idle"));
-		}
 		jsonScale = Reflect.hasField(animJson, "scale") ? animJson.scale : 1.0;
 		if (Reflect.hasField(animJson, "offset")) {
 			offsetX = animJson.offset[0];
