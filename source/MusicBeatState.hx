@@ -145,12 +145,23 @@ class MusicBeatState extends FlxUIState
 
 		super.update(elapsed);
 	}
+	
+	private function getSafeStepsPerBeat():Int
+	{
+		var spb:Int = Std.int(Conductor.stepsPerBeat);
+		if (spb > 0)
+			return spb;
+
+		var den:Int = Std.int(Conductor.timeSigDenominator);
+		if (den > 0 && den <= 16)
+			return Std.int(Math.max(1, Math.round(16 / den)));
+
+		return 4;
+	}
 
 	private function updateBeat():Void
 	{
-		var stepsPerBeat = Conductor.stepsPerBeat;
-		if (stepsPerBeat <= 0) stepsPerBeat = 4;
-		curBeat = Math.floor(curStep / stepsPerBeat);
+		curBeat = Math.floor(curStep / getSafeStepsPerBeat());
 	}
 
 	private function updateCurStep():Void
@@ -173,9 +184,7 @@ class MusicBeatState extends FlxUIState
 
 	public function stepHit():Void
 	{
-		var stepsPerBeat = Conductor.stepsPerBeat;
-		if (stepsPerBeat <= 0) stepsPerBeat = 4;
-		if (curStep % Std.int(stepsPerBeat) == 0)
+		if (curStep % getSafeStepsPerBeat() == 0)
 			beatHit();
 	}
 

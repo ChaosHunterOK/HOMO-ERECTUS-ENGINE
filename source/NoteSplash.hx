@@ -12,6 +12,9 @@ class NoteSplash extends FlxSprite {
     public static var getFrames:Bool = true;
 	static var gotFrames:FlxAtlasFrames = null;
     public static var oneType:Bool = false;
+    var animsBuilt:Bool = false;
+    var builtOneType:Bool = false;
+    var builtMania:Int = -1;
 
     public function new(xPos:Float,yPos:Float,?c:Int) {
         if (c == null) c = 0;
@@ -28,7 +31,7 @@ class NoteSplash extends FlxSprite {
 
         alpha = 0.6;
         animation.play("note"+c+"-"+FlxG.random.int(0,1), true);
-		animation.curAnim.frameRate += FlxG.random.int(-2, 2);
+		animation.curAnim.frameRate = 24 + FlxG.random.int(-2, 2);
         if (animation.curAnim.frameRate < 6)
             animation.curAnim.frameRate = 6;
         updateHitbox();
@@ -49,9 +52,22 @@ class NoteSplash extends FlxSprite {
             gotFrames = DynamicAtlasFrames.fromSparrow(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/${curUiType.uses}/noteSplashes.png',
             SUtil.getPath() + 'assets/images/custom_ui/ui_packs/${curUiType.uses}/noteSplashes.xml');
         }
-        frames = gotFrames;
+        if (frames != gotFrames) {
+            frames = gotFrames;
+            animsBuilt = false;
+        }
 
         if (frames == null) return;
+
+        var maniaNow = PlayState.SONG.mania;
+        if (!animsBuilt || builtOneType != oneType || builtMania != maniaNow) {
+            animation.destroyAnimations();
+            animsBuilt = true;
+            builtOneType = oneType;
+            builtMania = maniaNow;
+        }
+        else if (!oneType || animation.getByName("note" + c + "-0") != null)
+            return;
 
         if (oneType) {
             if (c != null) {

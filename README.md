@@ -71,7 +71,7 @@ Other installations you'd need is the additional libraries, a fully updated list
 
 ```
 haxelib install flixel 5.3.1
-haxelib install flixel-addons 3.0.2
+haxelib install flixel-addons 3.3.0
 
 haxelib install lime 8.0.2
 haxelib install openfl 9.2.2

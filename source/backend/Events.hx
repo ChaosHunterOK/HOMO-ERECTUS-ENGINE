@@ -357,9 +357,8 @@ class Events {
                         }
                 }
 
-                if (char != null) {
+                if (char != null)
                     char.idleSuffix = value2;
-                }
             case 'Screen Shake':
                 var valuesArray:Array<String> = [value1, value2];
                 var targetsArray:Array<FlxCamera> = [playState.camGame, playState.camHUD];

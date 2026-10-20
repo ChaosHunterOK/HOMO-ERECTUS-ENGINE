@@ -251,7 +251,13 @@ class CustomState extends MusicBeatState
 		interp.variables.set("FileParser", FileParser);
 		interp.variables.set("FirstTimeState", FirstTimeState);
 		interp.variables.set("FlxUIDropDownMenuCustom", FlxUIDropDownMenuCustom);
-		interp.variables.set("Fake3D", Fake3D);
+		interp.variables.set("Fake3D", backend.assets.Fake3D);
+		interp.variables.set("Fake3DEnv", backend.assets.Fake3D.Fake3DEnv);
+		interp.variables.set("Fake3DLight", backend.assets.Fake3D.Fake3DLight);
+		interp.variables.set("Fake3DMaterial", backend.assets.Fake3D.Fake3DMaterial);
+		interp.variables.set("Fake3DBlob", backend.assets.Fake3D.Fake3DBlob);
+		interp.variables.set("Fake3DEnv", backend.assets.Fake3D.Fake3DEnv);
+		interp.variables.set("Fake3DSky", backend.assets.Fake3D.Fake3DSky);
 		#if VIDEOS_ALLOWED
 		interp.variables.set("FlxVideo", FlxVideo);
 		#end

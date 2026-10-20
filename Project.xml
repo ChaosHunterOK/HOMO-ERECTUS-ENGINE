@@ -50,7 +50,6 @@
 	<assets path="assets/data" />
 	<assets path="assets/shaders" />
 	<assets path="VERSION" />
-	<assets path='art/readme.txt' rename='do NOT readme.txt' />
 
 	<!-- <template path='mods' /> -->
 

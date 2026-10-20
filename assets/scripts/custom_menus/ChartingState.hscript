@@ -106,6 +106,177 @@ var check_waveform = null;
 var WAVEFORM_STEP_MS = 5;
 
 var text = "";
+var VALID_DENOMINATORS = [1, 2, 4, 8, 16];
+var lastSongDen = 4;
+var lastSectionDen = 4;
+var curTimeSigNum = 4;
+var curTimeSigDen = 4;
+
+function nearestValidDenominator(d)
+{
+	if (d == null || d <= 0)
+		return 4;
+	var best = 4;
+	var bestDist = 999999;
+	for (v in VALID_DENOMINATORS)
+	{
+		var dist = Math.abs(v - d);
+		if (dist < bestDist)
+		{
+			best = v;
+			bestDist = dist;
+		}
+	}
+	return best;
+}
+
+function snapDenominator(newVal, oldVal)
+{
+	var v = Std.int(newVal);
+	if (VALID_DENOMINATORS.indexOf(v) >= 0)
+		return v;
+	if (v > 16)
+		return 16;
+	if (v < 1)
+		return 1;
+	var idx = VALID_DENOMINATORS.indexOf(nearestValidDenominator(oldVal));
+	if (v > VALID_DENOMINATORS[idx])
+		return VALID_DENOMINATORS[Std.int(Math.min(idx + 1, VALID_DENOMINATORS.length - 1))];
+	return VALID_DENOMINATORS[Std.int(Math.max(idx - 1, 0))];
+}
+
+function getStepsPerBeat(den)
+{
+	return Std.int(16 / nearestValidDenominator(den));
+}
+
+function getStepsPerMeasure(num, den)
+{
+	if (num == null || num <= 0)
+		num = 4;
+	return Std.int(num * getStepsPerBeat(den));
+}
+
+function getSectionTimeSig(secIndex)
+{
+	var num = _song.timeSigNumerator;
+	var den = _song.timeSigDenominator;
+	for (i in 0...(secIndex + 1))
+	{
+		var sec = _song.notes[i];
+		if (sec != null && sec.changeTimeSig == true && sec.timeSigNum > 0 && sec.timeSigDen > 0)
+		{
+			num = sec.timeSigNum;
+			den = sec.timeSigDen;
+		}
+	}
+	return {num: Std.int(num), den: nearestValidDenominator(den)};
+}
+
+function getSectionSteps(secIndex)
+{
+	var sec = _song.notes[secIndex];
+	if (sec != null && sec.lengthInSteps != null && sec.lengthInSteps > 0)
+		return Std.int(sec.lengthInSteps);
+	var ts = getSectionTimeSig(secIndex);
+	return getStepsPerMeasure(ts.num, ts.den);
+}
+
+function getNewSectionSteps()
+{
+	var last = _song.notes.length - 1;
+	if (last < 0)
+		return getStepsPerMeasure(_song.timeSigNumerator, _song.timeSigDenominator);
+	var ts = getSectionTimeSig(last);
+	return getStepsPerMeasure(ts.num, ts.den);
+}
+
+function computeSectionStarts()
+{
+	var starts = [];
+	var daBPM = _song.bpm;
+	var pos = 0.0;
+	for (i in 0..._song.notes.length)
+	{
+		var sec = _song.notes[i];
+		if (sec.changeBPM)
+			daBPM = sec.bpm;
+		starts.push(pos);
+		pos += getSectionSteps(i) * (15000 / daBPM);
+	}
+	starts.push(pos);
+	return starts;
+}
+
+function rebucketNotes()
+{
+	if (_song == null || _song.notes == null || _song.notes.length == 0)
+		return;
+
+	var ammo = Main.ammo[_song.mania];
+	var limit = ammo * 2;
+
+	var lastTime = 0.0;
+	for (sec in _song.notes)
+		for (n in sec.sectionNotes)
+			if (n[0] > lastTime)
+				lastTime = n[0];
+
+	var starts = computeSectionStarts();
+	var guard = 0;
+	while (lastTime >= starts[starts.length - 1] - 0.01 && guard < 2000)
+	{
+		addSection(getNewSectionSteps());
+		recalcSectionTimeSigs();
+		starts = computeSectionStarts();
+		guard++;
+	}
+
+	var moves = [];
+	for (i in 0..._song.notes.length)
+	{
+		var sec = _song.notes[i];
+		var keep = [];
+		for (n in sec.sectionNotes)
+		{
+			var t = i;
+			while (t > 0 && n[0] < starts[t] - 0.01)
+				t--;
+			while (t < _song.notes.length - 1 && n[0] >= starts[t + 1] - 0.01)
+				t++;
+			if (t == i)
+				keep.push(n);
+			else
+				moves.push([t, i, n]);
+		}
+		sec.sectionNotes = keep;
+	}
+
+	for (m in moves)
+	{
+		var toSec = _song.notes[m[0]];
+		var fromSec = _song.notes[m[1]];
+		var note = m[2];
+		if (note[1] > -1 && (fromSec.mustHitSection == true) != (toSec.mustHitSection == true))
+		{
+			var nd = Std.int(note[1]);
+			var type = Std.int(nd / limit);
+			var lane = nd % limit;
+			note[1] = ((lane + ammo) % limit) + type * limit;
+		}
+		toSec.sectionNotes.push(note);
+	}
+}
+
+function applyTimeSigChange()
+{
+	recalcSectionTimeSigs();
+	rebucketNotes();
+	Conductor.mapBPMChanges(_song);
+
+	reloadGridLayer();
+	updateSectionUI();
+}
 
 function create()
 {
@@ -179,6 +350,13 @@ function create()
 	if (_song.timeSigDenominator == null || _song.timeSigDenominator <= 0)
 		_song.timeSigDenominator = 4;
 
+	_song.timeSigNumerator = Std.int(_song.timeSigNumerator);
+	_song.timeSigDenominator = nearestValidDenominator(_song.timeSigDenominator);
+	lastSongDen = _song.timeSigDenominator;
+	for (sec in _song.notes)
+		if (sec.timeSigDen != null && sec.timeSigDen > 0)
+			sec.timeSigDen = nearestValidDenominator(sec.timeSigDen);
+
 	if (FNFAssets.exists(SUtil.getPath() + 'assets/images/custom_notetypes/notetypes.txt'))
 	{
 		customNoteNamesFile = FNFAssets.getText(SUtil.getPath() + 'assets/images/custom_notetypes/notetypes.txt');
@@ -220,7 +398,7 @@ function create()
 	rightIcon.scrollFactor.set(1, 1);
 	ignoreWarnings = FlixG.save.data.ignoreWarnings;
 
-	addSection(getStepsPerMeasure(_song.timeSigNumerator, _song.timeSigDenominator));
+	addSection(getNewSectionSteps());
 
 	// sections = _song.notes;
 
@@ -350,7 +528,7 @@ function addSectionUI()
 	stepperSectionTimeSigNum.name = 'section_timesig_num';
 	blockPressWhileTypingOnStepper.push(stepperSectionTimeSigNum);
 
-	stepperSectionTimeSigDen = new FlxUINumericStepper(220, 80, 1, _song.timeSigDenominator, 1, 32, 0);
+	stepperSectionTimeSigDen = new FlxUINumericStepper(220, 80, 1, _song.timeSigDenominator, 1, 16, 0);
 	stepperSectionTimeSigDen.value = _song.timeSigDenominator;
 	stepperSectionTimeSigDen.name = 'section_timesig_den';
 	blockPressWhileTypingOnStepper.push(stepperSectionTimeSigDen);
@@ -462,7 +640,7 @@ function addSongUI()
 	stepperSongTimeSigNum.name = 'song_timesig_num';
 	blockPressWhileTypingOnStepper.push(stepperSongTimeSigNum);
 
-	stepperSongTimeSigDen = new FlxUINumericStepper(210, 245, 1, _song.timeSigDenominator, 1, 32, 0);
+	stepperSongTimeSigDen = new FlxUINumericStepper(210, 245, 1, _song.timeSigDenominator, 1, 16, 0);
 	stepperSongTimeSigDen.value = _song.timeSigDenominator;
 	stepperSongTimeSigDen.name = 'song_timesig_den';
 	blockPressWhileTypingOnStepper.push(stepperSongTimeSigDen);
@@ -817,6 +995,271 @@ function addEventsUI()
 	UI_box.addGroup(tab_group_event);
 }
 
+var eventPopupOpen = false;
+var popupEvent = null;
+var popupEventList = [];
+var popupRows = [];
+var popupObjects = [];
+var popupFields = [];
+var popupXButtons = [];
+var popupScroll = 0;
+var popupAction = '';
+var POPUP_MAX_ROWS = 6;
+var POPUP_W = 560;
+var POPUP_H = 320;
+
+function trackPopup(obj)
+{
+	obj.scrollFactor.set();
+	add(obj);
+	popupObjects.push(obj);
+	return obj;
+}
+
+function clearEventPopupObjects()
+{
+	for (f in popupFields)
+	{
+		blockPressWhileTypingOn.remove(f.v1);
+		blockPressWhileTypingOn.remove(f.v2);
+		blockPressWhileTypingOn.remove(f.v3);
+		blockPressWhileScrolling.remove(f.dd);
+	}
+	for (o in popupObjects)
+	{
+		remove(o, true);
+		o.destroy();
+	}
+	popupObjects = [];
+	popupFields = [];
+	popupXButtons = [];
+}
+
+function openEventPopup(note)
+{
+	if (eventPopupOpen)
+		return;
+	popupEventList = [];
+	for (e in _song.events)
+		if (Math.abs(e[0] - note.strumTime) < 1)
+			popupEventList.push(e);
+	if (popupEventList.length == 0)
+		return;
+
+	popupEvent = popupEventList[0];
+	popupRows = [];
+	for (e in popupEventList)
+	{
+		for (r in e[1])
+		{
+			popupRows.push([
+				r[0] == null ? '' : r[0],
+				r[1] == null ? '' : r[1],
+				r[2] == null ? '' : r[2],
+				r[3] == null ? '' : r[3]
+			]);
+		}
+	}
+
+	curSelectedNote = popupEvent;
+	curEventSelected = 0;
+	changeEventSelected(0);
+
+	popupScroll = 0;
+	popupAction = '';
+	eventPopupOpen = true;
+	UI_box.active = false;
+	buildEventPopup();
+}
+
+function buildEventPopup()
+{
+	clearEventPopupObjects();
+
+	var px = Std.int((FlxG.width - POPUP_W) / 2);
+	var py = Std.int((FlxG.height - POPUP_H) / 2);
+
+	var names = [];
+	for (e in eventStuff)
+		names.push(e[0]);
+
+	var maxScroll = Std.int(Math.max(0, popupRows.length - POPUP_MAX_ROWS));
+	if (popupScroll > maxScroll) popupScroll = maxScroll;
+	if (popupScroll < 0) popupScroll = 0;
+
+	var dim = new FlxSprite(0, 0).makeGraphic(FlxG.width, FlxG.height, 0xAA000000);
+	trackPopup(dim);
+	var border = new FlxSprite(px - 3, py - 3).makeGraphic(POPUP_W + 6, POPUP_H + 6, 0xFF8888aa);
+	trackPopup(border);
+	var panel = new FlxSprite(px, py).makeGraphic(POPUP_W, POPUP_H, 0xFF262633);
+	trackPopup(panel);
+
+	var title = new FlxText(px + 14, py + 10, POPUP_W - 28, 'Events at ' + Math.floor(popupEvent[0]) + ' ms  (section ' + curSection + ')', 16);
+	trackPopup(title);
+
+	var colY = py + 42;
+	trackPopup(new FlxText(px + 14, colY, 0, 'Event', 8));
+	trackPopup(new FlxText(px + 148, colY, 0, 'Value 1', 8));
+	trackPopup(new FlxText(px + 266, colY, 0, 'Value 2', 8));
+	trackPopup(new FlxText(px + 384, colY, 0, 'Value 3', 8));
+
+	var shown = Std.int(Math.min(POPUP_MAX_ROWS, popupRows.length - popupScroll));
+	var k = shown - 1;
+	while (k >= 0)
+	{
+		var idx = popupScroll + k;
+		var rowIndex = idx;
+		var ry = py + 60 + k * 34;
+		var row = popupRows[idx];
+
+		var v1 = new FlxUIInputText(px + 148, ry + 2, 110, row[1], 8);
+		var v2 = new FlxUIInputText(px + 266, ry + 2, 110, row[2], 8);
+		var v3 = new FlxUIInputText(px + 384, ry + 2, 110, row[3], 8);
+		trackPopup(v1);
+		trackPopup(v2);
+		trackPopup(v3);
+		blockPressWhileTypingOn.push(v1);
+		blockPressWhileTypingOn.push(v2);
+		blockPressWhileTypingOn.push(v3);
+
+		var xs = new FlxSprite(px + POPUP_W - 50, ry).makeGraphic(26, 22, 0xFFd9534f);
+		trackPopup(xs);
+		var xt = new FlxText(px + POPUP_W - 50, ry + 3, 26, 'X', 14);
+		xt.setFormat(null, 14, 0xFFffffff, 'center');
+		trackPopup(xt);
+		popupXButtons.push({spr: xs, idx: rowIndex});
+
+		var dd = new FlxUIDropDownMenuCustom(px + 14, ry, FlxUIDropDownMenuCustom.makeStrIdLabelArray(names, true), function(pressed)
+		{
+			var sel = Std.parseInt(pressed);
+			if (popupRows[rowIndex] != null && sel != null && sel >= 0 && sel < eventStuff.length)
+				popupRows[rowIndex][0] = eventStuff[sel][0];
+		});
+		dd.selectedLabel = row[0];
+		trackPopup(dd);
+		blockPressWhileScrolling.push(dd);
+
+		popupFields.push({idx: rowIndex, v1: v1, v2: v2, v3: v3, dd: dd});
+		k--;
+	}
+
+	var info = '';
+	if (popupRows.length == 0)
+		info = 'No events left. ACCEPT will delete it.';
+	else
+		info = 'Events ' + (popupScroll + 1) + '-' + (popupScroll + shown) + ' of ' + popupRows.length + '   |   mouse wheel = scroll   |   ESC = cancel';
+	trackPopup(new FlxText(px + 14, py + POPUP_H - 70, POPUP_W - 28, info, 8));
+
+	var plusBtn = new FlxButton(px + 14, py + POPUP_H - 42, 'ADD', function()
+	{
+		popupAction = 'plus';
+	});
+	plusBtn.color = 0xFF5cb85c;
+	plusBtn.label.color = 0xFFffffff;
+	trackPopup(plusBtn);
+
+	var acceptBtn = new FlxButton(px + POPUP_W - 94, py + POPUP_H - 42, 'ACCEPT', function()
+	{
+		popupAction = 'accept';
+	});
+	acceptBtn.color = 0xFF5cb85c;
+	acceptBtn.label.color = 0xFFffffff;
+	trackPopup(acceptBtn);
+}
+
+function updateEventPopup()
+{
+	if (!eventPopupOpen)
+		return;
+	for (f in popupFields)
+	{
+		var row = popupRows[f.idx];
+		if (row != null)
+		{
+			row[1] = f.v1.text;
+			row[2] = f.v2.text;
+			row[3] = f.v3.text;
+		}
+	}
+
+	if (FlxG.keys.justPressed.ESCAPE)
+	{
+		closeEventPopup(false);
+		return;
+	}
+	if (popupAction == 'accept')
+	{
+		popupAction = '';
+		closeEventPopup(true);
+		return;
+	}
+	if (popupAction == 'plus')
+	{
+		popupAction = '';
+		popupRows.push(['', '', '', '']);
+		popupScroll = Std.int(Math.max(0, popupRows.length - POPUP_MAX_ROWS));
+		buildEventPopup();
+		return;
+	}
+
+	for (xb in popupXButtons)
+	{
+		var hover = FlixG.mouse.overlaps(xb.spr);
+		xb.spr.alpha = hover ? 1 : 0.75;
+		if (hover && FlixG.mouse.justPressed)
+		{
+			popupRows.splice(xb.idx, 1);
+			buildEventPopup();
+			return;
+		}
+	}
+
+	if (FlixG.mouse.wheel != 0 && popupRows.length > POPUP_MAX_ROWS)
+	{
+		popupScroll -= Std.int(FlixG.mouse.wheel);
+		buildEventPopup();
+	}
+}
+
+function closeEventPopup(accept)
+{
+	if (!eventPopupOpen)
+		return;
+
+	eventPopupOpen = false;
+	clearEventPopupObjects();
+	UI_box.active = true;
+
+	if (accept)
+	{
+		if (popupRows.length == 0)
+		{
+			for (e in popupEventList)
+				_song.events.remove(e);
+			curSelectedNote = null;
+		}
+		else
+		{
+			var cleaned = [];
+			for (r in popupRows)
+				cleaned.push([r[0], r[1], r[2], r[3]]);
+			popupEvent[1] = cleaned;
+			for (e in popupEventList)
+				if (e != popupEvent)
+					_song.events.remove(e);
+			curSelectedNote = popupEvent;
+		}
+		curEventSelected = 0;
+		changeEventSelected(0);
+		updateGrid();
+		autosaveSong();
+	}
+
+	popupEvent = null;
+	popupEventList = [];
+	popupRows = [];
+}
+
 function changeEventSelected(change)
 {
 	if(!arrayIsEmpty(curSelectedNote) && curSelectedNote[2] == null) //Is event note
@@ -1051,12 +1494,7 @@ function getEvent(id, sender, data, params)
 				FlixG.log.add('changed bpm shit');
 			case 'Change Time Sig':
 				_song.notes[curSection].changeTimeSig = check.checked;
-
-				recalcSectionTimeSigs();
-				Conductor.mapBPMChanges(_song);
-
-				reloadGridLayer();
-				updateSectionUI();
+				applyTimeSigChange();
 			case "Alt Animation":
 				_song.notes[curSection].altAnim = check.checked;
 			case "Is Moody":
@@ -1118,42 +1556,40 @@ function getEvent(id, sender, data, params)
 		else if (wname == 'song_timesig_num')
 		{
 			_song.timeSigNumerator = Std.int(nums.value);
-
-			recalcSectionTimeSigs();
-			Conductor.mapBPMChanges(_song);
-
-			reloadGridLayer();
-			updateSectionUI();
+			applyTimeSigChange();
 		}
 		else if (wname == 'song_timesig_den')
 		{
-			_song.timeSigDenominator = Std.int(nums.value);
-
-			recalcSectionTimeSigs();
-			Conductor.mapBPMChanges(_song);
-
-			reloadGridLayer();
-			updateSectionUI();
+			var snapped = snapDenominator(nums.value, lastSongDen);
+			lastSongDen = snapped;
+			if (nums.value != snapped)
+				nums.value = snapped;
+			_song.timeSigDenominator = snapped;
+			applyTimeSigChange();
 		}
 		else if (wname == 'section_timesig_num')
 		{
-			_song.notes[curSection].timeSigNum = Std.int(nums.value);
-
-			recalcSectionTimeSigs();
-			Conductor.mapBPMChanges(_song);
-
-			reloadGridLayer();
-			updateSectionUI();
+			var secNum = _song.notes[curSection];
+			var tsNum = getSectionTimeSig(curSection);
+			secNum.timeSigNum = Std.int(nums.value);
+			secNum.timeSigDen = tsNum.den;
+			secNum.changeTimeSig = true;
+			check_changeTimeSig.checked = true;
+			applyTimeSigChange();
 		}
 		else if (wname == 'section_timesig_den')
 		{
-			_song.notes[curSection].timeSigDen = Std.int(nums.value);
-
-			recalcSectionTimeSigs();
-			Conductor.mapBPMChanges(_song);
-
-			reloadGridLayer();
-			updateSectionUI();
+			var secDen = _song.notes[curSection];
+			var tsDen = getSectionTimeSig(curSection);
+			var snappedDen = snapDenominator(nums.value, lastSectionDen);
+			lastSectionDen = snappedDen;
+			if (nums.value != snappedDen)
+				nums.value = snappedDen;
+			secDen.timeSigNum = tsDen.num;
+			secDen.timeSigDen = snappedDen;
+			secDen.changeTimeSig = true;
+			check_changeTimeSig.checked = true;
+			applyTimeSigChange();
 		}
 		else if (wname == 'note_susLength')
 		{
@@ -1221,11 +1657,11 @@ function getEvent(id, sender, data, params)
 
 var updatedSection = false;
 
-function sectionStartTime(add)
+function sectionStartTimeAt(count)
 {
 	var daBPM = _song.bpm;
 	var daPos = 0;
-	for (i in 0...curSection + add)
+	for (i in 0...count)
 	{
 		if(_song.notes[i] != null)
 		{
@@ -1233,24 +1669,24 @@ function sectionStartTime(add)
 			{
 				daBPM = _song.notes[i].bpm;
 			}
-			var leinst = _song.notes[i].lengthInSteps;
-			if (leinst == null || leinst <= 0)
-			{
-				var tsNum = (_song.notes[i].timeSigNum != null && _song.notes[i].timeSigNum > 0) ? _song.notes[i].timeSigNum : _song.timeSigNumerator;
-				var tsDen = (_song.notes[i].timeSigDen != null && _song.notes[i].timeSigDen > 0) ? _song.notes[i].timeSigDen : _song.timeSigDenominator;
-				leinst = getStepsPerMeasure(tsNum, tsDen);
-			}
-			daPos += leinst * (1000 * 60 / daBPM / 4);
+			daPos += getSectionSteps(i) * (1000 * 60 / daBPM / 4);
 		}
 	}
 	return daPos;
+}
+
+function sectionStartTime(add)
+{
+	return sectionStartTimeAt(curSection + add);
 }
 
 var colorSine = 0;
 var lastConductorPos;
 function update(elapsed)
 {
-	if (FlxG.keys.justPressed.ENTER || (mobile && visPressed('A')))
+	updateEventPopup();
+
+	if (!eventPopupOpen && (FlxG.keys.justPressed.ENTER || (mobile && visPressed('A'))))
 		{
 			ChartingState.lastSection = curSection;
 	
@@ -1304,7 +1740,7 @@ function update(elapsed)
 	_song.cutsceneType = cutsceneTextField.text;
 	_song.uiType = uiTextField.text;
 	_song.forceLayout = uiLayoutTextField.text;
-	strumLine.y = getYfromStrum((Conductor.songPosition - sectionStartTime(0)) % (Conductor.stepCrochet * _song.notes[curSection].lengthInSteps),true);
+	strumLine.y = getYfromStrum((Conductor.songPosition - sectionStartTime(0)) % (Conductor.stepCrochet * getCurSectionSteps()),true);
 	camPos.y = strumLine.y;
 
 	var top1 = _song.player1;
@@ -1325,7 +1761,7 @@ function update(elapsed)
 	{
 		if (_song.notes[curSection + 1] == null)
 		{
-			addSection(getStepsPerMeasure(Conductor.timeSigNumerator, Conductor.timeSigDenominator));
+			addSection(getNewSectionSteps());
 			recalcSectionTimeSigs();
 		}
 
@@ -1344,7 +1780,7 @@ function update(elapsed)
 				&& FlixG.mouse.y > gridBG.y
 				&& FlixG.mouse.y < gridBG.y + (GRID_SIZE * _song.notes[curSection].lengthInSteps) * zoomList[curZoom];
 
-	if (FlixG.mouse.justPressed)
+	if (FlixG.mouse.justPressed && !eventPopupOpen)
 	{
 		if (FlixG.mouse.overlaps(curRenderedNotes))
 		{
@@ -1352,7 +1788,11 @@ function update(elapsed)
 			{
 				if (FlixG.mouse.overlaps(note))
 				{
-					if (ctrlPressed)
+					if (note.noteData < 0)
+					{
+						openEventPopup(note);
+					}
+					else if (ctrlPressed)
 					{
 						selectNote(note);
 					}
@@ -1445,6 +1885,9 @@ function update(elapsed)
 			}
 		}
 	}
+
+	if (eventPopupOpen)
+		blockInput = true;
 
 	var shiftThing = 1;
 	if (!blockInput)
@@ -1578,11 +2021,25 @@ function update(elapsed)
 
 	_song.bpm = tempBpm;
 
+	var beatInBar = Std.int(Math.floor((curStep - totalStepsUpToSection(curSection)) / getStepsPerBeat(curTimeSigDen))) + 1;
+	if (beatInBar < 1)
+		beatInBar = 1;
+	if (beatInBar > curTimeSigNum)
+		beatInBar = curTimeSigNum;
+
 	bpmTxt.text = bpmTxt.text = Std.string(FlxMath.roundDecimal(Conductor.songPosition / 1000, 2))
 		+ " / "
 		+ Std.string(FlxMath.roundDecimal(FlxG.sound.music.length / 1000, 2))
 		+ "\nSection: "
-		+ curSection;
+		+ curSection
+		+ "\nTime Sig: "
+		+ curTimeSigNum
+		+ "/"
+		+ curTimeSigDen
+		+ "  Beat: "
+		+ beatInBar
+		+ "/"
+		+ curTimeSigNum;
 
 	var playedSound = [false, false, false, false]; //Prevents ouchy GF sex sounds
 	curRenderedNotes.forEachAlive(function(note)
@@ -1770,23 +2227,22 @@ function reloadGridLayer() {
 	gridLayer.add(line2);
 	var visibleSteps = sectionSteps;
 	var rowH = GRID_SIZE * zoomList[curZoom];
-	var stepsPerBeatShow = Conductor.stepsPerBeat;
-	if (stepsPerBeatShow == null || stepsPerBeatShow <= 0) stepsPerBeatShow = Std.int(16 / _song.timeSigDenominator);
-	var stepsPerMeasureShow = Conductor.stepsPerMeasure;
-	if (stepsPerMeasureShow == null || stepsPerMeasureShow <= 0) stepsPerMeasureShow = getStepsPerMeasure(_song.timeSigNumerator, _song.timeSigDenominator);
+	var stepsPerBeatShow = getStepsPerBeat(curTimeSigDen);
 
-	var stepRow = 0;
-	while (stepRow <= visibleSteps)
+	var stepRow = stepsPerBeatShow;
+	while (stepRow < visibleSteps)
 	{
-		if (stepRow > 0)
-		{
-			var isMeasureLine = (Std.int(stepRow) % Std.int(stepsPerMeasureShow) == 0);
-			var beatLine = new FlxSprite(gridOriginX, stepRow * rowH).makeGraphic(gridW, isMeasureLine ? 3 : 1, isMeasureLine ? 0xFFffffff : 0xFF888888);
-			beatLine.alpha = isMeasureLine ? 0.8 : 0.4;
-			gridLayer.add(beatLine);
-		}
+		var beatLine = new FlxSprite(gridOriginX, stepRow * rowH).makeGraphic(gridW, 1, 0xFF888888);
+		beatLine.alpha = 0.4;
+		gridLayer.add(beatLine);
 		stepRow += stepsPerBeatShow;
 	}
+	var barTop = new FlxSprite(gridOriginX, 0).makeGraphic(gridW, 3, 0xFFffffff);
+	barTop.alpha = 0.8;
+	gridLayer.add(barTop);
+	var barBottom = new FlxSprite(gridOriginX, visibleSteps * rowH - 2).makeGraphic(gridW, 3, 0xFFffffff);
+	barBottom.alpha = 0.8;
+	gridLayer.add(barBottom);
 
 	if (strumLine != null)
 		remove(strumLine);
@@ -1856,22 +2312,12 @@ function resetSection(songBeginning)
 
 function getSectionGridY(section)
 {
-    var y = gridOriginY;
+	var y = gridOriginY;
 
-    for (i in 0...section)
-    {
-        var oldNum = _song.notes[i].timeSigNum;
-        var oldDen = _song.notes[i].timeSigDen;
+	for (i in 0...section)
+		y += getSectionSteps(i) * GRID_SIZE * zoomList[curZoom];
 
-        if (oldNum <= 0) oldNum = _song.timeSigNumerator;
-        if (oldDen <= 0) oldDen = _song.timeSigDenominator;
-
-        var rows = getStepsPerMeasure(oldNum, oldDen);
-
-        y += rows * GRID_SIZE * zoomList[curZoom];
-    }
-
-    return y;
+	return y;
 }
 
 function changeSection(sec, updateMusic)
@@ -1936,11 +2382,7 @@ function updateSectionUI()
 	var sec = _song.notes[curSection];
 
 	if (sec.lengthInSteps == null || sec.lengthInSteps <= 0)
-	{
-		var tsNum = (sec.timeSigNum != null && sec.timeSigNum > 0) ? sec.timeSigNum : _song.timeSigNumerator;
-		var tsDen = (sec.timeSigDen != null && sec.timeSigDen > 0) ? sec.timeSigDen : _song.timeSigDenominator;
-		sec.lengthInSteps = getStepsPerMeasure(tsNum, tsDen);
-	}
+		sec.lengthInSteps = getSectionSteps(curSection);
 
 	stepperLength.value = sec.lengthInSteps;
 
@@ -1967,14 +2409,18 @@ function updateSectionUI()
 	stepperAltAnim.value = sec.altAnimNum;
 	stepperSectionBPM.value = sec.bpm;
 
-	if (sec.timeSigNum == null || sec.timeSigNum <= 0)
-		sec.timeSigNum = _song.timeSigNumerator;
-	if (sec.timeSigDen == null || sec.timeSigDen <= 0)
-		sec.timeSigDen = _song.timeSigDenominator;
+	// when "Change Time Sig" is off the section just shows (and mirrors) the signature it inherits
+	var secTs = getSectionTimeSig(curSection);
+	if (sec.changeTimeSig != true)
+	{
+		sec.timeSigNum = secTs.num;
+		sec.timeSigDen = secTs.den;
+	}
 
-	check_changeTimeSig.checked = sec.changeTimeSig;
-	stepperSectionTimeSigNum.value = sec.timeSigNum;
-	stepperSectionTimeSigDen.value = sec.timeSigDen;
+	check_changeTimeSig.checked = (sec.changeTimeSig == true);
+	stepperSectionTimeSigNum.value = secTs.num;
+	stepperSectionTimeSigDen.value = secTs.den;
+	lastSectionDen = secTs.den;
 
 	updateHeads();
 }
@@ -2137,16 +2583,7 @@ function setupNoteData(i)
 	note.updateHitbox();
 	note.x = Math.floor((daNoteInfo % (Main.ammo[_song.mania] * 2)) * GRID_SIZE) + GRID_SIZE;
 
-	var leinst;
-	leinst = _song.notes[curSection].lengthInSteps;
-
-	if (leinst == null || leinst <= 0)
-	{
-		var curSec = _song.notes[curSection];
-		var tsNum = (curSec.timeSigNum != null && curSec.timeSigNum > 0) ? curSec.timeSigNum : _song.timeSigNumerator;
-		var tsDen = (curSec.timeSigDen != null && curSec.timeSigDen > 0) ? curSec.timeSigDen : _song.timeSigDenominator;
-		leinst = getStepsPerMeasure(tsNum, tsDen);
-	}
+	var leinst = getSectionSteps(curSection);
 
 	note.y = getYfromStrumNotes((daStrumTime - sectionStartTime(0)) % (Conductor.stepCrochet * leinst));
 
@@ -2172,25 +2609,9 @@ function totalStepsUpToSection(sec)
 	for (i in 0...sec)
 	{
 		if (_song.notes[i] != null)
-		{
-			var len = _song.notes[i].lengthInSteps;
-			if (len == null || len <= 0)
-			{
-				var tsNum = (_song.notes[i].timeSigNum != null && _song.notes[i].timeSigNum > 0) ? _song.notes[i].timeSigNum : _song.timeSigNumerator;
-				var tsDen = (_song.notes[i].timeSigDen != null && _song.notes[i].timeSigDen > 0) ? _song.notes[i].timeSigDen : _song.timeSigDenominator;
-				len = getStepsPerMeasure(tsNum, tsDen);
-			}
-			total += len;
-		}
+			total += getSectionSteps(i);
 	}
 	return total;
-}
-function getStepsPerMeasure(num, den)
-{
-	if (num == null || num <= 0) num = 4;
-	if (den == null || den <= 0) den = 4;
-	var stepsPerBeat = Std.int(Math.floor(16 / den));
-	return Std.int(num * stepsPerBeat);
 }
 
 function getCurSectionSteps()
@@ -2198,17 +2619,7 @@ function getCurSectionSteps()
 	if (_song == null || _song.notes == null || _song.notes[curSection] == null)
 		return getStepsPerMeasure(_song.timeSigNumerator, _song.timeSigDenominator);
 
-	var sec = _song.notes[curSection];
-	var steps = sec.lengthInSteps;
-
-	if (steps == null || steps <= 0)
-	{
-		var tsNum = (sec.timeSigNum != null && sec.timeSigNum > 0) ? sec.timeSigNum : _song.timeSigNumerator;
-		var tsDen = (sec.timeSigDen != null && sec.timeSigDen > 0) ? sec.timeSigDen : _song.timeSigDenominator;
-		steps = getStepsPerMeasure(tsNum, tsDen);
-	}
-
-	return steps;
+	return getSectionSteps(curSection);
 }
 
 function syncTimeSigToCurSection()
@@ -2216,18 +2627,10 @@ function syncTimeSigToCurSection()
 	if (_song == null || _song.notes == null || _song.notes[curSection] == null)
 		return;
 
-	if (_song.notes[curSection].changeTimeSig && _song.notes[curSection].timeSigNum > 0 && _song.notes[curSection].timeSigDen > 0)
-		Conductor.changeTimeSig(Std.int(_song.notes[curSection].timeSigNum), Std.int(_song.notes[curSection].timeSigDen));
-	else {
-		var daTimeSigNum = _song.timeSigNumerator;
-		var daTimeSigDen = _song.timeSigDenominator;
-		for (i in 0...curSection)
-			if (_song.notes[i].changeTimeSig && _song.notes[i].timeSigNum > 0 && _song.notes[i].timeSigDen > 0) {
-				daTimeSigNum = _song.notes[i].timeSigNum;
-				daTimeSigDen = _song.notes[i].timeSigDen;
-			}
-		Conductor.changeTimeSig(Std.int(daTimeSigNum), Std.int(daTimeSigDen));
-	}
+	var ts = getSectionTimeSig(curSection);
+	curTimeSigNum = ts.num;
+	curTimeSigDen = ts.den;
+	Conductor.changeTimeSig(ts.num, ts.den);
 }
 
 function recalcSectionTimeSigs()
@@ -2235,18 +2638,24 @@ function recalcSectionTimeSigs()
 	if (_song == null || _song.notes == null)
 		return;
 
-	var activeNum = _song.timeSigNumerator;
-	var activeDen = _song.timeSigDenominator;
+	var activeNum = Std.int(_song.timeSigNumerator);
+	var activeDen = nearestValidDenominator(_song.timeSigDenominator);
 
 	for (i in 0..._song.notes.length)
 	{
 		var sec = _song.notes[i];
 		if (sec == null) continue;
 
-		if (sec.changeTimeSig && sec.timeSigNum > 0 && sec.timeSigDen > 0)
+		if (sec.changeTimeSig == true && sec.timeSigNum > 0 && sec.timeSigDen > 0)
 		{
-			activeNum = sec.timeSigNum;
+			sec.timeSigDen = nearestValidDenominator(sec.timeSigDen);
+			activeNum = Std.int(sec.timeSigNum);
 			activeDen = sec.timeSigDen;
+		}
+		else
+		{
+			sec.timeSigNum = activeNum;
+			sec.timeSigDen = activeDen;
 		}
 
 		sec.lengthInSteps = getStepsPerMeasure(activeNum, activeDen);
@@ -2394,9 +2803,28 @@ function addNote()
 		var text1 = value1InputText.text;
 		var text2 = value2InputText.text;
 		var text3 = value3InputText.text;
-		_song.events.push([noteStrum, [[event, text1, text2, text3]]]);
-		curSelectedNote = _song.events[_song.events.length - 1];
-		curEventSelected = 0;
+		var existingEvent = null;
+		for (e in _song.events)
+		{
+			if (Math.abs(e[0] - noteStrum) < 1)
+			{
+				existingEvent = e;
+				break;
+			}
+		}
+
+		if (existingEvent != null)
+		{
+			existingEvent[1].push([event, text1, text2, text3]);
+			curSelectedNote = existingEvent;
+			curEventSelected = existingEvent[1].length - 1;
+		}
+		else
+		{
+			_song.events.push([noteStrum, [[event, text1, text2, text3]]]);
+			curSelectedNote = _song.events[_song.events.length - 1];
+			curEventSelected = 0;
+		}
 		changeEventSelected(0);
 	}
 

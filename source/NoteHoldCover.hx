@@ -13,6 +13,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
   public var strumNote:StrumNote;
   public var glow:FlxSprite;
   public var ending:Bool = false;
+  private var colorTitle:String = "";
 
   public function new(strumNote:StrumNote)
   {
@@ -48,17 +49,15 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
     var colorIdx = getColorIdx();
     var color = Note.colArray[colorIdx];
-    var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
+    colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
 
     var path = SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/holdCover" + colorTitle;
     try {
-        glow.frames = DynamicAtlasFrames.fromSparrow(path + ".png", path + ".xml");
+        glow.frames = FNFAssets.getAtlasFrames(path + ".png", path + ".xml");
     } catch(e:Dynamic) {
         trace("could not load textures at path: " + path + " Error: " + e);
         return;
     }
-
-        glow.frames = DynamicAtlasFrames.fromSparrow(path + ".png", path + ".xml");
 
         glow.animation.addByPrefix('holdCoverStart' + colorTitle, 'holdCoverStart' + colorTitle, FRAMERATE_DEFAULT, false);
         glow.animation.addByPrefix('holdCover' + colorTitle, 'holdCover' + colorTitle, FRAMERATE_DEFAULT, true);
@@ -99,7 +98,7 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
   public override function update(elapsed):Void
   {
-    super.update(elapsed);
+    if (visible) super.update(elapsed);
     var a = 0.8 * strumNote.alpha;
     this.alpha = a;
     if (glow != null) glow.alpha = a;
@@ -110,9 +109,6 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     this.visible = true;
     glow.visible = true;
     glow.setPosition(this.x, this.y);
-    var colorIdx = getColorIdx();
-    var color = Note.colArray[colorIdx];
-    var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
     var anim = 'holdCoverStart' + colorTitle;
     if (glow.animation.curAnim == null || glow.animation.curAnim.name != anim)
         glow.animation.play(anim, true);
@@ -123,9 +119,6 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
     this.visible = true;
     glow.visible = true;
     glow.setPosition(this.x, this.y);
-    var colorIdx = getColorIdx();
-    var color = Note.colArray[colorIdx];
-    var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
     var animName = 'holdCover' + colorTitle;
     
     if (glow.animation.curAnim != null)
@@ -150,9 +143,6 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
         glow.setPosition(this.x, this.y);
 
-        var colorIdx = getColorIdx();
-        var color = Note.colArray[colorIdx];
-        var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
 
         glow.animation.play('holdCoverEnd' + colorTitle, true);
     }
@@ -180,9 +170,6 @@ class NoteHoldCover extends FlxTypedSpriteGroup<FlxSprite>
 
   public function onAnimationFinished(animationName:String):Void
   {
-    var colorIdx = getColorIdx();
-    var color = Note.colArray[colorIdx];
-    var colorTitle = color.charAt(0).toUpperCase() + color.substr(1);
     
     if (StringTools.startsWith(animationName, 'holdCoverStart' + colorTitle))
       playContinue();

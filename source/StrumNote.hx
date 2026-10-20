@@ -49,7 +49,7 @@ class StrumNote extends FlxSprite
 		if(isPixelNote)
 		loadGraphic(FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/arrows-pixels.png"), true, 17, 17);
 		else
-		frames = DynamicAtlasFrames.fromSparrow(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.png", SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.xml");
+		frames = FNFAssets.getAtlasFrames(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.png", SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.xml");
 						
 		loadNoteAnims();
 		scrollFactor.set();
@@ -193,7 +193,7 @@ class StrumNote extends FlxSprite
 		if (isPixelNote)
 			loadGraphic(FNFAssets.getBitmapData(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/arrows-pixels.png"), true, 17, 17);
 		else
-			frames = DynamicAtlasFrames.fromSparrow(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.png", SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.xml");
+			frames = FNFAssets.getAtlasFrames(SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.png", SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + curUiType.uses + "/NOTE_assets.xml");
 
 		loadNoteAnims();
 		playAnim('static');
@@ -229,8 +229,10 @@ class StrumNote extends FlxSprite
 
 		if (holdCover != null)
 		{
-			holdCover.x = x - 108;
-			holdCover.y = y - 92;
+			var coverX = x - 108;
+			var coverY = y - 92;
+			if (holdCover.x != coverX) holdCover.x = coverX;
+			if (holdCover.y != coverY) holdCover.y = coverY;
 
 			if (!holdStarted && wasHolding && !holdEnding)
 			{

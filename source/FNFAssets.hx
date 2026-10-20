@@ -19,12 +19,25 @@ import haxe.io.Bytes;
 import flixel.graphics.FlxGraphic;
 import openfl.utils.AssetType;
 import openfl.system.System;
+import flixel.graphics.frames.FlxAtlasFrames;
+import DynamicSprite.DynamicAtlasFrames;
+import lime.media.AudioBuffer;
+#if (sys && target.threaded)
+import sys.thread.Thread;
+import sys.thread.Lock;
+#end
 using StringTools;
 enum Extensions {
 	None;
 	Json;
 	Hscript;
 }
+#if (sys && target.threaded)
+typedef PendingSound = {
+	var lock:Lock;
+	var buffer:Null<AudioBuffer>;
+}
+#end
 /**
  * Assets reader and writer
  */
@@ -37,6 +50,18 @@ class FNFAssets {
 	private static var assetAccessOrder:Array<String> = [];
 	private static var soundAccessOrder:Array<String> = [];
 	private static var extractedVideoPaths:Map<String, String> = new Map();
+	private static var existsCache:Map<String, Bool> = new Map();
+	private static var scopeCache:Map<String, Bool> = new Map();
+	private static var cwdRaw:String = null;
+	private static var cwdNormalized:String = null;
+	private static var bitmapCache:Map<String, BitmapData> = new Map();
+	private static var bitmapCacheOrder:Array<String> = [];
+	private static inline var MAX_BITMAP_CACHE_SIZE:Int = 128;
+	private static var atlasCache:Map<String, FlxAtlasFrames> = new Map();
+	public static var asyncAudioPreload:Bool = true;
+	#if (sys && target.threaded)
+	private static var pendingSounds:Map<String, PendingSound> = new Map();
+	#end
 	private static function resolvePath(id:String):String {
 		#if sys
 		return Assets.exists(id) ? Assets.getPath(id) : id;
@@ -185,28 +210,56 @@ class FNFAssets {
 			case Hscript: 
 				return existsAmbig([id], CoolUtil.HSCRIPT_EXT) != '';
 			default: 
+				#if sys
+				var cachedExists = existsCache.get(id);
+				if (cachedExists != null)
+					return cachedExists;
+				var result = existsUncached(id);
+				existsCache.set(id, result);
+				return result;
+				#else
 				if (!isInScope(id))
 					return false;
-				#if sys
-				var path = Assets.exists(id) ? Assets.getPath(id) : null;
-				if (path == null)
-					path = id;
-				else
-					return true;
-				return FileSystem.exists(path);
-				#else
 				return Assets.exists(id);
 				#end
 		}
     }
-	public static function isInScope(id:String) {
-		#if sys
-		if (Assets.exists(id))
-			return true;
-		if (!Path.normalize(FileSystem.absolutePath(id)).contains(Path.normalize(Main.cwd)))
+	#if sys
+	private static function existsUncached(id:String):Bool {
+		if (!isInScope(id))
 			return false;
-		#end
+		var path = Assets.exists(id) ? Assets.getPath(id) : null;
+		if (path == null)
+			path = id;
+		else
+			return true;
+		return FileSystem.exists(path);
+	}
+	#end
+	public static function clearExistsCache(?id:String):Void {
+		if (id != null)
+			existsCache.remove(id);
+		else
+			existsCache.clear();
+	}
+	public static function isInScope(id:String):Bool {
+		#if sys
+		var cached = scopeCache.get(id);
+		if (cached != null)
+			return cached;
+		var result:Bool = true;
+		if (!Assets.exists(id)) {
+			if (cwdRaw != Main.cwd || cwdNormalized == null) {
+				cwdRaw = Main.cwd;
+				cwdNormalized = Path.normalize(Main.cwd);
+			}
+			result = Path.normalize(FileSystem.absolutePath(id)).contains(cwdNormalized);
+		}
+		scopeCache.set(id, result);
+		return result;
+		#else
 		return true;
+		#end
 	}
 	 public static function getBitmapData(id:String, ?useCache:Bool = true):BitmapData {
         #if sys
@@ -214,8 +267,24 @@ class FNFAssets {
 				throw "Tried to access a file that is out of scope.";
             if (Assets.exists(id))
                 return Assets.getBitmapData(id, useCache);
+			if (useCache) {
+				var cachedBmp = bitmapCache.get(id);
+				if (cachedBmp != null && cachedBmp.width > 0)
+					return cachedBmp;
+				if (cachedBmp != null) {
+					bitmapCache.remove(id);
+					bitmapCacheOrder.remove(id);
+				}
+			}
 			try {
-				return BitmapData.fromFile(id);
+				var bmp = BitmapData.fromFile(id);
+				if (useCache && bmp != null) {
+					if (bitmapCacheOrder.length >= MAX_BITMAP_CACHE_SIZE)
+						bitmapCache.remove(bitmapCacheOrder.shift());
+					bitmapCache.set(id, bmp);
+					bitmapCacheOrder.push(id);
+				}
+				return bmp;
 			} catch (e:Any) {
 				throw 'File $id doesn\'t exist or cannot be read.';
 			}
@@ -231,7 +300,7 @@ class FNFAssets {
 				return currentTrackedAssets.get(id);
 			}
 			if (!FileSystem.exists(id)) return null;
-			if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE)
+			if (assetAccessOrder.length >= MAX_ASSET_CACHE_SIZE)
 				evictOldestAsset();
 			try {
 				var newBitmap:BitmapData = BitmapData.fromFile(id);
@@ -253,7 +322,7 @@ class FNFAssets {
 			return currentTrackedAssets.get(id);
 		}
 		if (!FileSystem.exists(id)) return null;
-		if (getMapSize(currentTrackedAssets) >= MAX_ASSET_CACHE_SIZE)
+		if (assetAccessOrder.length >= MAX_ASSET_CACHE_SIZE)
 			evictOldestAsset();
 		
 		try {
@@ -266,6 +335,67 @@ class FNFAssets {
 			trace("Error loading graphic " + id + ": " + e);
 			return null;
 		}
+	}
+	public static function getAtlasFrames(png:String, xml:String):FlxAtlasFrames {
+		var key = png + "|" + xml;
+		var cached = atlasCache.get(key);
+		if (cached != null && cached.parent != null && cached.parent.bitmap != null && cached.parent.bitmap.width > 0)
+			return cached;
+		var frames = DynamicAtlasFrames.fromSparrow(png, xml);
+		if (frames != null)
+			atlasCache.set(key, frames);
+		else
+			atlasCache.remove(key);
+		return frames;
+	}
+	public static function preloadSoundAsync(id:String):Void {
+		#if (sys && target.threaded)
+		if (!asyncAudioPreload)
+			return;
+		try {
+			if (!isInScope(id))
+				return;
+			var path = resolvePath(id);
+			if (currentTrackedSounds.exists(path) || pendingSounds.exists(path))
+				return;
+			if (!FileSystem.exists(path))
+				return;
+			var entry:PendingSound = {lock: new Lock(), buffer: null};
+			pendingSounds.set(path, entry);
+			Thread.create(function() {
+				try {
+					entry.buffer = AudioBuffer.fromFile(path);
+				} catch (e:Any) {
+					entry.buffer = null;
+				}
+				entry.lock.release();
+			});
+		} catch (e:Any) {
+			trace("Async preload failed for " + id + ": " + e);
+		}
+		#end
+	}
+
+	//i think its better yeah
+	private static function takePending(path:String):Null<Sound> {
+		#if (sys && target.threaded)
+		var entry = pendingSounds.get(path);
+		if (entry == null)
+			return null;
+		pendingSounds.remove(path);
+		entry.lock.wait();
+		return entry.buffer == null ? null : Sound.fromAudioBuffer(entry.buffer);
+		#else
+		return null;
+		#end
+	}
+
+	public static function takePreloadedSound(id:String):Null<Sound> {
+		#if sys
+		return takePending(resolvePath(id));
+		#else
+		return null;
+		#end
 	}
 
 	public static function precacheSound(path:String):Sound
@@ -280,16 +410,18 @@ class FNFAssets {
 			updateLRU(path, soundAccessOrder);
 			return currentTrackedSounds.get(path);
 		}
-		if (getMapSize(currentTrackedSounds) >= MAX_SOUND_CACHE_SIZE)
+		if (soundAccessOrder.length >= MAX_SOUND_CACHE_SIZE)
 			evictOldestSound();
 		
 		try {
-			if (!FileSystem.exists(path)) {
-				trace("Warning: Sound file does not exist: " + path);
-				return null;
+			var snd = takePending(path);
+			if (snd == null) {
+				if (!FileSystem.exists(path)) {
+					trace("Warning: Sound file does not exist: " + path);
+					return null;
+				}
+				snd = Sound.fromFile(path);
 			}
-			
-			var snd = Sound.fromFile(path);
 			currentTrackedSounds.set(path, snd);
 			soundAccessOrder.push(path);
 			return snd;
@@ -307,6 +439,7 @@ class FNFAssets {
 				throw "Tried to access a file that is out of scope.";
 			try {
 				File.saveContent(id, data);
+				existsCache.remove(id);
 			} catch (e:Any) {
 				throw "Couldn't save to " + id + ". Is it in use?";
 			}
@@ -320,6 +453,7 @@ class FNFAssets {
 			throw "Tried to access a file that is out of scope.";
 		try {
 			File.saveBytes(id, data);
+			existsCache.remove(id);
 		} catch (e:Any) {
 			throw "Couldn't save to " + id + ". Is it in use?";
 		}
@@ -463,6 +597,14 @@ class FNFAssets {
 		
 		assetAccessOrder.splice(0, assetAccessOrder.length);
 		soundAccessOrder.splice(0, soundAccessOrder.length);
+
+		existsCache.clear();
+		bitmapCache.clear();
+		bitmapCacheOrder.splice(0, bitmapCacheOrder.length);
+		atlasCache.clear();
+		#if (sys && target.threaded)
+		pendingSounds.clear();
+		#end
 		
 		openfl.system.System.gc();
 	}

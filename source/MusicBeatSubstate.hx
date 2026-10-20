@@ -78,13 +78,26 @@ class MusicBeatSubstate extends FlxSubState
 		var oldStep:Int = curStep;
 
 		updateCurStep();
-		curBeat = Math.floor(curStep / 4);
+		curBeat = Math.floor(curStep / getSafeStepsPerBeat());
 
 		if (oldStep != curStep && curStep > 0)
 			stepHit();
 
 
 		super.update(elapsed);
+	}
+	
+	private function getSafeStepsPerBeat():Int
+	{
+		var spb:Int = Std.int(Conductor.stepsPerBeat);
+		if (spb > 0)
+			return spb;
+
+		var den:Int = Std.int(Conductor.timeSigDenominator);
+		if (den > 0 && den <= 16)
+			return Std.int(Math.max(1, Math.round(16 / den)));
+
+		return 4;
 	}
 
 	private function updateCurStep():Void
@@ -107,7 +120,7 @@ class MusicBeatSubstate extends FlxSubState
 
 	public function stepHit():Void
 	{
-		if (curStep % 4 == 0)
+		if (curStep % getSafeStepsPerBeat() == 0)
 			beatHit();
 	}
 

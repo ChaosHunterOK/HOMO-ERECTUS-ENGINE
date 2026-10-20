@@ -87,6 +87,7 @@ class Character extends FlxSprite
 	public var poisonColorEnemy:FlxColor = 0xFFEA2FFF;
 	public var bfColor:FlxColor = 0xFF149DFF;
 	public var crossFadeColor:FlxColor = 0xFF00FFFF;
+	public var missColor:FlxColor = 0xCFAFFF;
 
 	public var likeGf:Bool = false;
 	public var hasGun:Bool = false;
@@ -176,7 +177,7 @@ class Character extends FlxSprite
 		{
 			var missAnim = baseAnim + "miss";
 			if (hasAnim(missAnim)) animToPlay = missAnim;
-			if (forceColor) color = 0xCFAFFF;
+			if (forceColor) color = missColor;
 		}
 		else if (forceColor) color = FlxColor.WHITE;
 

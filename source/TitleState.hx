@@ -31,6 +31,7 @@ import hscript.Interp;
 import hscript.Parser;
 import hscript.ParserEx;
 import hscript.InterpEx;
+import openfl.display.BitmapData;
 #if sys
 import haxe.io.Path;
 import openfl.utils.ByteArray;
@@ -246,6 +247,8 @@ class TitleState extends MusicBeatState
 
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
+		if (transIn != null) transIn.cameraMode = TOP;
+		if (transOut != null) transOut.cameraMode = TOP;
 	}
 	function getRandomObject(object:Dynamic):Array<Dynamic>
 	{
