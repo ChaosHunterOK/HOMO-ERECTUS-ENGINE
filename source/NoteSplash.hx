@@ -11,7 +11,7 @@ class NoteSplash extends FlxSprite {
 
     public static var getFrames:Bool = true;
 	static var gotFrames:FlxAtlasFrames = null;
-    public static var oneType:Bool = false;
+    public static var oneType:Bool = true;
     var animsBuilt:Bool = false;
     var builtOneType:Bool = false;
     var builtMania:Int = -1;

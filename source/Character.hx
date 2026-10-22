@@ -100,6 +100,8 @@ class Character extends FlxSprite
 
 	public var holdAnimationFix:Bool = true;
 	public var holdAnimationFreezeFrame:Int = -1;
+	private var sustainHoldGrace:Float = 0;
+	private var holdWasActive:Bool = false;
 	public var isAnimateAtlas:Bool = false;
 	public var atlas:PsychFlxAnimate;
 	private var atlasAnims:Map<String, Bool> = new Map<String, Bool>();
@@ -161,7 +163,7 @@ class Character extends FlxSprite
 			}
 		}
 	}
-	public function sing(direction:Int, ?miss:Bool = false, ?alt:Int = 0)
+	public function sing(direction:Int, ?miss:Bool = false, ?alt:Int = 0, ?sustain:Bool = false)
 	{
 		holdTimer = 0;
 		var ammo = Main.ammo[PlayState.mania];
@@ -188,8 +190,14 @@ class Character extends FlxSprite
 			if (hasAnim(altAnim)) animToPlay = altAnim;
 		}
 
-		if (canSing)
-			playAnim(animToPlay, true);
+		if (!canSing) return;
+		if (sustain && !miss && holdAnimationFreezeFrame >= 0 && !isAnimationNull() && getCurAnimName() == animToPlay)
+		{
+			sustainHoldGrace = Conductor.stepCrochet * 0.001 * 2;
+			return;
+		}
+
+		playAnim(animToPlay, true);
 	}
 
 	override function update(elapsed:Float)
@@ -233,24 +241,30 @@ class Character extends FlxSprite
 			if (curAnim.startsWith('sing'))
 			{
 				holdTimer += elapsed;
-				var numFrames:Int = getCurAnimNumFrames();
-				var targetFrame:Int = (holdAnimationFreezeFrame < 0) ? numFrames - 1 : Std.int(FlxMath.bound(holdAnimationFreezeFrame, 0, numFrames - 1));
 				var holdingSustain:Bool = sustainLock && beingControlled;
 
-				if (holdAnimationFix)
+				if (sustainHoldGrace > 0)
+					sustainHoldGrace -= elapsed;
+
+				if (usesHoldFreeze())
 				{
-					if (holdingSustain)
+					if (holdingSustain || sustainHoldGrace > 0)
 					{
-						if (getCurAnimFrame() >= targetFrame)
-						{
-							setCurAnimFrame(targetFrame);
-							setCurAnimPaused(true);
-						}
+						holdWasActive = true;
+						holdTimer = 0;
 					}
-					else if (isCurAnimPaused())
-						setCurAnimPaused(false);
+					else
+					{
+						if (holdWasActive)
+						{
+							holdWasActive = false;
+							holdTimer = 0;
+						}
+						if (isCurAnimPaused())
+							setCurAnimPaused(false);
+					}
 				}
-				if (instantIdleOnSingEnd && !holdingSustain && isCurAnimFinished() && !isFreezing)
+				if (instantIdleOnSingEnd && !holdingSustain && sustainHoldGrace <= 0 && isCurAnimFinished() && !isFreezing)
 				{
 					dance();
 					holdTimer = 0;
@@ -286,6 +300,29 @@ class Character extends FlxSprite
 
 		callInterp("update", [elapsed, this]);
 		super.update(elapsed);
+		enforceHoldFreeze();
+	}
+
+	function usesHoldFreeze():Bool
+		return holdAnimationFix || holdAnimationFreezeFrame >= 0;
+
+	function enforceHoldFreeze():Void
+	{
+		if (debugMode || isAnimationNull() || !usesHoldFreeze()) return;
+		if (!getCurAnimName().startsWith('sing')) return;
+		if (!((sustainLock && beingControlled) || sustainHoldGrace > 0)) return;
+
+		var numFrames:Int = getCurAnimNumFrames();
+		if (numFrames <= 0) return;
+
+		var targetFrame:Int = (holdAnimationFreezeFrame < 0) ? numFrames - 1 : Std.int(FlxMath.bound(holdAnimationFreezeFrame, 0, numFrames - 1));
+		if (getCurAnimFrame() >= targetFrame)
+		{
+			setCurAnimFrame(targetFrame);
+			if (!isAnimateAtlas && animation.curAnim != null && targetFrame < numFrames - 1)
+				Reflect.setField(animation.curAnim, "finished", false);
+			setCurAnimPaused(true);
+		}
 	}
 
 	public function dance()
@@ -317,9 +354,14 @@ class Character extends FlxSprite
 			{
 				var frame:Int = syncFrames ? (isAnimationNull() ? 0 : atlas.anim.curFrame) : Frame;
 
+				if (atlasPaused)
+				{
+					atlas.resumeAnimation();
+					atlasPaused = false;
+				}
+
 				atlas.anim.play(realName, Force, Reversed, frame);
 				lastPlayedAnim = AnimName;
-				atlasPaused = false;
 
 				if (forcedLoop && atlas.anim.finished)
 					atlas.anim.play(realName, true, Reversed, frame);

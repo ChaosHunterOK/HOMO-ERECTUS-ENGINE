@@ -284,6 +284,7 @@ class PlayState extends MusicBeatState
 	public var health:Float = 1;
 	private var combo:Int = 0;
 	public var showCombo:Bool = true;
+	public var showComboUI:Bool = true;
 	public var daScrollSpeed:Float = 1;
 	public static var duoMode:Bool = false;
 	public static var gameOverChar:String;
@@ -595,6 +596,16 @@ class PlayState extends MusicBeatState
 		#end
 		interp.variables.set("addVirtualPads", addVirtualPads);
 		interp.variables.set("visPressed", visPressed);
+		interp.variables.set("showComboUI", function(?show:Bool) {
+			if (show != null) {
+				showComboUI = show;
+				if (!show && currentTimingShown != null) {
+					remove(currentTimingShown);
+					currentTimingShown = null;
+				}
+			}
+			return showComboUI;
+		});
 		interp.variables.set("difficulty", storyDifficulty);
 		interp.variables.set("Math", Math);
 		interp.variables.set("songData", SONG);
@@ -646,7 +657,6 @@ class PlayState extends MusicBeatState
 		interp.variables.set("onPause", function() {});
 		interp.variables.set("onResume", function() {});
 		interp.variables.set("noteLoaded", function (note) {});
-		interp.variables.set("showCombo", showCombo);
 		interp.variables.set("Fake3D", Fake3D);
 		interp.variables.set("camHUD", camHUD);
 		interp.variables.set("pi", Math.PI);
@@ -3359,14 +3369,14 @@ class PlayState extends MusicBeatState
 						var isDadSingingDir:Bool = (dad.animation.curAnim != null && dad.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(daNote.noteData))]));
 
 						if (!dad.holdAnimationFix || !daNote.isSustainNote || !isDadSingingDir)
-							dad.sing(Std.int(Math.abs(daNote.noteData)), false, dad.altNum);
+							dad.sing(Std.int(Math.abs(daNote.noteData)), false, dad.altNum, daNote.isSustainNote);
 						else
 							dad.holdTimer = 0;
 
 						if (daNote.oppntSing != null) {
 							var isBfSingingDir:Bool = (boyfriend.animation.curAnim != null && boyfriend.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[daNote.oppntSing.direction]));
 							if (!boyfriend.holdAnimationFix || !daNote.isSustainNote || !isBfSingingDir)
-								boyfriend.sing(daNote.oppntSing.direction, daNote.oppntSing.miss, daNote.oppntSing.alt);
+								boyfriend.sing(daNote.oppntSing.direction, daNote.oppntSing.miss, daNote.oppntSing.alt, daNote.isSustainNote);
 							else
 								boyfriend.holdTimer = 0;
 						}
@@ -3432,14 +3442,14 @@ class PlayState extends MusicBeatState
 						var isBfSingingDir:Bool = (boyfriend.animation.curAnim != null && boyfriend.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(daNote.noteData % Main.ammo[mania]))]));
 						
 						if (!boyfriend.holdAnimationFix || !daNote.isSustainNote || !isBfSingingDir)
-							boyfriend.sing(Std.int(Math.abs(daNote.noteData % Main.ammo[mania])), false, boyfriend.altNum);
+							boyfriend.sing(Std.int(Math.abs(daNote.noteData % Main.ammo[mania])), false, boyfriend.altNum, daNote.isSustainNote);
 						else
 							boyfriend.holdTimer = 0;
 
 						if (daNote.oppntSing != null) {
 							var isDadSingingDir:Bool = (dad.animation.curAnim != null && dad.animation.curAnim.name.startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(daNote.oppntSing.direction % Main.ammo[mania]))]));
 							if (!dad.holdAnimationFix || !daNote.isSustainNote || !isDadSingingDir)
-								dad.sing(Std.int(Math.abs(daNote.oppntSing.direction % Main.ammo[mania])), daNote.oppntSing.miss, daNote.oppntSing.alt);
+								dad.sing(Std.int(Math.abs(daNote.oppntSing.direction % Main.ammo[mania])), daNote.oppntSing.miss, daNote.oppntSing.alt, daNote.isSustainNote);
 							else
 								dad.holdTimer = 0;
 						}
@@ -3884,6 +3894,13 @@ class PlayState extends MusicBeatState
 
 		setAllHaxeVar('songScore', songScore);
 		setAllHaxeVar('songScoreDef', songScoreDef);
+
+		if (!showComboUI)
+		{
+			finishPopUpScore(daNote, daRating, playerOne);
+			return;
+		}
+
 		var pixelSuffix = uiSmelly.isPixel ? '-pixel' : '';
 		var basePath = SUtil.getPath() + 'assets/images/custom_ui/ui_packs/' + uiSmelly.uses + '/';
 		var rating = new Judgement(0, 0, daRating, preferredJudgement, noteDiffSigned < 0, pixelUI);
@@ -4031,6 +4048,11 @@ class PlayState extends MusicBeatState
 			}
 		});
 
+		finishPopUpScore(daNote, daRating, playerOne);
+	}
+
+	function finishPopUpScore(daNote:Note, daRating:String, playerOne:Bool):Void
+	{
 		curSection += 1;
 		if (daNote.nukeNote && daRating != 'miss')
 		{
@@ -4314,7 +4336,7 @@ class PlayState extends MusicBeatState
 			var isActingSingingDir:Bool = (actingOn.getCurAnimName().startsWith('sing' + CoolUtil.directionArray[Std.int(Math.abs(note.noteData))]));
 
 			if (!actingOn.holdAnimationFix || !note.isSustainNote || !isActingSingingDir)
-				actingOn.sing(note.noteData, false, actingOn.altNum);
+				actingOn.sing(note.noteData, false, actingOn.altNum, note.isSustainNote);
 			else
 				actingOn.holdTimer = 0;
 
@@ -4326,7 +4348,8 @@ class PlayState extends MusicBeatState
 					onActing.sing(
 						note.oppntSing.direction,
 						note.oppntSing.miss,
-						note.oppntSing.alt
+						note.oppntSing.alt,
+						note.isSustainNote
 					);
 				else
 					onActing.holdTimer = 0;
