@@ -251,8 +251,8 @@ class PlayState extends MusicBeatState
 	var nps:Int = 0;
 	var currentTimingShown:FlxText;
 	var playingAsRpc:String = "";
-	private var strumLineNotes:FlxTypedGroup<StrumNote>;
-	private var playerStrums:FlxTypedGroup<StrumNote>;
+	public var strumLineNotes:FlxTypedGroup<StrumNote>;
+	public var playerStrums:FlxTypedGroup<StrumNote>;
 	private var enemyStrums:FlxTypedGroup<StrumNote>;
 	private var playerComboBreak:FlxTypedGroup<FlxSprite>;
 	private var enemyComboBreak:FlxTypedGroup<FlxSprite>;
@@ -3861,12 +3861,14 @@ class PlayState extends MusicBeatState
 					if (canCount)
 					{
 						misses++;
+						combo = 0;
 						score = -5;
 						ss = false;
 
 						if (accMode == Simple) totalNotesHit -= 1;
 
 						setAllHaxeVar("misses", misses);
+						setAllHaxeVar("combo", combo);
 					}
 			}
 		}
@@ -4007,7 +4009,7 @@ class PlayState extends MusicBeatState
 			numScore.velocity.y -= FlxG.random.int(140, 160);
 			numScore.velocity.x = FlxG.random.float(-5, 5);
 
-			if (combo >= 10 || combo == 0)
+			if (combo >= 10 && daRating != 'miss' && daRating != 'shit' && daRating != 'wayoff')
 				add(numScore);
 
 			FlxTween.tween(numScore, {alpha: 0}, 0.2, {
