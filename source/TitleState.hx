@@ -136,6 +136,8 @@ class TitleState extends MusicBeatState
 		var interp = PluginManager.createSimpleInterp();
 		// set vars
 		interp.variables.set("initialized", initialized);
+		interp.variables.set("setInitialized", function(v:Bool) {initialized = v;});
+		interp.variables.set("FlixG", FlxG);
 		interp.variables.set("soundExt", soundExt);
 		interp.variables.set("firstTime", firstTime);
 		interp.variables.set("makeTransition", makeTransition);
